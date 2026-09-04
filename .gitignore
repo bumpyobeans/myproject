@@ -1,0 +1,10 @@
+# 교육 자료 PDF — 용량이 커서 git에 넣지 않습니다 (파일은 폴더에 그대로 있습니다)
+00_교육자료/
+
+# Vercel 연결 정보 (자동 생성됨)
+.vercel
+
+# OS가 만드는 파일
+Thumbs.db
+desktop.ini
+.DS_Store

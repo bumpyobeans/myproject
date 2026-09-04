@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오늘의 인증 — 김현정 (양양 바다)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --frame: #2c2016;
+      --frame-light: #4a3826;
+      --sky-1: #cfe9f3;
+      --sky-2: #a9d8e9;
+      --sky-3: #7fc3dd;
+      --sea-1: #2f7ea6;
+      --sea-2: #256b93;
+      --sea-3: #1c577b;
+      --sea-4: #143f5c;
+      --foam: #eaf6fb;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #17110b;
+      font-family: "Malgun Gothic", "맑은 고딕", monospace, sans-serif;
+      image-rendering: pixelated;
+    }
+
+    /* ===== 창틀 ===== */
+    .window {
+      position: relative;
+      width: min(92vw, 560px);
+      aspect-ratio: 4 / 5;
+      border: 22px solid var(--frame);
+      border-radius: 6px;
+      box-shadow:
+        0 0 0 4px var(--frame-light),
+        0 30px 70px rgba(0, 0, 0, 0.55),
+        inset 0 0 0 3px #1c140d;
+      overflow: hidden;
+    }
+
+    /* 창살 */
+    .bar { position: absolute; background: var(--frame); z-index: 6; }
+    .bar-h { left: 0; right: 0; height: 12px; box-shadow: 0 0 0 2px var(--frame-light); }
+    .bar-v { top: 0; bottom: 0; width: 12px; box-shadow: 0 0 0 2px var(--frame-light); }
+    .h1 { top: 33.33%; } .h2 { top: 66.66%; }
+    .v1 { left: 50%; }
+
+    /* ===== 풍경 ===== */
+    .scene { position: absolute; inset: 0; }
+
+    .sky {
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        var(--sky-1) 0 22%,
+        var(--sky-2) 22% 40%,
+        var(--sky-3) 40% 52%
+      );
+    }
+
+    .sun {
+      position: absolute;
+      top: 10%; left: 16%;
+      width: 46px; height: 46px;
+      background: #fff3d0;
+      box-shadow:
+        0 0 0 8px rgba(255, 243, 208, 0.35),
+        0 0 0 16px rgba(255, 243, 208, 0.18);
+    }
+
+    .cloud {
+      position: absolute;
+      background: #f4fbfd;
+      box-shadow:
+        14px 0 0 #f4fbfd, 28px 0 0 #f4fbfd,
+        14px -12px 0 #f4fbfd;
+      width: 16px; height: 12px;
+      animation: cloud-move 26s linear infinite;
+    }
+    .cloud.c1 { top: 16%; left: 55%; }
+    .cloud.c2 { top: 26%; left: 78%; transform: scale(1.5); animation-duration: 38s; }
+    @keyframes cloud-move {
+      from { transform: translateX(0) scale(var(--s, 1)); }
+      to   { transform: translateX(-140px) scale(var(--s, 1)); }
+    }
+
+    .gull {
+      position: absolute;
+      width: 10px; height: 4px;
+      background:
+        linear-gradient(45deg, transparent 45%, #22303a 45% 55%, transparent 55%),
+        linear-gradient(-45deg, transparent 45%, #22303a 45% 55%, transparent 55%);
+      background-size: 50% 100%;
+      background-position: left, right;
+      background-repeat: no-repeat;
+      animation: gull 14s linear infinite;
+    }
+    .gull.g1 { top: 20%; left: 40%; }
+    .gull.g2 { top: 24%; left: 46%; animation-delay: -6s; }
+    .gull.g3 { top: 17%; left: 52%; animation-delay: -10s; transform: scale(0.8); }
+    @keyframes gull {
+      from { transform: translate(0, 0) scale(var(--gs, 1)); }
+      50%  { transform: translate(-30px, 10px) scale(var(--gs, 1)); }
+      to   { transform: translate(-60px, 0) scale(var(--gs, 1)); }
+    }
+
+    /* 바다 바탕 */
+    .sea {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 58%;
+      background: linear-gradient(var(--sea-1) 0 30%, var(--sea-3) 100%);
+    }
+
+    /* ===== 높은 파도 ===== */
+    .wave {
+      position: absolute;
+      left: -40px; right: -40px;
+      bottom: 0;
+      background: linear-gradient(180deg, var(--foam) 0 6px, var(--c) 6px);
+      -webkit-mask: radial-gradient(var(--hump) at 50% 0%, #0000 0 calc(var(--hump) - 7px), #000 var(--hump)) repeat-x;
+              mask: radial-gradient(var(--hump) at 50% 0%, #0000 0 calc(var(--hump) - 7px), #000 var(--hump)) repeat-x;
+      -webkit-mask-size: calc(var(--hump) * 1.5) 100%;
+              mask-size: calc(var(--hump) * 1.5) 100%;
+      animation: drift var(--spd) steps(10) infinite alternate;
+    }
+    .w1 { height: 24%; --c: #46a0c6; --hump: 34px; --spd: 2.3s; }
+    .w2 { height: 36%; --c: #398cb0; --hump: 48px; --spd: 2.9s; }
+    .w3 { height: 50%; --c: #2c789e; --hump: 66px; --spd: 3.5s; }
+    .w4 { height: 66%; --c: #205f82; --hump: 92px; --spd: 4.2s; }
+    .w5 { height: 84%; --c: #17475f; --hump: 128px; --spd: 5.0s; }
+    .w6 { height: 100%; --c: #0f2f42; --hump: 168px; --spd: 5.8s; }
+    @keyframes drift {
+      from { transform: translateX(-28px); }
+      to   { transform: translateX(28px); }
+    }
+
+    /* ===== 픽셀 그리드 오버레이 ===== */
+    .pixel-grid {
+      position: absolute; inset: 0; z-index: 7;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(10, 20, 30, 0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(10, 20, 30, 0.10) 1px, transparent 1px);
+      background-size: 9px 9px;
+      opacity: 0.4;
+    }
+    .vignette {
+      position: absolute; inset: 0; z-index: 8; pointer-events: none;
+      box-shadow: inset 0 0 90px rgba(10, 25, 40, 0.45);
+    }
+
+    /* ===== 캡션 ===== */
+    .caption {
+      position: absolute;
+      left: 0; right: 0;
+      top: 44%;
+      z-index: 9;
+      text-align: center;
+      color: #f7fbfd;
+    }
+    .title {
+      font-size: clamp(20px, 6vw, 34px);
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-shadow:
+        3px 0 0 #14384f, 0 3px 0 #14384f, 3px 3px 0 #14384f,
+        -3px 0 0 #14384f, 0 -3px 0 #14384f, 6px 6px 0 rgba(0,0,0,0.35);
+    }
+    .sub {
+      margin-top: 14px;
+      font-size: clamp(12px, 3.4vw, 15px);
+      line-height: 1.7;
+      font-weight: 700;
+      text-shadow: 2px 2px 0 #14384f, 3px 3px 0 rgba(0,0,0,0.3);
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 5px 12px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      background: #14384f;
+      color: #cdeaf5;
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="scene">
+      <div class="sky"></div>
+      <div class="sun"></div>
+      <div class="cloud c1"></div>
+      <div class="cloud c2" style="--s:1.5"></div>
+      <div class="gull g1"></div>
+      <div class="gull g2"></div>
+      <div class="gull g3" style="--gs:0.8"></div>
+
+      <div class="sea"></div>
+      <div class="wave w6"></div>
+      <div class="wave w5"></div>
+      <div class="wave w4"></div>
+      <div class="wave w3"></div>
+      <div class="wave w2"></div>
+      <div class="wave w1"></div>
+
+      <div class="pixel-grid"></div>
+      <div class="vignette"></div>
+
+      <div class="caption">
+        <div class="title">양양살이_김현정</div>
+        <div class="sub">안녕하세요, 김현정입니다.<br />Ai 내일바꿈 1기 시작!</div>
+        <div class="badge">2026 · 첫 웹페이지 인증</div>
+      </div>
+    </div>
+
+    <div class="bar bar-h h1"></div>
+    <div class="bar bar-h h2"></div>
+    <div class="bar bar-v v1"></div>
+  </div>
+</body>
+</html>
