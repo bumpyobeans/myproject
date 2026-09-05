@@ -278,14 +278,24 @@
   }
 
   function buildNewReason(a, np, shiftTarget) {
-    var primary = getPrimaryTaste(a);
-    var pLabel = PRIMARY_LABEL[primary] || "지금";
     // 새 경험 제품이 실제로 목표 맛을 가졌으면 그 표현을, 아니면 부드러운 표현을 쓴다
     var sLabel = (np.taste.indexOf(shiftTarget) !== -1)
       ? (SHIFT_LABEL[shiftTarget] || "조금 다른 결의")
       : "조금 다른 결의";
-    return "평소 " + pLabel + " 맛을 좋아하시니, 한 걸음만 옆으로 옮겨서 "
-      + sLabel + " " + eunNeun(np.name) + " 어떠세요? "
+
+    // 고객이 맛을 직접 고른 경우에만 "평소 ~ 좋아하시니" 라고 말한다.
+    // q2 가 "모름" 이면 고객이 말한 적 없는 취향이므로 그렇게 단정하지 않는다.
+    var opener;
+    if (a.q2 === "모름") {
+      opener = (a.q5 === "개성")
+        ? "개성있는 커피를 찾으신다고 하셔서, 거기서 한 걸음 더 나가 "
+        : "부드러운 커피부터 시작하시는 거라, 한 걸음만 옆으로 옮겨서 ";
+    } else {
+      var pLabel = PRIMARY_LABEL[getPrimaryTaste(a)] || "지금";
+      opener = "평소 " + pLabel + " 맛을 좋아하시니, 한 걸음만 옆으로 옮겨서 ";
+    }
+
+    return opener + sLabel + " " + eunNeun(np.name) + " 어떠세요? "
       + np.desc + " 느낌이라 부담 없이 새로운 맛을 경험할 수 있어요.";
   }
 

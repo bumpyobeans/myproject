@@ -155,7 +155,7 @@ const PRODUCTS = [
     method: ["아메리카노", "간편"],
     scene: ["집", "여행캠핑", "선물", "사무실"],
     decaf: false,
-    image: "",
+    image: "images/josun-horangi-dripbag.jpg",
     url: "",
     priority: 5
   },
@@ -168,7 +168,7 @@ const PRODUCTS = [
     method: ["아메리카노", "간편"],
     scene: ["집", "여행캠핑", "선물", "사무실"],
     decaf: false,
-    image: "",
+    image: "images/horangi-hyungnim-dripbag.jpg",
     url: "",
     priority: 4
   },
@@ -181,7 +181,7 @@ const PRODUCTS = [
     method: ["아메리카노", "간편"],
     scene: ["집", "여행캠핑", "선물", "사무실"],
     decaf: false,
-    image: "",
+    image: "images/yeoksamdong-horangi-dripbag.jpg",
     url: "",
     priority: 3
   },
@@ -194,7 +194,7 @@ const PRODUCTS = [
     method: ["아메리카노", "간편"],
     scene: ["집", "여행캠핑", "선물", "사무실"],
     decaf: true,
-    image: "",
+    image: "images/decaf-horangi-dripbag.jpg",
     url: "",
     priority: 3
   },
