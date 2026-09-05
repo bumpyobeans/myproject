@@ -208,11 +208,23 @@
       color: #c98a4b;
       margin-top: 6px;
     }
+    .why-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #c98a4b;
+      letter-spacing: 0.5px;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
     .prod-why {
-      font-size: 13px;
-      color: #e7d6c1;
-      margin-top: 10px;
+      font-size: 14px;
+      color: #f3e3d0;
       word-break: keep-all;
+      line-height: 1.55;
+      background: rgba(201, 138, 75, 0.12);
+      border-left: 3px solid #c98a4b;
+      border-radius: 0 10px 10px 0;
+      padding: 10px 12px;
     }
     .prod-hint {
       font-size: 12px;
@@ -245,6 +257,60 @@
       background: #c98a4b;
       color: #2c1e14;
       font-weight: 700;
+    }
+
+    /* ---------- 실제 구매자 후기 카드 ---------- */
+    .review-card {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px dashed #5a4028;
+    }
+    .review-label {
+      margin-bottom: 8px;
+    }
+    .review-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .review-photo-thumb {
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .review-photo-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .review-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .review-stars {
+      color: #c98a4b;
+      font-size: 13px;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .review-text {
+      font-size: 13px;
+      color: #e7d6c1;
+      white-space: pre-wrap;
+      word-break: keep-all;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .review-meta {
+      font-size: 11px;
+      color: #a08b76;
+      margin-top: 6px;
     }
     .shop-btn {
       display: block;
@@ -350,6 +416,7 @@
 
   <!-- 일반 script 태그 + 전역 변수만 사용 (ES 모듈 없음) -->
   <script src="products.js"></script>
+  <script src="reviews.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

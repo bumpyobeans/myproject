@@ -458,6 +458,95 @@
     }
   }
 
+  /* 지금 고객 답변을 리뷰 태그와 같은 값으로 정리 (q1/q2 목표맛/q4/q_amount) */
+  function currentSituationTags(a) {
+    var tags = [];
+    if (a.q1) tags.push(a.q1);
+    var tasteTarget = getTasteTarget(a);
+    if (tasteTarget) tags.push(tasteTarget);
+    if (a.q4 === "디카페인") tags.push("디카페인");
+    if (a.q_amount) tags.push(a.q_amount);
+    return tags;
+  }
+
+  /* p.id 에 달린 실제 후기 중, 지금 상황과 가장 많이 겹치는 후기 하나를 고른다.
+     겹치는 태그가 없어도(matched=false) 후기 자체는 보여준다 - 사회적 증거는 있는게 낫다. */
+  function pickReview(p, a) {
+    var reviews = (typeof REVIEWS !== "undefined" && REVIEWS[p.id]) || [];
+    if (reviews.length === 0) return null;
+
+    var situationTags = currentSituationTags(a);
+    var best = null;
+    var bestScore = -1;
+
+    for (var i = 0; i < reviews.length; i++) {
+      var r = reviews[i];
+      var score = 0;
+      for (var j = 0; j < situationTags.length; j++) {
+        if (r.tags.indexOf(situationTags[j]) !== -1) score++;
+      }
+      if (score > bestScore) {
+        best = r;
+        bestScore = score;
+      }
+    }
+
+    return { review: best, matched: bestScore > 0 };
+  }
+
+  /* 실제 구매자 후기 카드: 별점 + 사진 + 후기 본문 */
+  function buildReviewBlock(p, a) {
+    var picked = pickReview(p, a);
+    if (!picked || !picked.review) return null;
+    var r = picked.review;
+
+    var box = document.createElement("div");
+    box.className = "review-card";
+
+    var label = document.createElement("div");
+    label.className = "result-label review-label";
+    label.textContent = picked.matched ? "나와 비슷한 분의 후기" : "실제 구매자 후기";
+    box.appendChild(label);
+
+    var row = document.createElement("div");
+    row.className = "review-row";
+
+    if (r.photo) {
+      var imgWrap = document.createElement("div");
+      imgWrap.className = "review-photo-thumb";
+      var img = document.createElement("img");
+      img.src = r.photo;
+      img.alt = "구매자 후기 사진";
+      img.loading = "lazy";
+      img.onerror = function () { imgWrap.hidden = true; };
+      imgWrap.appendChild(img);
+      row.appendChild(imgWrap);
+    }
+
+    var content = document.createElement("div");
+    content.className = "review-content";
+
+    var stars = document.createElement("div");
+    stars.className = "review-stars";
+    stars.textContent = "★★★★★".slice(0, r.rating) + "☆☆☆☆☆".slice(0, 5 - r.rating);
+    content.appendChild(stars);
+
+    var text = document.createElement("div");
+    text.className = "review-text";
+    text.textContent = r.text;
+    content.appendChild(text);
+
+    var meta = document.createElement("div");
+    meta.className = "review-meta";
+    meta.textContent = r.author + " · " + r.date;
+    content.appendChild(meta);
+
+    row.appendChild(content);
+    box.appendChild(row);
+
+    return box;
+  }
+
   /* ----------------------------------------------------------
      4. 화면 그리기
      ---------------------------------------------------------- */
@@ -649,12 +738,20 @@
 
     frag.appendChild(priceLineEl(chosen));
 
+    var whyLabel1 = document.createElement("div");
+    whyLabel1.className = "why-label";
+    whyLabel1.textContent = "이렇게 추천했어요";
+    frag.appendChild(whyLabel1);
+
     var why1 = document.createElement("div");
     why1.className = "prod-why";
     why1.textContent = buildMainReason(answers, chosen, rec.fallback);
     frag.appendChild(why1);
 
     appendTasteOption(frag, chosen, rec);
+
+    var reviewEl1 = buildReviewBlock(chosen, answers);
+    if (reviewEl1) frag.appendChild(reviewEl1);
 
     frag.appendChild(shopButtonEl(chosen, "상품 보러가기"));
 
@@ -683,12 +780,20 @@
 
     frag.appendChild(priceLineEl(np));
 
+    var whyLabel2 = document.createElement("div");
+    whyLabel2.className = "why-label";
+    whyLabel2.textContent = "이런 점이 새로워요";
+    frag.appendChild(whyLabel2);
+
     var why2 = document.createElement("div");
     why2.className = "prod-why";
     why2.textContent = buildNewReason(answers, np, rec.chosen);
     frag.appendChild(why2);
 
     appendTasteOption(frag, np, rec);
+
+    var reviewEl2 = buildReviewBlock(np, answers);
+    if (reviewEl2) frag.appendChild(reviewEl2);
 
     frag.appendChild(shopButtonEl(np, "상품 보러가기"));
 
