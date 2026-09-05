@@ -31,6 +31,15 @@
         { label: "여행·캠핑에서 마실 거예요", value: "여행캠핑", phrase: "여행이나 캠핑에서 즐기실 거라 하셔서", ack: "여행이나 캠핑에서 마실 커피라니, 낭만 있네요." }
       ]
     },
+    q_amount: {
+      text: "원두는 어느 정도로 준비해드릴까요?",
+      options: [
+        { label: "처음이라 여러 맛을 조금씩 맛보고 싶어요", value: "100", phrase: "처음이라 여러 맛을 조금씩 맛보고 싶다고 하셔서", ack: "그럼 여러 맛을 조금씩 즐길 수 있는 양으로 준비해드릴게요." },
+        { label: "혼자 마셔요, 신선하게 오래 즐기고 싶어요", value: "200", phrase: "혼자서 신선하게 오래 즐기고 싶다고 하셔서", ack: "1인 기준 일주일 정도 신선하게 드시기 좋은 양으로 준비해드릴게요." },
+        { label: "2~3명이 같이 마셔요", value: "500", phrase: "2~3명이 함께 드신다고 하셔서", ack: "여러 명이 일주일 정도 나눠 드시기 좋은 양으로 준비해드릴게요." },
+        { label: "커피값 아끼게 넉넉히 준비해주세요", value: "1000", phrase: "넉넉하게 오래 두고 드시고 싶다고 하셔서", ack: "요즘 1kg으로 넉넉히 챙기시는 분들이 많아요. 그렇게 준비해드릴게요." }
+      ]
+    },
     q2: {
       text: "어떤 맛을 좋아하세요?",
       options: [
@@ -64,8 +73,9 @@
     }
   };
 
-  /* 질문 진행 순서. q5 는 조건부(q2 가 "모름" 일 때만) */
-  var FLOW = ["q1", "q2", "q3", "q4", "q5", "result"];
+  /* 질문 진행 순서. q_amount 는 조건부(q1 이 "핸드드립" 일 때만),
+     q5 는 조건부(q2 가 "모름" 일 때만) */
+  var FLOW = ["q1", "q_amount", "q2", "q3", "q4", "q5", "result"];
 
   /* q1 답 -> method 또는 scene 필터 */
   var FILTER_BY_Q1 = {
@@ -165,6 +175,23 @@
     return list.filter(function (p) { return p.decaf === true; });
   }
 
+  /* 상품명에서 g/kg 용량을 읽어온다 (예: "500g" -> 500, "1kg" -> 1000). 없으면 null. */
+  function extractWeightG(p) {
+    var m = p.name.match(/(\d+(?:\.\d+)?)\s*kg/i);
+    if (m) return Math.round(parseFloat(m[1]) * 1000);
+    m = p.name.match(/(\d+)\s*g\b/i);
+    if (m) return parseInt(m[1], 10);
+    return null;
+  }
+
+  /* 원두 구매 용량 취향(q_amount): 정확히 맞는 용량이 있으면 그것만, 없으면 그대로 둔다 */
+  function filterByAmount(list, a) {
+    if (!a.q_amount) return list;
+    var target = parseInt(a.q_amount, 10);
+    var matched = list.filter(function (p) { return extractWeightG(p) === target; });
+    return matched.length > 0 ? matched : list;
+  }
+
   /* 신맛 회피: 산뜻한산미/과실감 제외 (단, "다양" 상품은 그대로 둠) */
   function filterByAcidAvoid(list, a) {
     if (a.q3 !== "신맛회피") return list;
@@ -238,7 +265,8 @@
     var tasteTarget = getTasteTarget(a);
     var base = baseCandidates();
     var afterQ1 = filterByQ1(base, a);
-    var afterDecaf = filterByDecaf(afterQ1, a);
+    var afterAmount = filterByAmount(afterQ1, a);
+    var afterDecaf = filterByDecaf(afterAmount, a);
     var finalPool = filterByAcidAvoid(afterDecaf, a);
 
     var fallback = false;
@@ -318,6 +346,12 @@
     // 상황(q1) + 제품군 선택 이유
     var p1 = phraseOf("q1", a.q1);
     if (p1) parts.push(p1 + " " + (LINE_REASON_BY_Q1[a.q1] || ""));
+
+    // 원두 구매 용량(q_amount)
+    if (a.q_amount) {
+      var pAmt = phraseOf("q_amount", a.q_amount);
+      if (pAmt) parts.push(pAmt + " 그에 맞는 용량으로 준비했어요.");
+    }
 
     // 맛 취향(q2 / q5)
     if (a.q2 === "모름") {
@@ -511,6 +545,12 @@
   function nextStep() {
     flowIndex++;
     var key = FLOW[flowIndex];
+
+    // q_amount 는 원두를 직접 사서 내리는 분(q1 === "핸드드립")에게만
+    if (key === "q_amount" && answers.q1 !== "핸드드립") {
+      flowIndex++;
+      key = FLOW[flowIndex];
+    }
 
     // q5 는 q2 가 "모름" 일 때만
     if (key === "q5" && answers.q2 !== "모름") {
