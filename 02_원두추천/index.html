@@ -202,11 +202,49 @@
       margin-top: 4px;
       word-break: keep-all;
     }
+    .prod-price {
+      font-size: 16px;
+      font-weight: 700;
+      color: #c98a4b;
+      margin-top: 6px;
+    }
     .prod-why {
       font-size: 13px;
       color: #e7d6c1;
       margin-top: 10px;
       word-break: keep-all;
+    }
+    .prod-hint {
+      font-size: 12px;
+      color: #cdb69c;
+      margin-top: 6px;
+      word-break: keep-all;
+    }
+    .flavor-picker { margin-top: 10px; }
+    .flavor-picker-label {
+      font-size: 12px;
+      color: #cdb69c;
+      margin-bottom: 6px;
+    }
+    .flavor-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .flavor-chip {
+      background: transparent;
+      color: #f3e3d0;
+      border: 1px solid #c98a4b;
+      border-radius: 16px;
+      padding: 7px 13px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .flavor-chip.active {
+      background: #c98a4b;
+      color: #2c1e14;
+      font-weight: 700;
     }
     .shop-btn {
       display: block;
@@ -232,6 +270,41 @@
       height: 1px;
       background: #5a4028;
       margin: 20px 0 16px;
+    }
+
+    /* ---------- 샘플(처음이라 부담되시면) 카드: 더 작게, 크레마 브라운 테두리 ---------- */
+    .sample-label {
+      color: #c98a4b;
+    }
+    .sample-card {
+      border: 1px solid #c98a4b;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .sample-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .prod-img-small {
+      width: 64px;
+      height: 64px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .sample-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .sample-name {
+      font-size: 14px;
+      margin-top: 0;
+    }
+    .sample-info .shop-btn {
+      margin-top: 8px;
+      padding: 8px 0;
+      font-size: 13px;
     }
 
     /* ---------- 하단 다시하기 ---------- */

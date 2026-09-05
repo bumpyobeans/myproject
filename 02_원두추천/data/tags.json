@@ -1,0 +1,85 @@
+{
+  "_설명": "상품번호별 추천용 분류표. 상품명·가격·이미지·구매URL은 스마트스토어 CSV에서 자동으로 가져오고, 이 파일은 '어떤 상황/취향에 추천할지'만 정합니다. 김현정님이 직접 고쳐도 됩니다.",
+  "_필드": {
+    "short": "화면에 보여줄 짧은 이름 (스토어 상품명은 검색용이라 길어서 따로 씀)",
+    "line": "제품군",
+    "method": "음용 방식 — 첫 질문 답과 연결 (핸드드립 / 아메리카노간편 / 라떼 / 캡슐 / 콜드브루)",
+    "scene": "상황 (집 / 사무실 / 여행캠핑 / 선물 / 업소)",
+    "taste": "맛 (고소 / 균형 / 산뜻한산미 / 과실감 / 다양). '다양'은 여러 맛이 옵션으로 들어있어 어떤 취향에나 맞는 상품",
+    "decaf": "디카페인 여부",
+    "sample": "샘플·체험 상품 — '부담되면 이것부터' 버튼에 씀",
+    "priority": "같은 조건이면 이 숫자가 큰 것을 먼저 추천 (1~5)",
+    "exclude": "추천 대상에서 제외 (업소용 등)",
+    "flavors": "맛 옵션 목록(name/taste) — 드립백 4종처럼 상품 안에서 여러 맛을 고를 수 있을 때만 채움. 화면에서 맛 선택 칩으로 씀"
+  },
+
+  "5215355668":  { "short": "드립백 커피 4종 7개입",               "line": "드립백",   "method": ["핸드드립", "아메리카노간편"], "scene": ["집", "사무실", "여행캠핑"], "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 5,
+    "flavors": [
+      { "name": "조선호랑이", "taste": "고소" },
+      { "name": "호랑이형님", "taste": "균형" },
+      { "name": "역삼동호랑이", "taste": "산뜻한산미" },
+      { "name": "디카페인호랑이", "taste": "디카페인" }
+    ] },
+  "5217374639":  { "short": "커피티백 4종 7개입",                  "line": "티백",     "method": ["아메리카노간편"],             "scene": ["집", "사무실", "여행캠핑"], "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 4 },
+  "12972626274": { "short": "커피티백 취향 4종 맛보기",            "line": "티백",     "method": ["아메리카노간편"],             "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "12674379179": { "short": "드립백·티백 시음용 샘플",             "line": "드립백",   "method": ["핸드드립", "아메리카노간편"], "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": true,  "priority": 5 },
+  "12738150675": { "short": "디카페인 커피 컬렉션 5종",            "line": "드립백",   "method": ["아메리카노간편", "캡슐", "콜드브루", "라떼"], "scene": ["집"],       "taste": ["다양"],                 "decaf": true,  "sample": true,  "priority": 5 },
+  "10508542121": { "short": "여행 커피키트 8잔",                   "line": "드립백",   "method": ["아메리카노간편"],             "scene": ["여행캠핑"],                 "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 5 },
+  "8084877243":  { "short": "드립백 30개 4종 대용량",              "line": "드립백",   "method": ["핸드드립", "아메리카노간편"], "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2,
+    "flavors": [
+      { "name": "조선호랑이", "taste": "고소" },
+      { "name": "호랑이형님", "taste": "균형" },
+      { "name": "역삼동호랑이", "taste": "산뜻한산미" },
+      { "name": "디카페인호랑이", "taste": "디카페인" }
+    ] },
+  "8161720834":  { "short": "티백커피 30개 4종 대용량",            "line": "티백",     "method": ["아메리카노간편"],             "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2 },
+
+  "13623193339": { "short": "고소한 원두 500g 3종",                "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["고소"],                 "decaf": false, "sample": false, "priority": 5 },
+  "13623204620": { "short": "밸런스 원두 500g 2종",                "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["균형"],                 "decaf": false, "sample": false, "priority": 5 },
+  "13623213996": { "short": "산미있는 원두 500g 3종",              "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["산뜻한산미", "과실감"], "decaf": false, "sample": false, "priority": 5 },
+  "13623229799": { "short": "디카페인 원두 500g 2종",              "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["다양"],                 "decaf": true,  "sample": false, "priority": 5 },
+  "8479392738":  { "short": "원두 샘플팩 7종 20g",                 "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["다양"],                 "decaf": false, "sample": true,  "priority": 5 },
+  "13665308180": { "short": "볼리비아 로스 로드리게스 200g",       "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["산뜻한산미", "과실감"], "decaf": false, "sample": false, "priority": 3 },
+  "5657606851":  { "short": "당일로스팅 원두 200g 9종",            "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 4 },
+  "4830947751":  { "short": "홈카페 원두 100g 9종",                "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "4807118907":  { "short": "원두 500g 9종",                       "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "8719661855":  { "short": "원두 1kg 9종",                        "line": "원두",     "method": ["핸드드립"],                   "scene": ["집"],                       "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 1 },
+  "8048039588":  { "short": "카페 납품용 원두 3kg·5kg",            "line": "원두",     "method": ["핸드드립"],                   "scene": ["업소"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 1, "exclude": true },
+
+  "5239251410":  { "short": "네스프레소 호환캡슐 6종 10개입",      "line": "캡슐",     "method": ["캡슐"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": true,  "priority": 5 },
+  "6521062498":  { "short": "네스프레소 호환캡슐 30개",            "line": "캡슐",     "method": ["캡슐"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 4 },
+  "5366289913":  { "short": "네스프레소 호환캡슐 100개 6종",       "line": "캡슐",     "method": ["캡슐"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2 },
+  "5830821344":  { "short": "캡슐 선물세트 4종",                   "line": "캡슐",     "method": ["캡슐"],                       "scene": ["선물"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+
+  "6086088195":  { "short": "동결건조 파우더 7개입 4종",           "line": "파우더",   "method": ["아메리카노간편", "라떼"],     "scene": ["집", "사무실", "여행캠핑"], "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 5 },
+  "12633625424": { "short": "파우더커피 무료체험",                 "line": "파우더",   "method": ["아메리카노간편", "라떼"],     "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": true,  "priority": 5 },
+  "10770654839": { "short": "커피파우더 30g",                      "line": "파우더",   "method": ["아메리카노간편", "라떼"],     "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "11788686216": { "short": "파우더 스틱 20개입 4종",              "line": "파우더",   "method": ["아메리카노간편", "라떼"],     "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "12664553307": { "short": "파우더 대용량 20+2개입",              "line": "파우더",   "method": ["아메리카노간편", "라떼"],     "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2 },
+  "6998844800":  { "short": "파우더 스틱 7개입 3박스",             "line": "파우더",   "method": ["아메리카노간편", "라떼"],     "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2 },
+
+  "5425108033":  { "short": "콜드브루 500ml",                      "line": "콜드브루", "method": ["콜드브루"],                   "scene": ["집"],                       "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 5 },
+  "10004344457": { "short": "미니 콜드브루 50ml 5병",              "line": "콜드브루", "method": ["콜드브루"],                   "scene": ["집", "여행캠핑"],           "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 4 },
+  "10009353397": { "short": "휴대용 미니 콜드브루 1회용",          "line": "콜드브루", "method": ["콜드브루"],                   "scene": ["여행캠핑"],                 "taste": ["다양"],                 "decaf": false, "sample": true,  "priority": 4 },
+  "11163657344": { "short": "미니 콜드브루 시음용 샘플",           "line": "콜드브루", "method": ["콜드브루"],                   "scene": ["집", "여행캠핑"],           "taste": ["다양"],                 "decaf": false, "sample": true,  "priority": 5 },
+  "9983606871":  { "short": "콜드브루 원액 1L",                    "line": "콜드브루", "method": ["콜드브루"],                   "scene": ["집"],                       "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "11263385249": { "short": "콜드브루 선물세트 50ml 9개",          "line": "콜드브루", "method": ["콜드브루"],                   "scene": ["선물"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+
+  "9942645030":  { "short": "범표라떼 맛보기",                     "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": true,  "priority": 5 },
+  "10042198490": { "short": "범표커피 350ml 3캔",                  "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 4 },
+  "5188817159":  { "short": "범표라떼 350ml 5캔",                  "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "5762534501":  { "short": "수제 캔커피 500ml 5캔",               "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "7144276521":  { "short": "수제 캔커피 온아바라 5캔",            "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2 },
+  "13237777944": { "short": "두유라떼 디카페인 5캔",               "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": true,  "sample": false, "priority": 5 },
+  "6691740369":  { "short": "디카페인 범표라떼 350ml 10캔",        "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": true,  "sample": false, "priority": 3 },
+  "6692560973":  { "short": "디카페인 캔커피 500ml 10캔",          "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": true,  "sample": false, "priority": 2 },
+  "5578482247":  { "short": "수제 캔커피 500ml 10캔",              "line": "캔커피",   "method": ["라떼"],                       "scene": ["집", "사무실"],             "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2 },
+  "5620663325":  { "short": "레터링 캔커피 350ml 10캔",            "line": "캔커피",   "method": ["라떼"],                       "scene": ["선물", "사무실"],           "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2 },
+
+  "9197759366":  { "short": "선물세트 드립백·티백 14개입",         "line": "선물세트", "method": ["아메리카노간편"],             "scene": ["선물"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 5 },
+  "10800170496": { "short": "선물세트 드립백 7개입 + 카라비너컵",  "line": "선물세트", "method": ["아메리카노간편"],             "scene": ["선물"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 4 },
+  "7061025713":  { "short": "선물세트 드립백·원두·티백·콜드브루",  "line": "선물세트", "method": ["아메리카노간편"],             "scene": ["선물"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 4 },
+  "13040457289": { "short": "선물세트 동결건조 3종",               "line": "선물세트", "method": ["아메리카노간편", "라떼"],     "scene": ["선물"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "9200019610":  { "short": "선물세트 동결건조 2상자 + 티백·드립백", "line": "선물세트", "method": ["아메리카노간편", "라떼"],   "scene": ["선물"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 3 },
+  "13727847144": { "short": "선물세트 호랑이형님 드립백 + 동결건조", "line": "선물세트", "method": ["아메리카노간편", "라떼"],   "scene": ["선물"],                     "taste": ["다양"],                 "decaf": false, "sample": false, "priority": 2 }
+}
