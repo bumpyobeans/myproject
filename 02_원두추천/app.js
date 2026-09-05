@@ -212,6 +212,10 @@
     if (a.q3 === "쓴맛회피") {
       if (p.taste.indexOf("균형") !== -1 || p.taste.indexOf("산뜻한산미") !== -1) s += 1;
     }
+    // 실제 후기가 있으면 약간 가점 - 비슷한 조건이면 신뢰 신호가 있는 상품을 보여준다
+    if (typeof REVIEWS !== "undefined" && REVIEWS[p.id] && REVIEWS[p.id].length > 0) {
+      s += 1;
+    }
     s += p.priority * 0.5;
     return s;
   }
