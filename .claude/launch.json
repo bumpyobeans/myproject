@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5500", "--directory", "02_원두추천"],
       "port": 5500
+    },
+    {
+      "name": "원두추천-5501",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5501", "--directory", "02_원두추천"],
+      "port": 5501
     }
   ]
 }

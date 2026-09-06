@@ -42,6 +42,7 @@
     },
     q2: {
       text: "어떤 맛을 좋아하세요?",
+      textGift: "받으실 분은 어떤 맛을 좋아하실까요?",
       options: [
         { label: "고소하고 묵직한 맛", value: "고소", phrase: "고소하고 묵직한 맛을 좋아하신다고 하셨죠", ack: "고소하고 묵직한 맛, 든든하게 좋죠." },
         { label: "균형잡힌 잔잔한 맛", value: "균형", phrase: "균형잡힌 잔잔한 맛을 좋아하신다고 하셨죠", ack: "균형 잡힌 맛을 좋아하시는군요, 부담 없이 좋은 선택이에요." },
@@ -51,6 +52,7 @@
     },
     q3: {
       text: "부담스러운 맛이 있나요?",
+      textGift: "받으실 분이 부담스러워하는 맛이 있을까요?",
       options: [
         { label: "신맛은 좀...", value: "신맛회피", phrase: "신맛이 부담스럽다고 하셔서", ack: "네, 신맛은 튀지 않게 골라드릴게요." },
         { label: "쓴맛은 좀...", value: "쓴맛회피", phrase: "쓴맛이 부담스럽다고 하셔서", ack: "쓴맛 부담스러우신 거, 확인했어요." },
@@ -66,9 +68,10 @@
     },
     q5: {
       text: "그럼 이런 커피는 어떠세요?",
+      textGift: "그럼 받으실 분께는 이런 커피가 어떨까요?",
       options: [
-        { label: "부드럽고 편안한 커피", value: "부드러움", phrase: "부드럽고 편안한 커피를 원하셔서", ack: "부드럽고 편안한 쪽을 좋아하시는군요." },
-        { label: "개성있고 특별한 커피", value: "개성", phrase: "개성있고 특별한 커피를 원하셔서", ack: "개성있고 특별한 쪽이시군요, 재밌는 선택이에요." }
+        { label: "부드럽고 편안한 커피", value: "부드러움", phrase: "부드럽고 편안한 커피가 좋겠다고 하셨죠", ack: "부드럽고 편안한 쪽을 좋아하시는군요." },
+        { label: "개성있고 특별한 커피", value: "개성", phrase: "개성있고 특별한 커피가 좋겠다고 하셨죠", ack: "개성있고 특별한 쪽이시군요, 재밌는 선택이에요." }
       ]
     }
   };
@@ -122,6 +125,7 @@
      ---------------------------------------------------------- */
   function hasJong(word) {
     if (!word) return false;
+    if (/g$/i.test(word)) return true; // "200g", "1kg" 등은 "그램"으로 읽어 받침이 있다고 처리
     var c = word.charCodeAt(word.length - 1);
     if (c < 0xAC00 || c > 0xD7A3) return false; // 한글이 아니면 받침 없음으로 처리
     return (c - 0xAC00) % 28 !== 0;
@@ -139,6 +143,11 @@
   /* taste 가 정확히 ["다양"] 인지 */
   function isDayang(p) {
     return !!p && p.taste && p.taste.length === 1 && p.taste[0] === "다양";
+  }
+
+  /* 상품명/스토어명에 "N종" 또는 "외 N종" 형태의 옵션 안내가 있는지 */
+  function hasFlavorOptions(p) {
+    return /(\d+)\s*종|외\s*\d*\s*종/.test(p.name + " " + (p.storeName || ""));
   }
 
   function sameTasteSet(t1, t2) {
@@ -170,9 +179,23 @@
     return list.filter(function (p) { return passesQ1(p, a.q1); });
   }
 
+  /* p.flavors 중 taste 가 "디카페인" 인 첫 항목 (없으면 null) */
+  function decafFlavorOf(p) {
+    if (!p.flavors) return null;
+    for (var i = 0; i < p.flavors.length; i++) {
+      if (p.flavors[i].taste === "디카페인") return p.flavors[i];
+    }
+    return null;
+  }
+
+  /* 상품 자체가 디카페인이거나, 디카페인 맛 옵션을 가지고 있으면 디카페인 조건 통과 */
+  function isDecafOk(p) {
+    return p.decaf === true || !!decafFlavorOf(p);
+  }
+
   function filterByDecaf(list, a) {
     if (a.q4 !== "디카페인") return list;
-    return list.filter(function (p) { return p.decaf === true; });
+    return list.filter(function (p) { return isDecafOk(p); });
   }
 
   /* 상품명에서 g/kg 용량을 읽어온다 (예: "500g" -> 500, "1kg" -> 1000). 없으면 null. */
@@ -274,15 +297,24 @@
     var finalPool = filterByAcidAvoid(afterDecaf, a);
 
     var fallback = false;
+    var relaxedQ1 = false;
     var chosen;
     var candidatesForNew;
 
     if (finalPool.length === 0) {
-      // (7) 후보가 하나도 없으면 -> 대표 상품(priority 최고) + 안내 문구
-      fallback = true;
-      var repPool = base.length > 0 ? base : PRODUCTS;
-      chosen = sortByPriority(repPool)[0];
-      candidatesForNew = base.filter(function (p) { return p.id !== chosen.id; });
+      // q1·용량 조건만 풀고 디카페인·신맛회피는 유지한 채로 한 번 더 시도
+      var relaxedPool = filterByAcidAvoid(filterByDecaf(base, a), a);
+      if (relaxedPool.length > 0) {
+        relaxedQ1 = true;
+        chosen = sortByScore(relaxedPool, a, tasteTarget)[0];
+        candidatesForNew = relaxedPool.filter(function (p) { return p.id !== chosen.id; });
+      } else {
+        // (7) 후보가 하나도 없으면 -> 대표 상품(priority 최고) + 안내 문구
+        fallback = true;
+        var repPool = base.length > 0 ? base : PRODUCTS;
+        chosen = sortByPriority(repPool)[0];
+        candidatesForNew = base.filter(function (p) { return p.id !== chosen.id; });
+      }
     } else {
       chosen = sortByScore(finalPool, a, tasteTarget)[0];
       candidatesForNew = finalPool.filter(function (p) { return p.id !== chosen.id; });
@@ -316,6 +348,7 @@
       newProduct: newProduct,
       sampleProduct: sampleProduct,
       fallback: fallback,
+      relaxedQ1: relaxedQ1,
       tasteTarget: tasteTarget
     };
   }
@@ -332,7 +365,9 @@
   }
 
   function tasteLabelOf(p) {
-    if (isDayang(p)) return "여러 맛 중 골라 즐기는";
+    if (isDayang(p)) {
+      return hasFlavorOptions(p) ? "여러 맛 중 골라 즐기는" : "누구나 무난하게 즐기기 좋은";
+    }
     var labels = [];
     for (var i = 0; i < p.taste.length; i++) {
       labels.push(TASTE_LABEL[p.taste[i]] || p.taste[i]);
@@ -340,8 +375,9 @@
     return labels.join(", ");
   }
 
-  function buildMainReason(a, p, fallback) {
+  function buildMainReason(a, p, fallback, relaxedQ1) {
     var parts = [];
+    var gift = a.q1 === "선물";
 
     if (fallback) {
       parts.push("지금 조건에 딱 맞는 상품이 없어서, 그래도 잘 어울릴 만한 인기 상품을 보여드려요.");
@@ -349,10 +385,16 @@
 
     // 상황(q1) + 제품군 선택 이유
     var p1 = phraseOf("q1", a.q1);
-    if (p1) parts.push(p1 + " " + (LINE_REASON_BY_Q1[a.q1] || ""));
+    if (relaxedQ1) {
+      if (p1) parts.push(p1 + " 알아봤는데, 딱 맞는 상품이 아직 없어 조건을 조금 넓혀 가장 잘 어울리는 상품으로 골랐어요.");
+    } else if (fallback) {
+      // fallback 일 때는 q1 문장을 넣지 않는다 (위 첫 문장만 유지)
+    } else {
+      if (p1) parts.push(p1 + " " + (LINE_REASON_BY_Q1[a.q1] || ""));
+    }
 
-    // 원두 구매 용량(q_amount)
-    if (a.q_amount) {
+    // 원두 구매 용량(q_amount) - 실제로 그 용량 상품일 때만
+    if (a.q_amount && extractWeightG(p) === parseInt(a.q_amount, 10)) {
       var pAmt = phraseOf("q_amount", a.q_amount);
       if (pAmt) parts.push(pAmt + " 그에 맞는 용량으로 준비했어요.");
     }
@@ -360,24 +402,52 @@
     // 맛 취향(q2 / q5)
     if (a.q2 === "모름") {
       var p5 = phraseOf("q5", a.q5);
-      if (p5) parts.push(p5 + ".");
+      if (p5) parts.push((gift ? "받으실 분께는 " : "") + p5 + ".");
     } else {
       var p2 = phraseOf("q2", a.q2);
-      if (p2) parts.push(p2 + ".");
+      if (p2) parts.push((gift ? "받으실 분이 " : "") + p2 + ".");
     }
 
     if (isDayang(p)) {
-      parts.push(eulReul(p.name) + " 골랐어요. 여러 맛이 옵션으로 들어있어서 취향에 맞는 맛을 고르시면 돼요.");
+      var hasOptions = hasFlavorOptions(p);
+      if (hasOptions) {
+        var whoText = gift ? "받으실 분 취향에 맞는 맛을" : "취향에 맞는 맛을";
+        parts.push(eulReul(p.name) + " 골랐어요. 여러 맛이 옵션으로 들어있어서 " + whoText + " 고르시면 돼요.");
+      } else {
+        parts.push(eulReul(p.name) + " 골랐어요. 어떤 취향에도 무난하게 잘 맞는 상품이에요.");
+      }
     } else {
       parts.push(eunNeun(p.name) + " " + tasteLabelOf(p) + " 맛이라 지금 취향에 잘 맞아요.");
     }
 
     // 회피(q3)
-    if (a.q3 === "신맛회피") parts.push("신맛이 부담스럽다고 하셔서 산미가 튀지 않는 상품으로 맞췄어요.");
-    if (a.q3 === "쓴맛회피") parts.push("쓴맛이 부담스럽다고 하셔서 너무 진하지 않은 쪽으로 맞췄어요.");
+    if (a.q3 === "신맛회피") {
+      var acidOk = isDayang(p) || (p.taste.indexOf("산뜻한산미") === -1 && p.taste.indexOf("과실감") === -1);
+      if (acidOk) {
+        parts.push(gift
+          ? "받으실 분이 신맛을 부담스러워하신다고 하셔서 산미가 튀지 않는 상품으로 맞췄어요."
+          : "신맛이 부담스럽다고 하셔서 산미가 튀지 않는 상품으로 맞췄어요.");
+      }
+    }
+    if (a.q3 === "쓴맛회피") {
+      parts.push(gift
+        ? "받으실 분이 쓴맛을 부담스러워하신다고 하셔서 너무 진하지 않은 쪽으로 맞췄어요."
+        : "쓴맛이 부담스럽다고 하셔서 너무 진하지 않은 쪽으로 맞췄어요.");
+    }
 
     // 카페인(q4)
-    if (a.q4 === "디카페인") parts.push("카페인은 디카페인으로 원하셔서 디카페인 상품만 골랐어요.");
+    if (a.q4 === "디카페인") {
+      if (p.decaf === true) {
+        parts.push("카페인은 디카페인으로 원하셔서 디카페인 상품만 골랐어요.");
+      } else {
+        var decafFlavor = decafFlavorOf(p);
+        if (decafFlavor) {
+          parts.push("카페인은 디카페인으로 원하셔서 " + decafFlavor.name + " 맛을 골라 두었어요.");
+        } else {
+          parts.push("디카페인으로 원하셨는데 이 조건에 맞는 디카페인 상품은 아직 없어요.");
+        }
+      }
+    }
 
     return parts.join(" ");
   }
@@ -391,16 +461,25 @@
     }
 
     var tasteText = isDayang(np)
-      ? "여러 맛 중 골라 즐기는"
+      ? tasteLabelOf(np)
       : (tasteLabelOf(np) + " 맛의");
 
-    return opener + tasteText + " " + eunNeun(np.name) + " 어떠세요? "
+    var result = opener + tasteText + " " + eunNeun(np.name) + " 어떠세요? "
       + "부담 없이 새로운 커피를 경험해 보실 수 있어요.";
+
+    if (a.q4 === "디카페인" && np.decaf !== true) {
+      var decafFlavor = decafFlavorOf(np);
+      if (decafFlavor) {
+        result += " " + decafFlavor.name + " 맛으로 골라 두었어요.";
+      }
+    }
+
+    return result;
   }
 
   /* taste 가 ["다양"] 인 상품에 붙일 안내 문구 (예: "4종 중 취향에 맞는...") */
   function buildOptionHint(p) {
-    if (!isDayang(p)) return "";
+    if (!isDayang(p) || !hasFlavorOptions(p)) return "";
     var m = p.name.match(/(\d+)\s*종/);
     var countLabel = m ? (m[1] + "종") : "여러 가지";
     return countLabel + " 중 취향에 맞는 맛을 상품 페이지에서 고르시면 됩니다.";
@@ -661,7 +740,8 @@
   function askQuestion(key) {
     var q = QUESTIONS[key];
     clearChoices();
-    addSystemBubble(q.text, function () {
+    var text = (answers.q1 === "선물" && q.textGift) ? q.textGift : q.text;
+    addSystemBubble(text, function () {
       renderChoices(q.options, function (opt) {
         answers[key] = opt.value;
         addUserBubble(opt.label);
@@ -749,7 +829,7 @@
 
     var why1 = document.createElement("div");
     why1.className = "prod-why";
-    why1.textContent = buildMainReason(answers, chosen, rec.fallback);
+    why1.textContent = buildMainReason(answers, chosen, rec.fallback, rec.relaxedQ1);
     frag.appendChild(why1);
 
     appendTasteOption(frag, chosen, rec);
