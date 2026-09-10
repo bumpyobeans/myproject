@@ -40,6 +40,7 @@ const S = [
 for(const [name,a] of S){
   const rec = app.recommend(a);
   console.log(`\n=== ${name} ${(rec.fallback?"(FALLBACK)":"")+(rec.relaxedQ1?"(RELAXED)":"")}`);
+  console.log(`  [유형] ${rec.tiger}`);
   show("오늘의 추천", rec.chosen, a, rec);
   console.log("     이유: " + app.buildMainReason(a, rec.chosen, rec.fallback, rec.relaxedQ1));
   show("새로운 경험", rec.newProduct, a, rec);

@@ -140,6 +140,25 @@
     "과실감": "과일 같은 산미가 있는"
   };
 
+  /* 호랑이 유형: 답변으로 정하는 "당신의 커피 유형". 이름은 실제 원두 이름 그대로. */
+  var TIGER_TYPES = {
+    "인도호랑이":   { emoji: "🌰", tag: "든든한 고소파",       desc: "호밀 같은 고소함에 묵직한 바디감. 진한 한 잔으로 하루를 여는 분이에요." },
+    "조선호랑이":   { emoji: "🍫", tag: "고소한데 위트 있는",   desc: "고소하고 묵직한데 산미가 살짝 위트처럼 스쳐요. 쓴맛은 싫지만 밍밍한 것도 싫은 분이에요." },
+    "호랑이형님":   { emoji: "⚖️", tag: "밸런스 장인",         desc: "잔잔한 산미에 굿 밸런스. 누구와 마셔도 무난하게 잘 맞는 분이에요." },
+    "역삼동호랑이": { emoji: "🍋", tag: "상큼한 산미파",       desc: "자몽의 새콤함, 살구 같은 과실의 산미. 커피에서 과일 향을 찾는 분이에요." },
+    "아프리카호랑이": { emoji: "🍇", tag: "개성 있는 모험가",   desc: "리치 같은 달콤한 산미에 와인 같은 바디감. 새로운 맛에 먼저 손이 가는 분이에요." },
+    "디카페인호랑이": { emoji: "🌙", tag: "밤에도 편안한",     desc: "호밀 같은 고소함에 브라운 슈거의 단맛. 카페인 없이도 커피의 즐거움을 놓치지 않는 분이에요." }
+  };
+  function tigerTypeOf(a) {
+    if (a.q4 === "디카페인") return "디카페인호랑이";
+    var t = getTasteTarget(a);
+    if (t === "고소") return a.q3 === "쓴맛회피" ? "조선호랑이" : "인도호랑이";
+    if (t === "균형") return "호랑이형님";
+    if (t === "산뜻한산미") return "역삼동호랑이";
+    if (t === "과실감") return "아프리카호랑이";
+    return "호랑이형님";
+  }
+
   /* q2(+q5) 답 -> 목표 맛 키워드 */
   function getTasteTarget(a) {
     if (a.q1 === "라떼") { return a.q_latte === "온아바라" ? "균형" : "고소"; }
@@ -331,7 +350,7 @@
     else { chosen = beompyo; newProduct = onabara; }
     if (!chosen) return null;
     var sampleProduct = (sample && sample.id !== chosen.id && (!newProduct || sample.id !== newProduct.id)) ? sample : null;
-    return { chosen: chosen, newProduct: newProduct, sampleProduct: sampleProduct, fallback: false, relaxedQ1: false, tasteTarget: getTasteTarget(a) };
+    return { chosen: chosen, newProduct: newProduct, sampleProduct: sampleProduct, fallback: false, relaxedQ1: false, tasteTarget: getTasteTarget(a), tiger: tigerTypeOf(a) };
   }
 
   function recommend(a) {
@@ -396,7 +415,8 @@
       sampleProduct: sampleProduct,
       fallback: fallback,
       relaxedQ1: relaxedQ1,
-      tasteTarget: tasteTarget
+      tasteTarget: tasteTarget,
+      tiger: tigerTypeOf(a)
     };
   }
 
@@ -714,7 +734,8 @@
       buildMainReason: buildMainReason,
       buildNewReason: buildNewReason,
       buildOptionHint: buildOptionHint,
-      formatPrice: formatPrice
+      formatPrice: formatPrice,
+      tigerTypeOf: tigerTypeOf
     };
   }
   if (!HAS_DOM) return;
@@ -894,6 +915,17 @@
     return el;
   }
 
+  function buildTypeCard(rec, a) {
+    var name = rec.tiger, info = TIGER_TYPES[name] || { emoji: "🐯", tag: "", desc: "" };
+    var gift = a.q1 === "선물";
+    var box = document.createElement("div"); box.className = "type-card";
+    var label = document.createElement("div"); label.className = "type-label"; label.textContent = gift ? "받으실 분의 커피 유형" : "당신의 커피 유형"; box.appendChild(label);
+    var nm = document.createElement("div"); nm.className = "type-name"; nm.textContent = info.emoji + " " + name + "형"; box.appendChild(nm);
+    if (info.tag) { var tg = document.createElement("div"); tg.className = "type-tag"; tg.textContent = info.tag; box.appendChild(tg); }
+    if (info.desc) { var ds = document.createElement("div"); ds.className = "type-desc"; ds.textContent = info.desc; box.appendChild(ds); }
+    return box;
+  }
+
   function buildMainBlock(rec) {
     var frag = document.createDocumentFragment();
     var chosen = rec.chosen;
@@ -1008,12 +1040,12 @@
     var box = document.createElement("div");
     box.className = "share-card";
 
-    box.appendChild(sectionHeaderEl("🔗", "친구에게도 알려주세요", "커피 좋아하는 친구, 같은 고민 하던 친구에게 링크를 보내보세요.", ""));
+    box.appendChild(sectionHeaderEl("🔗", "친구는 무슨 호랑이일까요?", "링크를 보내면 친구의 커피 유형도 알 수 있어요.", ""));
 
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "share-btn";
-    btn.textContent = "친구에게 링크 보내기";
+    btn.textContent = "친구에게 유형 테스트 보내기";
     box.appendChild(btn);
 
     var doneEl = document.createElement("div");
@@ -1026,7 +1058,10 @@
       url = "https://beompyo-wondu-chucheon.vercel.app";
     }
     url += (url.indexOf("?") === -1 ? "?" : "&") + "src=friend";
-    var text = "☕ 범표원두 커피 추천 상담\n나는 '" + rec.chosen.name + "' 추천받았어요. 몇 가지 질문에 답하면 취향에 맞는 커피를 찾아줘요. 너도 해봐!";
+    url += "&from=" + encodeURIComponent(rec.tiger);
+    var tInfo = TIGER_TYPES[rec.tiger] || { emoji: "🐯" };
+    var mine = (answers.q1 === "선물" ? "선물 받을 분은 " : "나는 ") + rec.tiger + "형!";
+    var text = tInfo.emoji + " " + mine + " 너는 무슨 호랑이?\n범표원두 커피 취향 테스트 — 몇 가지 질문에 답하면 내 호랑이 유형과 딱 맞는 커피를 알려줘요.";
 
     btn.addEventListener("click", function () {
       if (navigator.share) {
@@ -1062,6 +1097,11 @@
     var card = document.createElement("div");
     card.className = "result-card";
 
+    card.appendChild(buildTypeCard(rec, answers));
+    var divider0 = document.createElement("div");
+    divider0.className = "result-divider";
+    card.appendChild(divider0);
+
     card.appendChild(buildMainBlock(rec));
     card.appendChild(buildNewExpBlock(rec));
 
@@ -1086,10 +1126,15 @@
       chosen: rec.chosen.id, chosen_name: rec.chosen.name,
       new_product: rec.newProduct ? rec.newProduct.id : null,
       sample: rec.sampleProduct ? rec.sampleProduct.id : null,
-      fallback: !!rec.fallback, relaxedQ1: !!rec.relaxedQ1
+      fallback: !!rec.fallback, relaxedQ1: !!rec.relaxedQ1,
+      tiger: rec.tiger
     });
 
-    addSystemBubble("이야기 잘 들었어요. 지금 취향에 맞는 커피를 찾았어요!", function () {
+    var tInfo = TIGER_TYPES[rec.tiger] || { emoji: "🐯" };
+    var who = answers.q1 === "선물" ? "받으실 분은" : "당신은";
+    var bubble = "이야기 잘 들었어요. " + who + " " + tInfo.emoji + " " + rec.tiger + "형이에요! 딱 맞는 커피도 찾았어요.";
+
+    addSystemBubble(bubble, function () {
       var row = document.createElement("div");
       row.className = "row row-sys";
       row.appendChild(buildResultCard(rec));
