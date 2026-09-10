@@ -10,6 +10,8 @@
 (function () {
   "use strict";
 
+  var BP = (typeof window !== "undefined" && window.BP) || { startSession: function () {}, track: function () {} };
+
   /* ----------------------------------------------------------
      0. 질문 정의
      각 선택지(option)
@@ -586,6 +588,7 @@
         var chips = chipRow.querySelectorAll(".flavor-chip");
         for (var j = 0; j < chips.length; j++) chips[j].classList.remove("active");
         chip.classList.add("active");
+        BP.track("chip", { product_id: p.id, flavor: flavor.name });
       });
       chipRow.appendChild(chip);
     });
@@ -809,6 +812,7 @@
     addSystemBubble(text, function () {
       renderChoices(q.options, function (opt) {
         answers[key] = opt.value;
+        BP.track("answer", { q: key, value: opt.value });
         addUserBubble(opt.label);
         clearChoices();
         if (opt.ack) {
@@ -862,7 +866,7 @@
     return box;
   }
 
-  function shopButtonEl(p, label) {
+  function shopButtonEl(p, label, position) {
     if (p && p.url) {
       var a = document.createElement("a");
       a.className = "shop-btn";
@@ -870,6 +874,9 @@
       a.target = "_blank";
       a.rel = "noopener";
       a.textContent = label || "상품 보러가기";
+      a.addEventListener("click", function () {
+        BP.track("shop_click", { product_id: p.id, name: p.name, position: position || "main" });
+      });
       return a;
     }
     var btn = document.createElement("button");
@@ -917,7 +924,7 @@
     var reviewEl1 = buildReviewBlock(chosen, answers);
     if (reviewEl1) frag.appendChild(reviewEl1);
 
-    frag.appendChild(shopButtonEl(chosen, "상품 보러가기"));
+    frag.appendChild(shopButtonEl(chosen, "상품 보러가기", "main"));
 
     return frag;
   }
@@ -956,7 +963,7 @@
     var reviewEl2 = buildReviewBlock(np, answers);
     if (reviewEl2) frag.appendChild(reviewEl2);
 
-    frag.appendChild(shopButtonEl(np, "상품 보러가기"));
+    frag.appendChild(shopButtonEl(np, "상품 보러가기", "new"));
 
     return frag;
   }
@@ -989,7 +996,7 @@
     price3.textContent = formatPrice(sp.price);
     infoBox.appendChild(price3);
 
-    infoBox.appendChild(shopButtonEl(sp, "먼저 맛보기"));
+    infoBox.appendChild(shopButtonEl(sp, "먼저 맛보기", "sample"));
 
     row.appendChild(infoBox);
     box.appendChild(row);
@@ -1018,14 +1025,17 @@
     if (location.protocol === "file:") {
       url = "https://beompyo-wondu-chucheon.vercel.app";
     }
+    url += (url.indexOf("?") === -1 ? "?" : "&") + "src=friend";
     var text = "☕ 범표원두 커피 추천 상담\n나는 '" + rec.chosen.name + "' 추천받았어요. 몇 가지 질문에 답하면 취향에 맞는 커피를 찾아줘요. 너도 해봐!";
 
     btn.addEventListener("click", function () {
       if (navigator.share) {
         navigator.share({ title: "범표원두 커피 추천 상담", text: text, url: url }).then(function () {
           doneEl.textContent = "친구에게 전달했어요 🙌";
+          BP.track("share", { method: "share", ok: true });
         }).catch(function () {
           // 취소 등 실패 시 아무것도 하지 않음
+          BP.track("share", { method: "share", ok: false });
         });
         return;
       }
@@ -1033,13 +1043,16 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text + "\n" + url).then(function () {
           doneEl.textContent = "링크를 복사했어요. 카톡이나 문자에 붙여넣어 보내세요 📋";
+          BP.track("share", { method: "clipboard", ok: true });
         }).catch(function () {
           doneEl.textContent = "복사가 안 되면 이 주소를 길게 눌러 복사하세요: " + url;
+          BP.track("share", { method: "text", ok: true });
         });
         return;
       }
 
       doneEl.textContent = "복사가 안 되면 이 주소를 길게 눌러 복사하세요: " + url;
+      BP.track("share", { method: "text", ok: true });
     });
 
     return box;
@@ -1068,6 +1081,13 @@
   function showResult() {
     clearChoices();
     var rec = recommend(answers);
+    BP.track("result", {
+      answers: answers,
+      chosen: rec.chosen.id, chosen_name: rec.chosen.name,
+      new_product: rec.newProduct ? rec.newProduct.id : null,
+      sample: rec.sampleProduct ? rec.sampleProduct.id : null,
+      fallback: !!rec.fallback, relaxedQ1: !!rec.relaxedQ1
+    });
 
     addSystemBubble("이야기 잘 들었어요. 지금 취향에 맞는 커피를 찾았어요!", function () {
       var row = document.createElement("div");
@@ -1085,6 +1105,7 @@
      6. 시작 / 다시하기
      ---------------------------------------------------------- */
   function startConsult() {
+    BP.startSession();
     answers = {};
     flowIndex = 0;
     chatLog.innerHTML = "";
@@ -1106,6 +1127,6 @@
   }
 
   startBtn.addEventListener("click", startConsult);
-  restartBtn.addEventListener("click", restart);
+  restartBtn.addEventListener("click", function () { BP.track("restart", {}); restart(); });
 
 })();
