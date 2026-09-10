@@ -1,9 +1,10 @@
 # HANDOFF — 범표원두 원두추천 프로젝트
 
-마지막 업데이트: 2026-09-10 (6일차 세션 끝)
+마지막 업데이트: 2026-09-10 (7일차 세션 끝)
 작업 폴더: `C:\Users\bebeb\OneDrive - 범표원두\★.김현정\claude_2026`
-git 브랜치: `update-settings` (마지막 커밋 `70c1c00`, 작업 트리 깨끗함. push 안 됨. `03_수서점상권분석/`은 다른 세션 것 — untracked로 두기)
-실서비스: **https://beompyo-wondu-chucheon.vercel.app** (`70c1c00`까지 배포 완료)
+git 브랜치: `update-settings` (마지막 커밋 `c115fdb`, 작업 트리 깨끗함(이 HANDOFF.md 제외). push 안 됨. `03_수서점상권분석/`은 다른 세션 것 — untracked로 두기)
+실서비스: **https://beompyo-wondu-chucheon.vercel.app** (`c115fdb`까지 배포 완료)
+Supabase: 프로젝트 `dash board` (ref `pwwerrxitfesworulijr`, 서울, 무료). 표 4개 만들어져 있고 기록 쌓이는 중
 
 ---
 
@@ -12,12 +13,13 @@ git 브랜치: `update-settings` (마지막 커밋 `70c1c00`, 작업 트리 깨�
 - [ ] **같은 폴더를 다른 Claude 세션이 열고 있는지 확인.** 9/5에 두 세션이 `tools/build_products.py`를 동시에 고쳐 한쪽이 덮어써진 사고가 있었음. 포트 5500에 다른 세션 서버가 떠 있으면 그 신호. 검증용 서버는 **5501** (`.claude/launch.json`의 `원두추천-5501` 설정 사용).
 - [ ] `git status` 확인 (마지막 세션 종료 시 깨끗했음).
 - [ ] 설계 문서(`02_원두추천/docs/`)는 1일차 아이디어라 "가상 제품 30종" 기준. **이 HANDOFF.md 가 최신 기준.**
+- [ ] **Supabase 프로젝트가 잠들었는지 확인.** 무료 플랜은 1주일쯤 접속이 없으면 pause → 기록이 버려짐. https://supabase.com/dashboard/project/pwwerrxitfesworulijr 에 들어가 "Paused"면 Resume. 확인 명령: `curl -s "https://pwwerrxitfesworulijr.supabase.co/rest/v1/sessions?select=id&limit=1" -H "apikey: <config.js 의 key>"` → `[]`(200)이면 살아 있음.
 
 ---
 
 ## 1. 이 프로젝트가 뭐냐면
 
-고객이 채팅처럼 5~6개 질문에 답하면 **범표원두 스마트스토어에 실제로 있는 상품**을 하나 추천하고, 왜 추천했는지 쉬운 말로 설명하고, 비슷한 상황의 실제 구매자 후기를 보여준 뒤 구매 페이지로 연결하는 웹서비스. 결과 끝에서 친구에게 링크를 공유할 수 있음.
+고객이 채팅처럼 5~6개 질문에 답하면 **범표원두 스마트스토어에 실제로 있는 상품**을 하나 추천하고, 왜 추천했는지 쉬운 말로 설명하고, 비슷한 상황의 실제 구매자 후기를 보여준 뒤 구매 페이지로 연결하는 웹서비스. 9/10부터는 **"당신은 🍋 역삼동호랑이형"** 같은 커피 유형을 붙이고, 친구 링크로 들어온 사람에겐 **둘의 궁합**을, 링크를 뿌린 사람에겐 **내 커피 친구 지도**(map.html)를 보여주는 바이럴 구조가 얹혀 있음. 모든 상담·클릭·공유는 Supabase 에 기록됨.
 
 - 9/5에 "고객이 실제로 써서 구매까지 이어지는 것"으로 방향 확정 (사용자 지시)
 - **규칙 기반**(선택지 클릭). AI 대화 아님. 오프라인 동작, 없는 상품을 지어낼 위험 없음
@@ -70,9 +72,19 @@ git 브랜치: `update-settings` (마지막 커밋 `70c1c00`, 작업 트리 깨�
 
 브라우저(5501)에서 우유·두유 두 갈래 끝까지 확인, 콘솔 에러 0, 배포·커밋 완료.
 
+### 9/10 오후 — 사주앱(doryeong.app) 방식 접목: 기록 저장 → 유형 → 궁합 → 친구 지도 (7일차, 이번 세션)
+사용자가 "사주 유형 + 관계 지도" 앱의 바이럴 구조(유형=정체성, 관계 보려면 친구 필요, 예쁜 지도)를 커피에 옮기자고 함. 4개 커밋.
+1. **두유라떼 decaf 고정 해제** (`56c3ca6`) — 실제 상품에 일반 옵션도 있어 `decaf:false`, 이름 "두유라떼 5캔"
+2. **Supabase 상담 기록** (`ddb4fbb`) — 사용자가 "구매전환·재도전·친구공유·유입경로를 알고 싶다"고 해서 먼저 깔음. `analytics.js`(fetch 직접, 라이브러리 없음), `config.js`(주소+Publishable 키), `docs/supabase.sql`(sessions/events, 익명 INSERT 만), `docs/분석쿼리.md`(깔때기·재도전·공유율·상품TOP·답변분포·일별). app.js 훅 8곳. 공유 링크 `?src=friend`. 배너용 링크는 `?src=kakao|insta|store`
+3. **호랑이 유형 카드 (1단계)** (`0704cd5`) — 원두 이름 그대로 6유형. 결과 맨 위 카드 + 말풍선 "당신은 🍋 역삼동호랑이형이에요!" + 공유 문구 "나는 ○○형! 너는 무슨 호랑이?" + 링크 `&from=유형`
+4. **둘의 궁합 (2단계) + 내 커피 친구 지도 (3단계)** (`c115fdb`) — 아래 3절에 상세. `types.js` 분리, `map.html` 신설, `docs/supabase_map.sql`(maps/map_friends, 익명 읽기+쓰기)
+5. 셀럽 방문 스토리(전미도·김온아·곽민정 사진)는 **초상권 동의 확인 전이라 보류**. 이름 없는 문장 하나만("디카페인만 찾으시던 단골손님도…", `54d0d93`)
+
+전부 브라우저(5501)에서 주인·친구·지도 흐름 끝까지 확인, 배포·커밋 완료.
+
 ---
 
-## 3. 코드가 어떻게 돌아가나 (app.js, 약 1,100줄)
+## 3. 코드가 어떻게 돌아가나 (app.js 약 1,400줄 + types.js + analytics.js + map.html)
 
 ### 질문 흐름
 ```
@@ -112,6 +124,21 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 
 새 태그를 추가하면 app.js 답변값 ↔ `tools/build_reviews.py` 의 `TAG_KEYWORDS` 를 같이 맞출 것. `data/tags.json` 의 캔커피 3종에 `canFlavor` 필드가 있어야 `recommendLatte` 가 상품을 찾음.
 
+### 호랑이 유형 (`types.js` → `BP_TYPES.tigerTypeOf(a)`)
+디카페인이면 무조건 `디카페인호랑이`. 아니면 목표 맛으로: 고소→`인도호랑이`(단, 쓴맛회피면 `조선호랑이`), 균형→`호랑이형님`, 산뜻한산미→`역삼동호랑이`, 과실감(모름+개성)→`아프리카호랑이`. 라떼 경로도 같은 규칙(범표라떼→인도, 온아바라→호랑이형님). `TIGER_TYPES[이름] = {emoji, tag, desc}`. `recommend()` 결과에 `tiger` 필드로 들어감. 결과 카드 맨 위 `buildTypeCard`.
+
+### 둘의 궁합 (`BP_TYPES.pairRule(mine, friend)` → app.js `pairOf` 가 상품까지 붙임)
+유형을 4그룹(G 고소 / B 균형 / S 산미 / D 디카페인)으로 묶어 7규칙: 같은 유형 "같은 잔 나누는 사이" 96 / D×누구나 "밤에도 함께 마시는 사이" 90 / GG "고소한 형제" 92 / SS "산미 탐험대" 92 / GS "한 잔씩 바꿔 마시는 사이" 84 / BG "든든한 짝꿍" 88 / BS "산뜻한 콤비" 88. 상품: 같은 유형이면 그 취향 원두 500g(`SAME_TYPE_PRODUCT`), 갈리면 드립백 4종(`DRIPBAG_SET`). 궁합 상품이 오늘의 추천과 같으면 드립백 30개 대용량으로 대체(`buildPairCard`). 친구 유형은 URL `?from=유형`(`friendType`)로 들어옴. 있으면 첫 화면 문구도 바뀜.
+
+### 친구 지도 흐름
+- **주인**: 결과 카드 `buildMapBlock` — `localStorage bp_map` 없으면 CTA(별명 입력 → `BP.createMap` → `maps` 행 생성, 코드 10자 → `bp_map`/`bp_map_name` 저장). 있으면 "친구 N명" + 지도 보기. 공유 URL 은 **클릭 시점에** 계산해 `&map=코드` 를 붙임
+- **친구**: URL `?from=유형&map=코드` → 결과의 궁합 카드 아래 `buildJoinBlock`(별명 → `BP.joinMap` → `map_friends` 행). 같은 방문자는 unique index 로 한 번만(409→"이미 올라가 있어요")
+- **지도** `map.html?id=코드`: `BP.fetchMap` → 헤더(주인 별명·유형) → 커피잔 지도 → 궁합별 타일 → 궁합순 목록(`같이 마실 커피 →` = pairRule.productId 로 PRODUCTS 에서 링크) → 궁합 설명 → 친구 더 부르기(공유 URL 은 index.html 로, from+map 포함)
+- 지도 배치(`layoutGroups`): 궁합 이름별 그룹을 평균점수 순으로 360° 부채꼴 배분(최소 40°, 간격 8°), 반지름 = 점수 96→27%, 84→38%(컨테이너 폭 기준), 별 지름 13~17%, 라벨은 테두리 바깥 56% 위치에 짧은 이름(`GROUP_SHORT`), 화면 밖으로 나가면 `clampLabels` 가 안쪽으로. 잔은 폭 84%로 양옆 여백
+
+### 기록 (`analytics.js` → `window.BP`)
+`startSession()`(상담 시작마다 `sessions` 1행: src/from/referrer/device/visitor_id) · `track(type, payload)`(`events`). 훅: start / answer / result(answers, chosen, tiger, friend_type, pair, map_id) / shop_click(position main|new|sample|pair) / share(method, ok) / restart / chip / map_create / map_join / map_open / map_view. 설정 없거나 오프라인이면 조용히 무동작. `visitor_id` 는 `localStorage bp_visitor`. 지도 API: `createMap`, `joinMap`, `fetchMap`(모두 reject 없이 null/"fail").
+
 ---
 
 ## 4. 파일 구조 (02_원두추천/)
@@ -119,13 +146,19 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 | 파일 | 역할 | 직접 수정? |
 |---|---|---|
 | `index.html` | 화면 + CSS 전체 + OG 메타 | O |
-| `app.js` | 질문·추천·화면 그리기 전부 (IIFE 하나, Node 에서 `require` 하면 `recommend`/`buildMainReason`/`buildNewReason` export) | O |
+| `app.js` | 질문·추천·화면 그리기 전부 (IIFE 하나, Node 에서 `require` 하면 `recommend`/`buildMainReason`/`buildNewReason`/`tigerTypeOf`/`pairOf` export) | O |
+| `types.js` | 호랑이 유형·궁합 규칙 (`BP_TYPES`). index.html 과 map.html 이 같이 씀. **app.js 보다 먼저 로드** | O |
+| `analytics.js` | Supabase 기록 전송 + 지도 API (`window.BP`) | O |
+| `config.js` | Supabase 주소 + Publishable 키 (공개용, 쓰기만 허용이라 커밋해도 됨) | O |
+| `map.html` | 내 커피 친구 지도 페이지 (CSS·JS 인라인, `?id=코드`) | O |
 | `data/tags.json` | 상품 분류표. **사람이 관리하는 유일한 데이터** | O |
 | `products.js` | 상품 51개 | **X** → `python tools\build_products.py` |
 | `reviews.js` | 후기 273건 (엑셀 2개 병합 결과) | **X** → `python tools\build_reviews.py` |
 | `og-image.jpg` | 링크 미리보기 배너 1200×630 | O (원본: 바탕화면 `범표원두이미지.png`) |
 | `tools/sim_scenarios.js` | **19개 시나리오 추천·후기·문구를 한 번에 출력** (`node 02_원두추천/tools/sim_scenarios.js`) | O |
 | `tools/build_*.py`, `fetch_images.py` | 데이터 재생성 | O |
+| `docs/supabase.sql`, `docs/supabase_map.sql` | Supabase 표·권한 생성문 (이미 실행됨. 다시 실행해도 안전) | O |
+| `docs/분석쿼리.md` | 대시보드 SQL Editor 에 붙여넣을 분석 쿼리 | O |
 | `.vercel/` | Vercel 연결 정보 (gitignore) | X |
 
 원본 데이터(git 에 없음): 상품 `C:\Users\bebeb\Desktop\Product_20260905_150247.csv`, 후기 `review_20260906_003018.xlsx`(종합) + `review_20260910_171909.xlsx`(범표라떼 전용 2,144건). `build_reviews.py` 의 `XLSX_PATHS` 리스트에 둘 다 들어 있음.
@@ -139,7 +172,8 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
   - 선물 시나리오는 후기 가점 덕에 **후기 8건 있는 `7061025713` 선물세트**가 오늘의 추천으로 나옴(후기 "선물받게 되었습니다"). 문제 없음
 - 후기 태그 분포: 라떼 104, 고소 94, 아메리카노간편 52, 디카페인 48, 산뜻한산미 45, 캡슐 40, 선물 37, 핸드드립 30, 콜드브루 22, 200g 19, 균형 18, 500g 17, 여행캠핑 15, 1kg 11, 100g 10, **과실감 4** (9/6 기준, 9/10 병합 후 약간 달라짐)
 - 취향별 원두(고소한/밸런스/산미있는/디카페인)는 **500g만** 있음. 100g/200g/1kg 은 `9종` 옵션 상품 → 200g 고르면 "9종 중 고르세요" 상품이 나오는 게 정상
-- **수제 캔커피 3종**: 범표라떼 `5188817159`(29,000, signature, 후기 8), 두유라떼 `13237777944`(35,300, decaf 고정, 후기 3), 온아바라 `7144276521`(37,800, story, 후기 8). 350/500ml·디카페인은 상품 하나 안의 옵션 → 용량 질문은 안내용, 링크는 안 바뀜
+- **수제 캔커피 3종**: 범표라떼 `5188817159`(29,000, signature, 후기 8), 두유라떼 `13237777944`(32,000, decaf:false 로 고침, 후기 3), 온아바라 `7144276521`(34,500, story, 후기 8). 350/500ml·디카페인은 상품 하나 안의 옵션 → 용량 질문은 안내용, 링크는 안 바뀜
+- **Supabase 표 4개**: `sessions`/`events`(익명 쓰기만) · `maps`/`map_friends`(익명 읽기+쓰기, 수정·삭제 불가, 같은 친구 한 지도에 한 번). 테스트 행 있음: `src='test'`, `visitor_id='curl-test'`, 지도 `testmap001`(친구 3명)·`3ejd5joe32`. 분석할 때 빼거나 대시보드에서 지울 것
 
 ---
 
@@ -162,7 +196,17 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 | 우유 | 온아바라 | 충전 | 온아바라 5캔 (김온아 스토리) | 범표라떼 5캔 |
 | 상관없음 | 시그니처 | 디카페인 | 범표라떼 5캔 (+디카페인 안내) | 온아바라 5캔 |
 
-전체 19개는 `node 02_원두추천/tools/sim_scenarios.js` 로 30초 안에 다시 볼 수 있음(A~I, L1~L4). 기능을 고친 뒤엔 이 스크립트 먼저 돌리고, 위 표 일부는 브라우저로도 확인할 것.
+전체 19개는 `node 02_원두추천/tools/sim_scenarios.js` 로 30초 안에 다시 볼 수 있음(A~I, L1~L4 + 각 시나리오의 `[유형]` + 끝에 6×6 궁합 표). 기능을 고친 뒤엔 이 스크립트 먼저 돌리고, 위 표 일부는 브라우저로도 확인할 것.
+
+유형·궁합·지도(9/10 브라우저 확인):
+
+| 상황 | 확인한 것 |
+|---|---|
+| 핸드드립+산뜻 | 유형 카드 🍋 역삼동호랑이형, 말풍선, 공유 URL `?src=friend&from=역삼동호랑이` |
+| `?from=역삼동호랑이` 로 들어와 아메리카노+고소 | 첫 화면 "친구가 보낸 테스트예요", 궁합 "한 잔씩 바꿔 마시는 사이 84", 같이 마실 상품이 오늘의 추천(드립백 4종)과 겹쳐 30개 대용량으로 대체됨 |
+| 지도 만들기 (별명 "현정") | `bp_map` 저장, 카드 "친구 0명", 공유 URL 에 `&map=코드` |
+| `?from=…&map=testmap001` 로 들어와 온아바라 | 궁합 "산뜻한 콤비 88", 지도에 올리기 → "올라갔어요", 같은 사람 재시도는 "이미 올라가 있어요" |
+| `map.html?id=testmap001` | 친구 3명 배치(잔 안), 라벨 3개 화면 안, 가로 스크롤 없음, 궁합순 목록 🥇🥈🥉, 공유 URL 에 from+map |
 
 ---
 
@@ -175,8 +219,12 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 5. **후기 사진 품질 들쭉날쭉.** 제외 기준 없음. 필요하면 `build_reviews.py`에 제외 리뷰번호 목록.
 6. **선물세트 5종 후기 0건, 과실감 태그 4건뿐** — 코드로는 못 고침. 후기 엑셀 다시 받아 `build_reviews.py` 재실행해야 함.
 7. `TAG_KEYWORDS`와 `data/tags.json`은 초안. `hasFlavorOptions` 는 상품명의 "N종/외 N종"으로 옵션 유무를 추정하므로, 옵션이 있는데 이름에 "종"이 없는 상품(예: 콜드브루 500ml "외")은 "무난한 상품" 문구가 나옴. 어색하면 tags.json 의 `short` 이름에 "N종"을 넣거나 정규식을 손보면 됨.
-8. **두유라떼 상품(`13237777944`)이 데이터상 `decaf: true` 로 고정.** 이름도 "두유라떼 디카페인 5캔". 유당불내증만 있고 디카페인은 원치 않는 분에게도 이게 나옴. 실제 스토어 상품에 일반 두유라떼 옵션이 있으면 `tags.json` 에서 `short`·`decaf` 를 바꿔야 함(사용자 확인 대기 중).
-9. git CRLF 경고는 무해함.
+8. ~~두유라떼 decaf 고정~~ → 9/10 해결(`decaf:false`, "두유라떼 5캔").
+9. **셀럽 사진·실명은 초상권 동의 확인 전까지 보류.** 사용자가 전미도 배우(디카페인 재방문)·김온아·곽민정(절친 방문) 사진 2장을 보냈지만, 상업 사이트에 실명+사진을 추천 근거로 쓰는 건 당사자/소속사 동의가 있어야 안전하다고 설명하고 이름 없는 문장만 넣음. 사용자가 "동의 받았어"라고 하면 카드에 사진 슬롯 추가.
+10. **types.js 로드 순서.** index.html 은 `config → analytics → types → products → reviews → app` 순. 서버를 막 띄운 첫 로드에서 브라우저가 옛 index.html(types 태그 없음)을 캐시로 써서 `require is not defined` 가 한 번 찍힌 적 있음. app.js 에 안전장치(BP_TYPES 없으면 콘솔 에러 후 중단) 넣어 둠. 새 탭에서는 정상.
+11. **map.html 배치 튜닝값**은 3절 참고. 친구가 많아지면(10명+) 라벨·별이 겹칠 수 있음 — 그때 부채꼴 최소각·별 크기를 줄이면 됨. 별이 한 그룹에 몰리면 같은 반지름에 등각 배치라 원호를 따라 늘어섬.
+12. **브라우저 도구로 Supabase 요청 확인할 때** `read_network_requests` 에 fetch 가 안 잡혔음 → 페이지 안에서 `window.fetch` 를 감싸 상태코드를 모으는 방식으로 확인했음(전부 201).
+13. git CRLF 경고는 무해함.
 
 ---
 
@@ -188,6 +236,9 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 - 후기·상품 지어내기. 없으면 생략
 - `.env` 수정
 - 배포·커밋을 미리 하기 (사용자가 "배포하고 커밋해줘"라고 할 때만)
+- Supabase **Secret key(`sb_secret_…`, service_role)** 를 받거나 코드·문서에 넣기. Publishable 키만 씀
+- `types.js` 를 `app.js` 뒤에 로드하기 (script 순서 바꾸지 말 것)
+- 셀럽 실명·사진을 동의 확인 없이 올리기
 
 ---
 
@@ -200,24 +251,26 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 - 사용자 PC 바탕화면에 직접 만든 이미지가 있을 수 있음(`find` 로 최근 이미지 검색해서 찾았음)
 - 코드 작성은 Sonnet 서브에이전트에 한 문단 사양으로 위임하고 결과를 직접 검증(이번 세션 3회 위임, 문제 없음). 3줄짜리 문구 수정은 직접 함
 - 사용량 크레딧 걱정이 있음(프로모션 크레딧 9/19 만료). 서브에이전트·긴 탐색은 필요할 때만
+- 다른 서비스(사주앱 등) 캡처를 보내며 "이거 접목해줘"라고 함 → 강점을 표로 정리해 우리 버전으로 옮긴 뒤 단계(가벼운 것→무거운 것)로 나눠 제안하면 잘 받아들임. 질문 창(AskUserQuestion)을 닫아버리는 경우가 있으니 결정은 제안+추천안으로 제시하고, 정말 필요한 것만 물을 것
+- Supabase 대시보드처럼 영어 화면은 어려워함 → "어디를 눌러라"를 한 단계씩, 버튼 이름 그대로 안내. 키는 채팅에 붙여넣게 함(Publishable 만)
+- 큰 기능은 Sonnet 서브에이전트 2개를 병렬로(파일 겹치지 않게 나눠서) 돌리고 결과를 직접 브라우저 검증. 이번 세션엔 서브에이전트가 만든 지도 배치 공식이 컨테이너 기준을 두 배로 잡아 별이 잔 밖으로 나간 걸 직접 잡음
 
 ---
 
 ## 10. 남은 일
 
-1. **셀럽 방문 스토리·사진** (9/10 논의 중) — 전미도 배우(디카페인파 → 디카페인 범표라떼 재방문), 김온아·곽민정(절친, 함께 방문). 사용자가 매장 촬영 사진 2장 보냄(전미도 님 / 김온아·곽민정 님, 텍스트 오버레이 포함). **초상권·퍼블리시티권 확인 필요** — 인스타 스토리와 달리 상업 사이트에 이름+사진을 추천 근거로 쓰는 건 당사자/소속사 동의가 있어야 안전. 동의 확인 전까지 사진은 안 올림. 텍스트 스토리(온아바라 유래 등)는 이미 공개된 것이라 반영 가능.
-2. **스마트스토어 우측 배너 이미지 제작 + 연결** (7-1)
-3. **두유라떼 `decaf` 고정 문제** (7-8) — 실제 옵션 확인 후 tags.json 수정
-4. Supabase 상담 데이터 저장 (설계서 6단계, 가입만 됨)
-5. `data/tags.json` 분류 검토 + 7-7 옵션 유무 정리
-6. 후기 엑셀 재수집(선물세트·과실감 보강)
-7. `01_인사페이지/ocean.html` 최종 확인 (급하지 않음)
+1. **며칠 뒤 기록 보기** — `docs/분석쿼리.md` 1번(유입경로별 깔때기)·3번(공유율)과 `select count(*) from maps` / `map_friends` 로 유형 테스트가 실제로 퍼지는지, 친구 링크(`src=friend`)로 온 사람이 상품을 누르는지 확인. 결과에 따라 첫 화면을 "나는 무슨 호랑이? 30초 테스트"로 바꿀지 결정(아직 안 바꿈)
+2. **스마트스토어 우측 배너 이미지 제작 + 연결** (7-1). 배너 링크는 `?src=store`
+3. **채널별 링크 배포** — 카톡 채널 `?src=kakao`, 인스타 `?src=insta` 를 실제로 걸기(사용자 작업)
+4. 셀럽 사진 — 동의 받으면 진행 (7-9)
+5. 지도 개선 후보: 친구 별 누르면 궁합 상세 팝업, 주인이 지도 공유용 이미지(캡처 카드), 친구 10명+ 배치 튜닝
+6. `data/tags.json` 분류 검토 + 7-7 옵션 유무 정리, 후기 엑셀 재수집(선물세트·과실감), `01_인사페이지/ocean.html` 확인 (급하지 않음)
 
 ---
 
 ## 11. 다음 첫 단계
 
-**셀럽 스토리를 어떻게 넣을지 사용자와 정한다.** 사진은 초상권 동의 여부부터 확인. 동의됐다면 디카페인 범표라떼 카드에 전미도 스토리+사진, 온아바라 카드에 김온아·곽민정 스토리+사진. 안 됐다면 텍스트만(사진 슬롯은 비워두고 나중에 이미지만 끼우게). 그다음 스마트스토어 우측 배너 이미지 제작.
+**Supabase 기록을 한 번 들여다본다.** 대시보드 SQL Editor 에서 `docs/분석쿼리.md` 1·3·4번을 돌려 (테스트 행 `src='test'` 제외) 방문·결과도달·상품클릭·공유가 찍히는지 보고, 이상한 값(예: `type` 누락, `tiger` null)이 있으면 app.js 훅을 점검. 그다음 스마트스토어 우측 배너(링크 `?src=store`)로.
 
 ---
 
@@ -228,10 +281,19 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 python -m http.server 5501 --directory 02_원두추천
 ```
 
-시나리오 19개 한 번에 점검:
+시나리오 19개 + 유형 + 궁합 표 한 번에 점검:
 ```
 node 02_원두추천/tools/sim_scenarios.js
 ```
+
+지도 화면 로컬 확인 (테스트 지도, 친구 3명):
+```
+http://localhost:5501/map.html?id=testmap001
+```
+친구 흐름 로컬 확인: `http://localhost:5501/?src=friend&from=역삼동호랑이&map=testmap001`
+
+Supabase 표 다시 만들기(이미 있음, 재실행 안전): 대시보드 SQL Editor 에 `docs/supabase.sql`, `docs/supabase_map.sql` 붙여넣고 Run.
+Supabase 살아있는지: `curl -s "https://pwwerrxitfesworulijr.supabase.co/rest/v1/sessions?select=id&limit=1" -H "apikey: <config.js 의 key>"` → `[]` 면 정상, `PGRST205` 면 표 없음, 연결 실패면 pause 상태.
 
 데이터 갱신 (저장소 루트에서):
 ```
