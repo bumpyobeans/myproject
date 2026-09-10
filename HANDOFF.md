@@ -2,15 +2,15 @@
 
 마지막 업데이트: 2026-09-06 (5일차 세션 끝)
 작업 폴더: `C:\Users\bebeb\OneDrive - 범표원두\★.김현정\claude_2026`
-git 브랜치: `update-settings` (마지막 커밋 `198e6cb`, 미커밋: 이 HANDOFF.md 와 `02_원두추천/tools/sim_scenarios.js`)
-실서비스: **https://beompyo-wondu-chucheon.vercel.app** (198e6cb 내용까지 배포됨)
+git 브랜치: `update-settings` (마지막 커밋 `16858b2`, 작업 트리 깨끗함. push 안 됨)
+실서비스: **https://beompyo-wondu-chucheon.vercel.app** (198e6cb 내용까지 배포됨 — 이후 커밋은 문서·파일정리라 배포 불필요)
 
 ---
 
 ## 0. 시작 전 체크리스트
 
 - [ ] **같은 폴더를 다른 Claude 세션이 열고 있는지 확인.** 9/5에 두 세션이 `tools/build_products.py`를 동시에 고쳐 한쪽이 덮어써진 사고가 있었음. 포트 5500에 다른 세션 서버가 떠 있으면 그 신호. 검증용 서버는 **5501** (`.claude/launch.json`의 `원두추천-5501` 설정 사용).
-- [ ] `git status` 확인. 미커밋 파일 2개(HANDOFF.md, tools/sim_scenarios.js)는 사용자가 "커밋해줘" 할 때 같이 넣으면 됨.
+- [ ] `git status` 확인 (마지막 세션 종료 시 깨끗했음).
 - [ ] 설계 문서(`02_원두추천/docs/`)는 1일차 아이디어라 "가상 제품 30종" 기준. **이 HANDOFF.md 가 최신 기준.**
 
 ---
