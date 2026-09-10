@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 커피 친구 지도 - 범표원두</title>
+
+  <!-- 카카오톡/문자 등으로 링크 공유할 때 뜨는 미리보기 카드 (오픈그래프) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="내 커피 친구 지도">
+  <meta property="og:description" content="내 링크로 테스트한 친구들이 나와 어떤 커피 사이인지 한눈에">
+  <meta property="og:image" content="https://beompyo-wondu-chucheon.vercel.app/og-image.jpg">
+
+  <!-- ============================================================
+       스타일 (외부 폰트/라이브러리 불러오지 않음. 전부 시스템 폰트)
+       범표원두 로스터리 톤:
+         배경   짙은 브라운 #2c1e14 (바깥은 #22160e)
+         글자   크림색     #f3e3d0
+         포인트 크레마 브라운 #c98a4b
+         보조   #cdb69c
+       ============================================================ -->
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
+      background: #22160e;
+      color: #f3e3d0;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      margin: 0 auto;
+      overflow-x: hidden;       /* 라벨이 살짝 넘쳐도 페이지가 옆으로 안 밀림 */
+      background: #2c1e14;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-bar {
+      padding: 14px 18px;
+      border-bottom: 1px solid #43301f;
+      font-size: 15px;
+      font-weight: 700;
+      color: #c98a4b;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    #map-page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 16px 30px;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    /* ---------- 새로고침 ---------- */
+    .map-toolbar { display: flex; justify-content: flex-end; }
+    .text-btn {
+      background: transparent;
+      border: none;
+      color: #c98a4b;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 4px 6px;
+    }
+    .text-btn:active { opacity: 0.7; }
+
+    .loading-text {
+      text-align: center;
+      color: #cdb69c;
+      font-size: 13px;
+      padding: 60px 0;
+    }
+
+    /* ---------- 지도를 찾을 수 없을 때 ---------- */
+    .not-found {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 14px;
+      padding: 60px 20px;
+    }
+    .not-found-emoji { font-size: 40px; }
+    .not-found-text { font-size: 15px; color: #f3e3d0; }
+    .not-found .shop-btn { width: 100%; max-width: 260px; }
+
+    /* ---------- (a) 헤더 ---------- */
+    .map-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .map-title { font-size: 19px; font-weight: 800; color: #f3e3d0; word-break: keep-all; }
+    .type-chip {
+      display: inline-block;
+      border: 1px solid #c98a4b;
+      color: #c98a4b;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .map-sub { font-size: 12px; color: #cdb69c; word-break: keep-all; }
+
+    /* ---------- (b) 커피잔 지도 ---------- */
+    .cup-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .cup {
+      width: 84%;               /* 양옆 여백: 부채꼴 라벨이 테두리 밖으로 살짝 나가도 페이지가 옆으로 안 밀림 */
+      margin: 26px auto;        /* 위아래 여백: 테두리 밖 라벨이 캡션과 안 겹침 */
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      position: relative;
+      overflow: visible;        /* 라벨은 테두리 바깥, 별은 안쪽(최대 48.5%)에 머묾 */
+      background: radial-gradient(circle at center, #5a3d24 0%, #2a1a0f 100%);
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, .4);
+    }
+    .ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 50%;
+      border: 1px dashed rgba(201, 138, 75, .35);
+      transform: translate(-50%, -50%);
+    }
+    .ring1 { width: 60%; height: 60%; }
+    .ring2 { width: 90%; height: 90%; }
+    .ring3 { width: 120%; height: 120%; }
+    .ring-outer { animation: spin 90s linear infinite; }
+    @keyframes spin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to   { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .me {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 22%;
+      height: 22%;
+      border-radius: 50%;
+      background: #f3e3d0;
+      color: #2c1e14;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2px;
+      box-shadow: 0 0 30px rgba(243, 227, 208, .35);
+      z-index: 5;
+    }
+    .me-emoji { font-size: 20px; line-height: 1.15; }
+    .me-name {
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.15;
+      max-width: 92%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #c98a4b;
+      color: #2c1e14;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      z-index: 3;
+    }
+    .star-emoji { font-size: 11px; line-height: 1.1; }
+    .star-name {
+      font-size: 8px;
+      font-weight: 700;
+      line-height: 1.1;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+      50%      { transform: translate(-50%, -50%) translateY(-6px); }
+    }
+
+    .sector-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: rgba(44, 30, 20, .85);
+      border: 1px solid #c98a4b;
+      color: #f3e3d0;
+      font-size: 11px;
+      border-radius: 12px;
+      padding: 3px 8px;
+      white-space: nowrap;
+      max-width: 44%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 4;
+    }
+
+    .empty-hint {
+      position: absolute;
+      left: 50%;
+      top: 72%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      color: #cdb69c;
+      text-align: center;
+      width: 80%;
+      word-break: keep-all;
+      z-index: 4;
+    }
+
+    .cup-caption { font-size: 11px; color: #cdb69c; text-align: center; word-break: keep-all; }
+
+    /* ---------- (c) 요약 타일 ---------- */
+    .tiles { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .tile {
+      flex-shrink: 0;
+      min-width: 76px;
+      background: #3d2c1c;
+      border: 1px solid #5a4028;
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .tile-num { font-size: 20px; font-weight: 800; color: #f3e3d0; }
+    .tile-emoji { font-size: 16px; margin-top: 2px; }
+    .tile-name { font-size: 10px; color: #cdb69c; margin-top: 4px; word-break: keep-all; }
+
+    /* ---------- (d) 친구 목록 ---------- */
+    .friend-list-header { font-size: 13px; font-weight: 700; color: #c98a4b; }
+    .friend-list { display: flex; flex-direction: column; gap: 8px; }
+    .friend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #3d2c1c;
+      border: 1px solid #5a4028;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .friend-rank { width: 20px; flex-shrink: 0; text-align: center; font-size: 13px; font-weight: 700; color: #cdb69c; }
+    .friend-emoji { font-size: 18px; flex-shrink: 0; }
+    .friend-info { flex: 1; min-width: 0; }
+    .friend-name { font-size: 13px; font-weight: 700; color: #f3e3d0; word-break: keep-all; }
+    .friend-sub { font-size: 11px; color: #cdb69c; margin-top: 2px; }
+    .friend-pair { text-align: right; flex-shrink: 0; max-width: 110px; }
+    .friend-pair-name { font-size: 11px; color: #cdb69c; word-break: keep-all; }
+    .friend-score { font-size: 14px; font-weight: 800; color: #c98a4b; margin-top: 2px; }
+    .friend-link { display: block; font-size: 11px; color: #c98a4b; margin-top: 6px; text-decoration: none; }
+    .friend-row.flash { animation: flashRow 1.2s ease; }
+    @keyframes flashRow {
+      0%   { background: rgba(201, 138, 75, .35); }
+      100% { background: #3d2c1c; }
+    }
+
+    /* ---------- (e) 궁합 설명 ---------- */
+    .pair-explain-details { border: 1px solid #43301f; border-radius: 12px; padding: 10px 14px; }
+    .pair-explain-details summary { font-size: 13px; color: #c98a4b; cursor: pointer; font-weight: 700; }
+    .pair-explain-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .pair-explain-item { font-size: 12px; color: #e6d3bb; line-height: 1.5; word-break: keep-all; }
+
+    /* ---------- (f) 하단 액션 ---------- */
+    .map-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 2px; }
+    .shop-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: #c98a4b;
+      color: #2c1e14;
+      border: none;
+      border-radius: 22px;
+      padding: 11px 0;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .shop-btn:active { background: #b7793c; }
+    .share-done { font-size: 12px; color: #c98a4b; text-align: center; min-height: 14px; word-break: break-all; }
+    .text-link { font-size: 12px; color: #cdb69c; text-decoration: none; }
+
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-bar">범표원두 · 내 커피 친구 지도</div>
+    <div id="map-page"><!-- JS 가 채움 --></div>
+  </div>
+
+  <!-- 일반 script 태그 + 전역 변수만 사용 (ES 모듈 없음) -->
+  <script src="config.js"></script>
+  <script src="analytics.js"></script>
+  <script src="types.js"></script>
+  <script src="products.js"></script>
+  <script>
+  (function () {
+    "use strict";
+
+    /* ============================================================
+       내 커피 친구 지도
+       ------------------------------------------------------------
+       배치 계산의 핵심 함수: layoutGroups()
+         1) groupFriends()   - pair_name 별로 묶고 그룹 평균 점수 계산
+         2) allocateDegrees() - 그룹 인원 비례로 360도를 부채꼴 배분(최소 40도, 간격 8도)
+         3) layoutGroups()   - 위 둘을 합쳐 그룹별 시작각/그룹 안 각 친구의 각도까지 계산
+         4) polarPercent()   - (각도, 반지름%) -> 컨테이너 기준 (left%, top%) 좌표 변환
+       ============================================================ */
+
+    var GROUP_EMOJI = { same: "🍵", D: "🌙", GG: "🌰", SS: "🍋", GS: "🔄", BG: "🤝", BS: "🍃" };
+    /* 지도 안 라벨용 짧은 이름 (긴 이름은 잔 밖으로 넘침) */
+    var GROUP_SHORT = { same: "같은 잔", D: "밤에도 함께", GG: "고소한 형제", SS: "산미 탐험대", GS: "바꿔 마시기", BG: "든든한 짝꿍", BS: "산뜻한 콤비" };
+    var PAIR_ORDER = ["same", "D", "GG", "SS", "GS", "BG", "BS"];
+
+    /* ---------- 작은 유틸 ---------- */
+
+    function el(tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined && text !== null) node.textContent = text;
+      return node;
+    }
+
+    function clearChildren(node) {
+      while (node.firstChild) node.removeChild(node.firstChild);
+    }
+
+    function getMapId() {
+      try {
+        var q = new URLSearchParams(location.search);
+        var id = q.get("id") || "";
+        if (/^[A-Za-z0-9]{1,10}$/.test(id)) return id;
+      } catch (e) {}
+      return "";
+    }
+
+    function typeInfoOf(typeName) {
+      var t = (window.BP_TYPES && BP_TYPES.TIGER_TYPES && BP_TYPES.TIGER_TYPES[typeName]) || null;
+      return t || { emoji: "🐯", tag: "", desc: "" };
+    }
+
+    function findProduct(id) {
+      if (typeof PRODUCTS === "undefined" || !id) return null;
+      for (var i = 0; i < PRODUCTS.length; i++) {
+        if (PRODUCTS[i].id === id) return PRODUCTS[i];
+      }
+      return null;
+    }
+
+    function pairKeyByName(name) {
+      var rules = (window.BP_TYPES && BP_TYPES.PAIR_RULES) || {};
+      for (var k in rules) {
+        if (rules.hasOwnProperty(k) && rules[k].name === name) return k;
+      }
+      return "";
+    }
+
+    function rankBadge(idx) {
+      if (idx === 0) return "🥇";
+      if (idx === 1) return "🥈";
+      if (idx === 2) return "🥉";
+      return String(idx + 1);
+    }
+
+    /* ---------- 점수 -> 시각적 크기/밝기 ---------- */
+
+    function clamp01(t) { return t < 0 ? 0 : (t > 1 ? 1 : t); }
+    function scoreT(score) { return clamp01((score - 84) / (96 - 84)); }              /* 84->0, 96->1 */
+    function starRadiusPercent(score) { return 27 + clamp01((96 - score) / (96 - 84)) * 11; } /* 중심에서의 거리(컨테이너 폭 %): 96->27%, 84->38% (가운데 노드 반지름 11% + 별 반지름 8.5% 보다 멀고, 잔 안쪽에 머묾) */
+    function starDiameterPercent(score) { return 13 + scoreT(score) * 4; }             /* 84->13%, 96->17% */
+    function starOpacity(score) { return 0.75 + scoreT(score) * 0.25; }                /* 84->.75, 96->1 */
+    function starGlowPx(score) { return 8 + scoreT(score) * 10; }                      /* 84->8px, 96->18px */
+
+    /* ---------- 친구 정렬 (궁합 목록/지도 클릭 스크롤이 같은 순서를 씀) ---------- */
+
+    function rankFriends(friends) {
+      var withIndex = friends.map(function (f, i) { return { f: f, i: i }; });
+      withIndex.sort(function (a, b) {
+        var sa = a.f.pair_score || 0, sb = b.f.pair_score || 0;
+        if (sb !== sa) return sb - sa;
+        return a.i - b.i;
+      });
+      return withIndex.map(function (x) { return x.f; });
+    }
+
+    /* ---------- (b) 지도 배치 계산 ---------- */
+
+    function groupFriends(friends) {
+      var map = {}, order = [], i, f, key, g;
+      for (i = 0; i < friends.length; i++) {
+        f = friends[i];
+        key = f.pair_name || "친구";
+        if (!map[key]) { map[key] = { name: key, items: [], sum: 0 }; order.push(key); }
+        map[key].items.push(f);
+        map[key].sum += (f.pair_score || 0);
+      }
+      var list = [];
+      for (i = 0; i < order.length; i++) {
+        g = map[order[i]];
+        g.count = g.items.length;
+        g.avg = g.sum / g.count;
+        list.push(g);
+      }
+      list.sort(function (a, b) { return b.avg - a.avg; });
+      return list;
+    }
+
+    /* 그룹 인원 비례로 available(도)를 나누되 그룹당 최소 minDeg 는 보장(워터필링) */
+    function allocateDegrees(groups, available, minDeg) {
+      var n = groups.length;
+      if (n === 0) return [];
+      var fixed = new Array(n);
+      var degrees = new Array(n);
+      var i, changed = true, guard = 0;
+      while (changed && guard <= n) {
+        changed = false;
+        guard++;
+        var usedByFixed = 0, freeCount = 0;
+        for (i = 0; i < n; i++) {
+          if (fixed[i]) usedByFixed += minDeg;
+          else freeCount += groups[i].count;
+        }
+        var remaining = available - usedByFixed;
+        for (i = 0; i < n; i++) {
+          if (fixed[i]) { degrees[i] = minDeg; continue; }
+          var d = freeCount > 0 ? remaining * groups[i].count / freeCount : 0;
+          if (d < minDeg) { fixed[i] = true; changed = true; }
+          degrees[i] = d;
+        }
+      }
+      return degrees;
+    }
+
+    /* 그룹(평균점수 내림차순)을 12시부터 시계방향으로 배치, 그룹 안은 등분 */
+    function layoutGroups(groups) {
+      var n = groups.length;
+      if (n === 0) return [];
+      var gapDeg = 8, minDeg = 40;
+      var available = Math.max(0, 360 - gapDeg * n);
+      var degrees = allocateDegrees(groups, available, minDeg);
+      var angle = 0, out = [], i, j;
+      for (i = 0; i < n; i++) {
+        var g = groups[i];
+        var span = degrees[i];
+        var start = angle;
+        var stars = [];
+        for (j = 0; j < g.count; j++) {
+          stars.push({ friend: g.items[j], angle: start + (j + 0.5) / g.count * span });
+        }
+        out.push({
+          name: g.name,
+          count: g.count,
+          avg: g.avg,
+          startAngle: start,
+          span: span,
+          midAngle: start + span / 2,
+          stars: stars
+        });
+        angle = start + span + gapDeg;
+      }
+      return out;
+    }
+
+    /* 각도(12시=0, 시계방향 증가) + 반지름(%) -> 컨테이너 기준 좌표(%) */
+    /* 테두리 밖 라벨이 화면(.wrap) 좌우를 벗어나면 안쪽으로 밀어 넣는다 */
+    function clampLabels(cup) {
+      var wrap = document.querySelector(".wrap") || document.body;
+      var wr = wrap.getBoundingClientRect();
+      var labels = cup.querySelectorAll(".sector-label");
+      for (var i = 0; i < labels.length; i++) {
+        var lab = labels[i]; lab.style.marginLeft = "0px";
+        var r = lab.getBoundingClientRect(), dx = 0;
+        if (r.left < wr.left + 6) dx = (wr.left + 6) - r.left;
+        else if (r.right > wr.right - 6) dx = (wr.right - 6) - r.right;
+        if (dx) lab.style.marginLeft = dx + "px";
+      }
+    }
+
+    function polarPercent(angleDeg, rPercent) {
+      var rad = angleDeg * Math.PI / 180;
+      return { left: 50 + rPercent * Math.sin(rad), top: 50 - rPercent * Math.cos(rad) };
+    }
+
+    /* ---------- 행 flash 애니메이션 재생(같은 클래스 재추가 시에도 다시 보이게) ---------- */
+
+    function flashRow(row) {
+      row.classList.remove("flash");
+      void row.offsetWidth; /* 리플로우 강제 -> 애니메이션 재시작 */
+      row.classList.add("flash");
+      setTimeout(function () { row.classList.remove("flash"); }, 1200);
+    }
+
+    /* ============================================================
+       렌더링
+       ============================================================ */
+
+    function renderNotFound(page) {
+      clearChildren(page);
+      var box = el("div", "not-found");
+      box.appendChild(el("div", "not-found-emoji", "🗺️"));
+      box.appendChild(el("p", "not-found-text", "지도를 찾을 수 없어요"));
+      var a = document.createElement("a");
+      a.className = "shop-btn";
+      a.href = "index.html";
+      a.textContent = "나도 커피 유형 테스트하기";
+      box.appendChild(a);
+      page.appendChild(box);
+    }
+
+    function showLoading(page) {
+      clearChildren(page);
+      page.appendChild(el("div", "loading-text", "불러오는 중..."));
+    }
+
+    function buildCup(ownerType, ownerName, friends) {
+      var ownerInfo = typeInfoOf(ownerType);
+      var cup = el("div", "cup");
+      cup.appendChild(el("div", "ring ring1"));
+      cup.appendChild(el("div", "ring ring2"));
+      cup.appendChild(el("div", "ring ring3 ring-outer"));
+
+      var me = el("div", "me");
+      me.appendChild(el("div", "me-emoji", ownerInfo.emoji || "🐯"));
+      me.appendChild(el("div", "me-name", ownerName || "나"));
+      cup.appendChild(me);
+
+      if (friends.length === 0) {
+        cup.appendChild(el("div", "empty-hint", "아직 별이 없어요. 링크를 뿌려보세요 ⭐"));
+        return { cup: cup, groups: [] };
+      }
+
+      var groups = groupFriends(friends);
+      var laidOut = layoutGroups(groups);
+      var rankedFriends = rankFriends(friends);
+
+      function rowIdFor(friend) {
+        var idx = rankedFriends.indexOf(friend);
+        return idx >= 0 ? "f-" + idx : "";
+      }
+
+      for (var gi = 0; gi < laidOut.length; gi++) {
+        var g = laidOut[gi];
+        var key = pairKeyByName(g.name);
+        var emoji = GROUP_EMOJI[key] || "🍵";
+
+        var labelPos = polarPercent(g.midAngle, 56); /* 테두리(50%) 바깥 — 별(최대 38%+8.5%)과 안 겹침 */
+        var label = el("div", "sector-label", emoji + " " + (GROUP_SHORT[key] || g.name) + " " + g.count);
+        label.style.left = labelPos.left + "%";
+        label.style.top = labelPos.top + "%";
+        cup.appendChild(label);
+
+        for (var si = 0; si < g.stars.length; si++) {
+          (function (star) {
+            var friend = star.friend;
+            var score = friend.pair_score || 0;
+            var r = starRadiusPercent(score);
+            var pos = polarPercent(star.angle, r);
+            var d = starDiameterPercent(score);
+            var fInfo = typeInfoOf(friend.friend_type);
+
+            var starEl = el("div", "star");
+            starEl.style.left = pos.left + "%";
+            starEl.style.top = pos.top + "%";
+            starEl.style.width = d + "%";
+            starEl.style.height = d + "%";
+            starEl.style.opacity = String(starOpacity(score));
+            starEl.style.boxShadow = "0 0 " + starGlowPx(score) + "px rgba(201,138,75,.6)";
+            var dur = (5 + Math.random() * 3).toFixed(2);
+            var delay = (Math.random() * 3).toFixed(2);
+            starEl.style.animation = "float " + dur + "s ease-in-out infinite";
+            starEl.style.animationDelay = delay + "s";
+
+            starEl.appendChild(el("div", "star-emoji", fInfo.emoji || "🐯"));
+            starEl.appendChild(el("div", "star-name", friend.friend_name || "친구"));
+
+            var targetId = rowIdFor(friend);
+            starEl.addEventListener("click", function () {
+              if (!targetId) return;
+              var row = document.getElementById(targetId);
+              if (!row) return;
+              row.scrollIntoView({ behavior: "smooth", block: "center" });
+              flashRow(row);
+            });
+
+            cup.appendChild(starEl);
+          })(g.stars[si]);
+        }
+      }
+
+      setTimeout(function () { clampLabels(cup); }, 0); /* DOM 에 붙은 뒤 화면 밖으로 나간 라벨을 안쪽으로 */
+      return { cup: cup, groups: laidOut };
+    }
+
+    function buildTiles(laidOutGroups) {
+      var tiles = el("div", "tiles");
+      for (var i = 0; i < laidOutGroups.length; i++) {
+        var g = laidOutGroups[i];
+        var key = pairKeyByName(g.name);
+        var emoji = GROUP_EMOJI[key] || "🍵";
+        var tile = el("div", "tile");
+        tile.appendChild(el("div", "tile-num", String(g.count)));
+        tile.appendChild(el("div", "tile-emoji", emoji));
+        tile.appendChild(el("div", "tile-name", g.name));
+        tiles.appendChild(tile);
+      }
+      return tiles;
+    }
+
+    function buildFriendList(ownerType, friends) {
+      var wrap = document.createDocumentFragment();
+      wrap.appendChild(el("div", "friend-list-header", "친구 " + friends.length + "명 · 궁합순"));
+
+      var list = el("div", "friend-list");
+      var ranked = rankFriends(friends);
+      for (var idx = 0; idx < ranked.length; idx++) {
+        var f = ranked[idx];
+        var row = el("div", "friend-row");
+        row.id = "f-" + idx;
+
+        row.appendChild(el("div", "friend-rank", rankBadge(idx)));
+        row.appendChild(el("div", "friend-emoji", (typeInfoOf(f.friend_type).emoji || "🐯")));
+
+        var infoCol = el("div", "friend-info");
+        infoCol.appendChild(el("div", "friend-name", f.friend_name || "친구"));
+        infoCol.appendChild(el("div", "friend-sub", (f.friend_type || "") + "형"));
+        row.appendChild(infoCol);
+
+        var pairCol = el("div", "friend-pair");
+        pairCol.appendChild(el("div", "friend-pair-name", f.pair_name || ""));
+        pairCol.appendChild(el("div", "friend-score", f.pair_score != null ? String(f.pair_score) : ""));
+
+        var rule = (window.BP_TYPES && BP_TYPES.pairRule) ? BP_TYPES.pairRule(ownerType, f.friend_type) : null;
+        if (rule && rule.productId) {
+          var prod = findProduct(rule.productId);
+          if (prod && prod.url) {
+            var link = document.createElement("a");
+            link.className = "friend-link";
+            link.href = prod.url;
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.textContent = "같이 마실 커피 →";
+            pairCol.appendChild(link);
+          }
+        }
+        row.appendChild(pairCol);
+
+        list.appendChild(row);
+      }
+      wrap.appendChild(list);
+      return wrap;
+    }
+
+    function buildExplain() {
+      var details = document.createElement("details");
+      details.className = "pair-explain-details";
+      var summary = document.createElement("summary");
+      summary.textContent = "궁합 이름은 무슨 뜻인가요?";
+      details.appendChild(summary);
+
+      var listEl = el("div", "pair-explain-list");
+      var rules = (window.BP_TYPES && BP_TYPES.PAIR_RULES) || {};
+      for (var i = 0; i < PAIR_ORDER.length; i++) {
+        var key = PAIR_ORDER[i];
+        var rule = rules[key];
+        if (!rule) continue;
+        var emoji = GROUP_EMOJI[key] || "";
+        listEl.appendChild(el("div", "pair-explain-item", emoji + " " + rule.name + " — " + rule.desc));
+      }
+      details.appendChild(listEl);
+      return details;
+    }
+
+    function buildActions(ownerType, id) {
+      var actions = el("div", "map-actions");
+      var shareBtn = el("button", "shop-btn", "친구 더 부르기");
+      shareBtn.type = "button";
+      shareBtn.id = "share-btn";
+      actions.appendChild(shareBtn);
+
+      var shareDone = el("div", "share-done", "");
+      shareDone.id = "share-done";
+      actions.appendChild(shareDone);
+
+      var textLink = document.createElement("a");
+      textLink.className = "text-link";
+      textLink.href = "index.html";
+      textLink.textContent = "나도 커피 유형 테스트하기 →";
+      actions.appendChild(textLink);
+
+      var ownerInfo = typeInfoOf(ownerType);
+      var shareText = (ownerInfo.emoji || "🐯") + " 나는 " + ownerType + "형! 내 커피 친구 지도에 별로 떠줘 ⭐ 너는 무슨 호랑이?\n범표원두 커피 취향 테스트";
+      var shareUrl = location.origin + location.pathname.replace(/map\.html$/, "index.html") +
+        "?src=friend&from=" + encodeURIComponent(ownerType) + "&map=" + id;
+
+      shareBtn.addEventListener("click", function () {
+        if (navigator.share) {
+          navigator.share({ title: "내 커피 친구 지도", text: shareText, url: shareUrl }).then(function () {
+            shareDone.textContent = "친구에게 전달했어요 🙌";
+            try { BP.track("share", { method: "share", ok: true, from: "map" }); } catch (e) {}
+          }).catch(function () {
+            try { BP.track("share", { method: "share", ok: false, from: "map" }); } catch (e) {}
+          });
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(shareText + "\n" + shareUrl).then(function () {
+            shareDone.textContent = "링크를 복사했어요 📋";
+            try { BP.track("share", { method: "clipboard", ok: true, from: "map" }); } catch (e) {}
+          }).catch(function () {
+            shareDone.textContent = "복사가 안 되면 이 주소를 길게 눌러 복사하세요: " + shareUrl;
+            try { BP.track("share", { method: "text", ok: true, from: "map" }); } catch (e) {}
+          });
+          return;
+        }
+        shareDone.textContent = "복사가 안 되면 이 주소를 길게 눌러 복사하세요: " + shareUrl;
+        try { BP.track("share", { method: "text", ok: true, from: "map" }); } catch (e) {}
+      });
+
+      return actions;
+    }
+
+    function renderMap(page, id, data) {
+      clearChildren(page);
+      var mapInfo = data.map || {};
+      var friends = data.friends || [];
+      var ownerType = mapInfo.owner_type;
+      var ownerName = mapInfo.owner_name;
+      var ownerInfo = typeInfoOf(ownerType);
+
+      /* 새로고침 */
+      var toolbar = el("div", "map-toolbar");
+      var refreshBtn = el("button", "text-btn", "🔄 새로고침");
+      refreshBtn.type = "button";
+      refreshBtn.addEventListener("click", function () { loadAndRender(id, page); });
+      toolbar.appendChild(refreshBtn);
+      page.appendChild(toolbar);
+
+      /* (a) 헤더 */
+      var header = el("div", "map-header");
+      header.appendChild(el("h1", "map-title", "☕ " + (ownerName || "나") + "의 커피 친구 지도"));
+      header.appendChild(el("div", "type-chip", (ownerInfo.emoji || "🐯") + " " + ownerType + "형"));
+      header.appendChild(el("p", "map-sub", "가까울수록, 밝을수록 궁합이 좋은 친구예요."));
+      page.appendChild(header);
+
+      /* (b) 커피잔 지도 */
+      var built = buildCup(ownerType, ownerName, friends);
+      var cupWrap = el("div", "cup-wrap");
+      cupWrap.appendChild(built.cup);
+      cupWrap.appendChild(el("p", "cup-caption", "가운데에 가까울수록, 밝을수록 궁합이 좋은 친구"));
+      page.appendChild(cupWrap);
+
+      /* (c) 요약 타일 */
+      if (built.groups.length > 0) {
+        page.appendChild(buildTiles(built.groups));
+      }
+
+      /* (d) 친구 목록 */
+      page.appendChild(buildFriendList(ownerType, friends));
+
+      /* (e) 궁합 설명 */
+      page.appendChild(buildExplain());
+
+      /* (f) 하단 액션 */
+      page.appendChild(buildActions(ownerType, id));
+    }
+
+    /* ============================================================
+       초기화
+       ============================================================ */
+
+    function loadAndRender(id, page) {
+      showLoading(page);
+      BP.fetchMap(id).then(function (data) {
+        try {
+          if (!data) { renderNotFound(page); return; }
+          renderMap(page, id, data);
+        } catch (e) {
+          try { console.error(e); } catch (e2) {}
+          renderNotFound(page);
+        }
+      });
+    }
+
+    function init() {
+      var page = document.getElementById("map-page");
+      if (!page) return;
+      var id = getMapId();
+      if (!id) { renderNotFound(page); return; }
+
+      try { BP.startSession(); } catch (e) {}
+      try { BP.track("map_view", { map_id: id }); } catch (e) {}
+
+      loadAndRender(id, page);
+    }
+
+    try {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    } catch (e) {
+      try { console.error(e); } catch (e2) {}
+    }
+  })();
+  </script>
+</body>
+</html>

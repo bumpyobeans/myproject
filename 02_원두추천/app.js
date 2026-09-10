@@ -12,6 +12,13 @@
 
   var BP = (typeof window !== "undefined" && window.BP) || { startSession: function () {}, track: function () {} };
 
+  var T = (typeof BP_TYPES !== "undefined") ? BP_TYPES
+        : (typeof require === "function" ? require("./types.js") : null);
+  if (!T) { if (typeof console !== "undefined") console.error("types.js 가 먼저 로드되어야 합니다 (index.html 의 script 순서 확인)"); return; }
+  var TIGER_TYPES = T.TIGER_TYPES, TIGER_GROUP = T.TIGER_GROUP, SAME_TYPE_PRODUCT = T.SAME_TYPE_PRODUCT, DRIPBAG_SET = T.DRIPBAG_SET, PAIR_RULES = T.PAIR_RULES;
+  function getTasteTarget(a) { return T.getTasteTarget(a); }
+  function tigerTypeOf(a) { return T.tigerTypeOf(a); }
+
   /* ----------------------------------------------------------
      0. 질문 정의
      각 선택지(option)
@@ -140,34 +147,16 @@
     "과실감": "과일 같은 산미가 있는"
   };
 
-  /* 호랑이 유형: 답변으로 정하는 "당신의 커피 유형". 이름은 실제 원두 이름 그대로. */
-  var TIGER_TYPES = {
-    "인도호랑이":   { emoji: "🌰", tag: "든든한 고소파",       desc: "호밀 같은 고소함에 묵직한 바디감. 진한 한 잔으로 하루를 여는 분이에요." },
-    "조선호랑이":   { emoji: "🍫", tag: "고소한데 위트 있는",   desc: "고소하고 묵직한데 산미가 살짝 위트처럼 스쳐요. 쓴맛은 싫지만 밍밍한 것도 싫은 분이에요." },
-    "호랑이형님":   { emoji: "⚖️", tag: "밸런스 장인",         desc: "잔잔한 산미에 굿 밸런스. 누구와 마셔도 무난하게 잘 맞는 분이에요." },
-    "역삼동호랑이": { emoji: "🍋", tag: "상큼한 산미파",       desc: "자몽의 새콤함, 살구 같은 과실의 산미. 커피에서 과일 향을 찾는 분이에요." },
-    "아프리카호랑이": { emoji: "🍇", tag: "개성 있는 모험가",   desc: "리치 같은 달콤한 산미에 와인 같은 바디감. 새로운 맛에 먼저 손이 가는 분이에요." },
-    "디카페인호랑이": { emoji: "🌙", tag: "밤에도 편안한",     desc: "호밀 같은 고소함에 브라운 슈거의 단맛. 카페인 없이도 커피의 즐거움을 놓치지 않는 분이에요." }
-  };
-  function tigerTypeOf(a) {
-    if (a.q4 === "디카페인") return "디카페인호랑이";
-    var t = getTasteTarget(a);
-    if (t === "고소") return a.q3 === "쓴맛회피" ? "조선호랑이" : "인도호랑이";
-    if (t === "균형") return "호랑이형님";
-    if (t === "산뜻한산미") return "역삼동호랑이";
-    if (t === "과실감") return "아프리카호랑이";
-    return "호랑이형님";
+  function productById(id) {
+    for (var i = 0; i < PRODUCTS.length; i++) { var p = PRODUCTS[i]; if (p.id === id && !p.exclude && p.stock > 0) return p; }
+    return null;
   }
-
-  /* q2(+q5) 답 -> 목표 맛 키워드 */
-  function getTasteTarget(a) {
-    if (a.q1 === "라떼") { return a.q_latte === "온아바라" ? "균형" : "고소"; }
-    if (a.q2 === "고소") return "고소";
-    if (a.q2 === "균형") return "균형";
-    if (a.q2 === "산뜻") return "산뜻한산미";
-    if (a.q2 === "모름" && a.q5 === "부드러움") return "균형";
-    if (a.q2 === "모름" && a.q5 === "개성") return "과실감";
-    return "균형";
+  /* 내 유형 × 친구 유형 -> { key, name, score, desc, product } 또는 null(친구 유형이 모르는 값이면) */
+  function pairOf(mine, friend) {
+    var r = T.pairRule(mine, friend);
+    if (!r) return null;
+    var product = productById(r.productId) || productById(DRIPBAG_SET);
+    return { key: r.key, name: r.name, score: r.score, desc: r.desc, product: product };
   }
 
   /* ----------------------------------------------------------
@@ -735,7 +724,8 @@
       buildNewReason: buildNewReason,
       buildOptionHint: buildOptionHint,
       formatPrice: formatPrice,
-      tigerTypeOf: tigerTypeOf
+      tigerTypeOf: tigerTypeOf,
+      pairOf: pairOf
     };
   }
   if (!HAS_DOM) return;
@@ -749,6 +739,22 @@
 
   var answers = {};       // 고객 답 저장
   var flowIndex = 0;      // 지금 몇 번째 단계인지
+
+  var mapId = null, mapName = "";
+  try { mapId = localStorage.getItem("bp_map") || null; mapName = localStorage.getItem("bp_map_name") || ""; } catch (e) {}
+
+  var friendType = null;
+  var joinMapId = null;
+  try {
+    var _ft = new URLSearchParams(location.search).get("from");
+    if (_ft && TIGER_TYPES[_ft]) friendType = _ft;
+    var _mid = new URLSearchParams(location.search).get("map");
+    if (_mid && /^[a-zA-Z0-9]{1,10}$/.test(_mid)) joinMapId = _mid;
+  } catch (e) {}
+  if (friendType) {
+    var _introSub = document.querySelector(".intro-sub");
+    if (_introSub) _introSub.textContent = TIGER_TYPES[friendType].emoji + " " + friendType + "형 친구가 보낸 테스트예요. 나는 무슨 호랑이일까요?";
+  }
 
   function scrollToBottom() {
     // 새 말풍선이 그려진 뒤 맨 아래로
@@ -926,6 +932,46 @@
     return box;
   }
 
+  function buildPairCard(rec, a) {
+    if (!friendType) return null;
+    var pair = pairOf(rec.tiger, friendType);
+    if (!pair) return null;
+    var mine = TIGER_TYPES[rec.tiger], theirs = TIGER_TYPES[friendType];
+    var who = a.q1 === "선물" ? "받으실 분" : "당신";
+    var box = document.createElement("div"); box.className = "pair-card";
+    var label = document.createElement("div"); label.className = "type-label"; label.textContent = "링크 보낸 친구와의 궁합"; box.appendChild(label);
+    var types = document.createElement("div"); types.className = "pair-types";
+    types.textContent = theirs.emoji + " " + friendType + "형  ×  " + mine.emoji + " " + rec.tiger + "형"; box.appendChild(types);
+    var nameRow = document.createElement("div"); nameRow.className = "pair-name";
+    nameRow.textContent = "\"" + pair.name + "\"";
+    var score = document.createElement("span"); score.className = "pair-score"; score.textContent = "궁합 " + pair.score + "점"; nameRow.appendChild(score);
+    box.appendChild(nameRow);
+    var desc = document.createElement("div"); desc.className = "type-desc"; desc.textContent = pair.desc; box.appendChild(desc);
+    // "둘이 같이 마시면" 상품이 바로 아래 오늘의 추천과 같으면 중복이므로 대안(드립백 4종 → 30개 대용량)으로 바꾼다
+    var pairProduct = pair.product;
+    if (pairProduct && rec.chosen && pairProduct.id === rec.chosen.id) {
+      var alts = [DRIPBAG_SET, "8084877243"];
+      pairProduct = null;
+      for (var ai = 0; ai < alts.length; ai++) {
+        var cand = productById(alts[ai]);
+        if (cand && cand.id !== rec.chosen.id) { pairProduct = cand; break; }
+      }
+    }
+    if (pairProduct) {
+      var pl = document.createElement("div"); pl.className = "pair-product-label"; pl.textContent = "둘이 같이 마시면"; box.appendChild(pl);
+      var row = document.createElement("div"); row.className = "sample-row";
+      row.appendChild(productImageEl(pairProduct, true));
+      var info = document.createElement("div"); info.className = "sample-info";
+      var nm = document.createElement("div"); nm.className = "prod-name sample-name"; nm.textContent = pairProduct.name; info.appendChild(nm);
+      var pr = document.createElement("div"); pr.className = "prod-price"; pr.textContent = formatPrice(pairProduct.price); info.appendChild(pr);
+      info.appendChild(shopButtonEl(pairProduct, "같이 마실 커피 보기", "pair"));
+      row.appendChild(info); box.appendChild(row);
+    } else if (pair.product) {
+      var pl2 = document.createElement("div"); pl2.className = "pair-product-label"; pl2.textContent = "바로 아래 오늘의 추천이 둘이 나눠 마시기에도 딱이에요."; box.appendChild(pl2);
+    }
+    return box;
+  }
+
   function buildMainBlock(rec) {
     var frag = document.createDocumentFragment();
     var chosen = rec.chosen;
@@ -1053,17 +1099,19 @@
     doneEl.textContent = "";
     box.appendChild(doneEl);
 
-    var url = location.origin + location.pathname;
-    if (location.protocol === "file:") {
-      url = "https://beompyo-wondu-chucheon.vercel.app";
-    }
-    url += (url.indexOf("?") === -1 ? "?" : "&") + "src=friend";
-    url += "&from=" + encodeURIComponent(rec.tiger);
-    var tInfo = TIGER_TYPES[rec.tiger] || { emoji: "🐯" };
-    var mine = (answers.q1 === "선물" ? "선물 받을 분은 " : "나는 ") + rec.tiger + "형!";
-    var text = tInfo.emoji + " " + mine + " 너는 무슨 호랑이?\n범표원두 커피 취향 테스트 — 몇 가지 질문에 답하면 내 호랑이 유형과 딱 맞는 커피를 알려줘요.";
-
     btn.addEventListener("click", function () {
+      var url = location.origin + location.pathname;
+      if (location.protocol === "file:") {
+        url = "https://beompyo-wondu-chucheon.vercel.app";
+      }
+      url += (url.indexOf("?") === -1 ? "?" : "&") + "src=friend";
+      url += "&from=" + encodeURIComponent(rec.tiger);
+      if (mapId) url += "&map=" + encodeURIComponent(mapId);
+      var tInfo = TIGER_TYPES[rec.tiger] || { emoji: "🐯" };
+      var mine = (answers.q1 === "선물" ? "선물 받을 분은 " : "나는 ") + rec.tiger + "형!";
+      var text = tInfo.emoji + " " + mine + " 너는 무슨 호랑이?\n범표원두 커피 취향 테스트 — 몇 가지 질문에 답하면 내 호랑이 유형과 딱 맞는 커피를 알려줘요.";
+      if (mapId) text += "\n내 커피 친구 지도에 별로 떠줘 ⭐";
+
       if (navigator.share) {
         navigator.share({ title: "범표원두 커피 추천 상담", text: text, url: url }).then(function () {
           doneEl.textContent = "친구에게 전달했어요 🙌";
@@ -1093,11 +1141,151 @@
     return box;
   }
 
+  /* 지도 카드 (주인 흐름): 지도가 있으면 "지도 보기" 안내, 없으면 지도 만들기 CTA */
+  /* 지도 페이지로 가는 버튼 (상품 클릭과 구분해서 map_open 으로 기록) */
+  function mapLinkEl(id, label) {
+    var a = document.createElement("a");
+    a.className = "shop-btn";
+    a.href = "map.html?id=" + encodeURIComponent(id);
+    a.textContent = label;
+    a.addEventListener("click", function () { BP.track("map_open", { map_id: id }); });
+    return a;
+  }
+
+  function buildMapBlock(rec) {
+    var box = document.createElement("div");
+    box.className = "map-card";
+
+    if (mapId) {
+      box.appendChild(sectionHeaderEl("🗺️", "내 커피 친구 지도", "가까울수록, 밝을수록 궁합이 좋은 친구예요.", ""));
+
+      var countEl = document.createElement("div");
+      countEl.className = "map-count";
+      countEl.textContent = "친구를 불러오는 중…";
+      box.appendChild(countEl);
+
+      box.appendChild(mapLinkEl(mapId, "지도 보기"));
+
+      var shareText = document.createElement("div");
+      shareText.className = "share-text";
+      shareText.textContent = "아래 공유 버튼으로 링크를 더 뿌려보세요.";
+      box.appendChild(shareText);
+
+      BP.fetchMap(mapId).then(function (r) {
+        countEl.textContent = r ? "친구 " + r.friends.length + "명이 별로 떠 있어요" : "지도를 불러오지 못했어요";
+      });
+
+      return box;
+    }
+
+    box.className = "map-card map-cta";
+    box.appendChild(sectionHeaderEl("🐯", "내 커피 친구 지도 만들어보세요", "내 링크를 뿌리면, 친구들이 테스트하고 나와 어떤 커피 사이인지 지도에 떠요.", ""));
+
+    var nameInput = document.createElement("input");
+    nameInput.className = "map-name";
+    nameInput.maxLength = 12;
+    nameInput.placeholder = "지도에 표시될 내 별명 (선택)";
+    box.appendChild(nameInput);
+
+    var createBtn = document.createElement("button");
+    createBtn.type = "button";
+    createBtn.className = "shop-btn map-create";
+    createBtn.textContent = "내 커피 친구 지도 만들기";
+    box.appendChild(createBtn);
+
+    var doneEl = document.createElement("div");
+    doneEl.className = "share-done";
+    box.appendChild(doneEl);
+
+    createBtn.addEventListener("click", function () {
+      createBtn.disabled = true;
+      createBtn.textContent = "만드는 중…";
+      var name = nameInput.value || "";
+      BP.createMap(rec.tiger, name).then(function (id) {
+        if (id) {
+          try { localStorage.setItem("bp_map", id); localStorage.setItem("bp_map_name", name.slice(0, 12)); } catch (e) {}
+          mapId = id;
+          mapName = name.slice(0, 12);
+          BP.track("map_create", { map_id: id });
+          var newBox = buildMapBlock(rec);
+          box.parentNode.replaceChild(newBox, box);
+        } else {
+          doneEl.textContent = "지금은 만들 수 없어요. 잠시 후 다시 시도해 주세요.";
+          createBtn.disabled = false;
+          createBtn.textContent = "내 커피 친구 지도 만들기";
+        }
+      });
+    });
+
+    return box;
+  }
+
+  /* 친구 지도에 올리기 카드 (친구 흐름): joinMapId && friendType 일 때만 사용 */
+  function buildJoinBlock(rec) {
+    if (!joinMapId || !friendType) return null;
+
+    var box = document.createElement("div");
+    box.className = "map-card map-join";
+    box.appendChild(sectionHeaderEl("⭐", "친구 지도에 내 별을 띄울까요?", "친구가 나와 어떤 커피 사이인지 볼 수 있어요.", ""));
+
+    if (mapId === joinMapId) {
+      var mineEl = document.createElement("div");
+      mineEl.className = "share-text";
+      mineEl.textContent = "내 지도예요 😊";
+      box.appendChild(mineEl);
+      box.appendChild(mapLinkEl(joinMapId, "지도 보기"));
+      return box;
+    }
+
+    var nameInput = document.createElement("input");
+    nameInput.className = "map-name";
+    nameInput.maxLength = 12;
+    nameInput.placeholder = "지도에 표시될 내 별명 (선택)";
+    box.appendChild(nameInput);
+
+    var joinBtn = document.createElement("button");
+    joinBtn.type = "button";
+    joinBtn.className = "shop-btn map-join-btn";
+    joinBtn.textContent = "지도에 올리기";
+    box.appendChild(joinBtn);
+
+    var doneEl = document.createElement("div");
+    doneEl.className = "share-done";
+    box.appendChild(doneEl);
+
+    joinBtn.addEventListener("click", function () {
+      joinBtn.disabled = true;
+      joinBtn.textContent = "올리는 중…";
+      var name = nameInput.value || "";
+      var pr = pairOf(rec.tiger, friendType);
+      BP.joinMap(joinMapId, rec.tiger, name, pr ? pr.name : null, pr ? pr.score : null).then(function (result) {
+        if (result === "ok" || result === "dup") {
+          doneEl.textContent = (result === "ok" ? "올라갔어요! 🌟" : "이미 올라가 있어요 😊");
+          doneEl.appendChild(document.createElement("br"));
+          doneEl.appendChild(mapLinkEl(joinMapId, "친구 지도 보기"));
+          nameInput.hidden = true;
+          joinBtn.hidden = true;
+          if (result === "ok") BP.track("map_join", { map_id: joinMapId });
+        } else {
+          doneEl.textContent = "지금은 올릴 수 없어요. 잠시 후 다시 시도해 주세요.";
+          joinBtn.disabled = false;
+          joinBtn.textContent = "지도에 올리기";
+        }
+      });
+    });
+
+    return box;
+  }
+
   function buildResultCard(rec) {
     var card = document.createElement("div");
     card.className = "result-card";
 
     card.appendChild(buildTypeCard(rec, answers));
+    var pairEl = buildPairCard(rec, answers);
+    if (pairEl) card.appendChild(pairEl);
+    var joinEl = buildJoinBlock(rec);
+    if (joinEl) card.appendChild(joinEl);
     var divider0 = document.createElement("div");
     divider0.className = "result-divider";
     card.appendChild(divider0);
@@ -1113,6 +1301,7 @@
       card.appendChild(sampleEl);
     }
 
+    card.appendChild(buildMapBlock(rec));
     card.appendChild(buildShareBlock(rec));
 
     return card;
@@ -1127,7 +1316,10 @@
       new_product: rec.newProduct ? rec.newProduct.id : null,
       sample: rec.sampleProduct ? rec.sampleProduct.id : null,
       fallback: !!rec.fallback, relaxedQ1: !!rec.relaxedQ1,
-      tiger: rec.tiger
+      tiger: rec.tiger,
+      friend_type: friendType,
+      pair: (friendType && pairOf(rec.tiger, friendType) || {}).name || null,
+      map_id: joinMapId || null
     });
 
     var tInfo = TIGER_TYPES[rec.tiger] || { emoji: "🐯" };

@@ -2,6 +2,7 @@ const fs = require("fs"), vm = require("vm"), path = require("path");
 const dir = require("path").join(__dirname, "..");
 const ctx = { module: { exports: {} }, console };
 vm.createContext(ctx);
+vm.runInContext(fs.readFileSync(path.join(dir, "types.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(dir, "products.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(dir, "reviews.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(dir, "app.js"), "utf8"), ctx);
@@ -47,3 +48,8 @@ for(const [name,a] of S){
   console.log("     이유: " + app.buildNewReason(a, rec.newProduct, rec.chosen));
   if(rec.sampleProduct) console.log(`  [샘플] ${rec.sampleProduct.name} (${rec.sampleProduct.price}원)`);
 }
+
+console.log("\n=== 궁합 표 (내 유형 × 친구 유형) ===");
+const T = ["인도호랑이","조선호랑이","호랑이형님","역삼동호랑이","아프리카호랑이","디카페인호랑이"];
+for (const m of T) for (const f of T) { const p = app.pairOf(m, f); console.log(`${m} × ${f} → ${p ? p.name + " " + p.score + "점 / " + (p.product ? p.product.name : "(상품없음)") : "null"}`); }
+console.log("모르는 유형:", app.pairOf("인도호랑이", "없는유형"));
