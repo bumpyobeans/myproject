@@ -130,6 +130,10 @@ def build_product_entries():
             "sample": bool(tag.get("sample", False)),
             "exclude": bool(tag.get("exclude", False)),
             "flavors": tag.get("flavors", []),
+            "signature": bool(tag.get("signature", False)),
+            "soyMilk": bool(tag.get("soyMilk", False)),
+            "canFlavor": tag.get("canFlavor", ""),
+            "story": tag.get("story", ""),
             "priority": tag.get("priority", 1),
             "price": price,
             "stock": stock,
@@ -159,6 +163,10 @@ def render_js(entries):
     lines.append("   - scene     : 추천 상황 배열")
     lines.append("   - taste     : 맛 키워드 배열 (['다양']이면 옵션에서 여러 맛 중 선택)")
     lines.append("   - flavors   : 맛 옵션 배열 ([{name, taste}, ...]) — 여러 맛 중 고를 수 있는 상품에만 있음")
+    lines.append("   - signature : 시그니처 메뉴 여부 (범표라떼)")
+    lines.append("   - soyMilk   : 두유 베이스 여부 (두유라떼)")
+    lines.append("   - canFlavor : 수제 캔커피 맛 이름 (범표라떼 / 두유라떼 / 온아바라 / 맛보기)")
+    lines.append("   - story     : 메뉴에 얽힌 이야기 (있을 때만)")
     lines.append("   - decaf     : 디카페인 여부")
     lines.append("   - sample    : 샘플/체험 상품 여부")
     lines.append("   - exclude   : 추천 대상에서 제외할지 여부 (업소용 등)")
@@ -184,6 +192,11 @@ def render_js(entries):
         lines.append("    sample: {},".format("true" if e["sample"] else "false"))
         lines.append("    exclude: {},".format("true" if e["exclude"] else "false"))
         lines.append("    flavors: {},".format(js_array_of_flavors(e["flavors"])))
+        lines.append("    signature: {},".format("true" if e["signature"] else "false"))
+        lines.append("    soyMilk: {},".format("true" if e["soyMilk"] else "false"))
+        lines.append("    canFlavor: {},".format(js_string(e["canFlavor"])))
+        if e["story"]:
+            lines.append("    story: {},".format(js_string(e["story"])))
         lines.append("    priority: {},".format(e["priority"]))
         lines.append("    price: {},".format(e["price"]))
         lines.append("    stock: {},".format(e["stock"]))

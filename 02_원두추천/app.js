@@ -40,6 +40,22 @@
         { label: "커피값 아끼게 넉넉히 준비해주세요 💰", value: "1000", phrase: "넉넉하게 오래 두고 드시고 싶다고 하셔서", ack: "요즘 1kg으로 넉넉히 챙기시는 분들이 많아요. 그렇게 준비해드릴게요." }
       ]
     },
+    q_milk: {
+      text: "라떼에 우유는 어떠세요?",
+      options: [
+        { label: "일반 우유 괜찮아요 🥛", value: "우유", phrase: "", ack: "네, 우유 베이스로 골라드릴게요." },
+        { label: "유당불내증이 있어요, 두유로 주세요 🌱", value: "두유", phrase: "유당불내증이 있어 두유로 원하셔서", ack: "두유라떼로 편하게 드실 수 있게 챙겨드릴게요." },
+        { label: "상관없어요 😊", value: "상관없음", phrase: "", ack: "그럼 가장 잘 맞는 걸로 골라드릴게요." }
+      ]
+    },
+    q_latte: {
+      text: "어떤 라떼가 끌리세요?",
+      options: [
+        { label: "궁극의 고소함, 범표라떼 🐯", value: "범표라떼", phrase: "고소한 범표라떼를 원하셔서", ack: "범표라떼, 저희를 알린 시그니처예요. 잘 고르셨어요." },
+        { label: "덜 단 바닐라, 온아바라 🏐", value: "온아바라", phrase: "덜 단 바닐라라떼를 원하셔서", ack: "온아바라, 사연이 있는 메뉴예요. 이따 이야기해드릴게요." },
+        { label: "시그니처로 골라주세요 ✨", value: "시그니처", phrase: "시그니처로 골라달라고 하셔서", ack: "그럼 저희 대표 메뉴로 골라드릴게요." }
+      ]
+    },
     q2: {
       text: "어떤 맛을 좋아하세요?",
       textGift: "받으실 분은 어떤 맛을 좋아하실까요?",
@@ -78,7 +94,7 @@
 
   /* 질문 진행 순서. q_amount 는 조건부(q1 이 "핸드드립" 일 때만),
      q5 는 조건부(q2 가 "모름" 일 때만) */
-  var FLOW = ["q1", "q_amount", "q2", "q3", "q4", "q5", "result"];
+  var FLOW = ["q1", "q_amount", "q_milk", "q_latte", "q2", "q3", "q4", "q5", "result"];
 
   /* q1 답 -> method 또는 scene 필터 */
   var FILTER_BY_Q1 = {
@@ -124,6 +140,7 @@
 
   /* q2(+q5) 답 -> 목표 맛 키워드 */
   function getTasteTarget(a) {
+    if (a.q1 === "라떼") { return a.q_latte === "온아바라" ? "균형" : "고소"; }
     if (a.q2 === "고소") return "고소";
     if (a.q2 === "균형") return "균형";
     if (a.q2 === "산뜻") return "산뜻한산미";
@@ -251,6 +268,7 @@
     if (typeof REVIEWS !== "undefined" && REVIEWS[p.id] && REVIEWS[p.id].length > 0) {
       s += 1;
     }
+    if (p.signature === true) s += 2;
     s += p.priority * 0.5;
     return s;
   }
@@ -300,7 +318,22 @@
     return top;
   }
 
+  function canByFlavor(name) {
+    return PRODUCTS.filter(function (p) { return p.canFlavor === name && !p.exclude && p.stock > 0; })[0] || null;
+  }
+  function recommendLatte(a) {
+    var beompyo = canByFlavor("범표라떼"), soy = canByFlavor("두유라떼"), onabara = canByFlavor("온아바라"), sample = canByFlavor("맛보기");
+    var chosen, newProduct;
+    if (a.q_milk === "두유") { chosen = soy || beompyo; newProduct = (beompyo && (!chosen || beompyo.id !== chosen.id)) ? beompyo : onabara; }
+    else if (a.q_latte === "온아바라") { chosen = onabara || beompyo; newProduct = (beompyo && (!chosen || beompyo.id !== chosen.id)) ? beompyo : soy; }
+    else { chosen = beompyo; newProduct = onabara; }
+    if (!chosen) return null;
+    var sampleProduct = (sample && sample.id !== chosen.id && (!newProduct || sample.id !== newProduct.id)) ? sample : null;
+    return { chosen: chosen, newProduct: newProduct, sampleProduct: sampleProduct, fallback: false, relaxedQ1: false, tasteTarget: getTasteTarget(a) };
+  }
+
   function recommend(a) {
+    if (a.q1 === "라떼") { var _r = recommendLatte(a); if (_r) return _r; }
     var tasteTarget = getTasteTarget(a);
     var base = baseCandidates();
     var afterQ1 = filterByQ1(base, a);
@@ -390,6 +423,22 @@
   function buildMainReason(a, p, fallback, relaxedQ1) {
     var parts = [];
     var gift = a.q1 === "선물";
+    var latte = a.q1 === "라떼";
+
+    if (latte) {
+      var lparts = ["라떼를 즐기신다고 하셔서 저희 수제 캔커피로 골랐어요."];
+      if (a.q_milk === "두유") {
+        lparts.push("유당불내증이 있으시다고 해서 두유라떼로 준비했어요. 우유 대신 두유라 속이 편하고, 두유 특유의 고소함이 잘 어울려요.");
+      } else {
+        var lq = phraseOf("q_latte", a.q_latte);
+        if (lq) lparts.push(lq + " " + eulReul(p.name) + " 골랐어요.");
+      }
+      if (p.signature === true) lparts.push("범표원두를 세상에 알린 시그니처 메뉴예요. 궁극의 고소함이 그대로 담겨 있어요.");
+      if (p.story) lparts.push(p.story);
+      lparts.push("용량은 350ml 두 샷, 500ml 세 샷이에요. 용량이 커지면 샷도 그만큼 늘어서 진하기는 비슷하니, 마실 양으로 고르시면 돼요. 상품 페이지 옵션에서 선택할 수 있어요.");
+      if (a.q4 === "디카페인") lparts.push("카페인은 디카페인으로 원하셔서요. 범표원두 캔커피는 전부 디카페인으로도 주문할 수 있어요. 상품 페이지 옵션에서 디카페인을 고르시면 돼요.");
+      return lparts.join(" ");
+    }
 
     if (fallback) {
       parts.push("지금 조건에 딱 맞는 상품이 없어서, 그래도 잘 어울릴 만한 인기 상품을 보여드려요.");
@@ -465,6 +514,14 @@
   }
 
   function buildNewReason(a, np, chosen) {
+    if (a.q1 === "라떼") {
+      var nt;
+      if (np.canFlavor === "온아바라") nt = "이건 덜 단 바닐라 향이 나는 온아바라예요. 사연이 있는 메뉴라 더 특별하고요.";
+      else if (np.canFlavor === "범표라떼") nt = "이건 저희 시그니처 범표라떼예요. 궁극의 고소함이 담겨 있어요.";
+      else if (np.canFlavor === "두유라떼") nt = "이건 두유로 만든 두유라떼예요. 속이 편하고 더 고소해요.";
+      else nt = "색다르게 즐겨보실 수 있어요.";
+      return eunNeun(np.name) + " 어떠세요? " + nt + " 부담 없이 새로운 커피를 경험해 보실 수 있어요.";
+    }
     var diff;
     if (np.line !== chosen.line) {
       var d1 = LINE_DESC[chosen.line] || chosen.line, d2 = LINE_DESC[np.line] || np.line;
@@ -557,6 +614,7 @@
     var tasteTarget = getTasteTarget(a);
     if (tasteTarget) tags.push(tasteTarget);
     if (a.q4 === "디카페인") tags.push("디카페인");
+    if (a.q_milk === "두유") tags.push("두유");
     if (a.q_amount) tags.push(a.q_amount);
     return tags;
   }
@@ -722,27 +780,22 @@
     choiceBox.innerHTML = "";
   }
 
+  /* 이 질문을 건너뛸지 결정 */
+  function shouldSkip(key) {
+    if (key === "q_amount") return answers.q1 !== "핸드드립";
+    if (key === "q_milk") return answers.q1 !== "라떼";
+    if (key === "q_latte") return answers.q1 !== "라떼" || answers.q_milk === "두유";
+    if (key === "q2" || key === "q3") return answers.q1 === "라떼";
+    if (key === "q5") return answers.q2 !== "모름";
+    return false;
+  }
+
   /* 다음 단계로 이동 */
   function nextStep() {
     flowIndex++;
     var key = FLOW[flowIndex];
-
-    // q_amount 는 원두를 직접 사서 내리는 분(q1 === "핸드드립")에게만
-    if (key === "q_amount" && answers.q1 !== "핸드드립") {
-      flowIndex++;
-      key = FLOW[flowIndex];
-    }
-
-    // q5 는 q2 가 "모름" 일 때만
-    if (key === "q5" && answers.q2 !== "모름") {
-      flowIndex++;
-      key = FLOW[flowIndex];
-    }
-
-    if (key === "result") {
-      showResult();
-      return;
-    }
+    while (shouldSkip(key)) { flowIndex++; key = FLOW[flowIndex]; }
+    if (key === "result") { showResult(); return; }
     askQuestion(key);
   }
 
@@ -794,7 +847,7 @@
     img.alt = p.name;
     img.style.width = "100%";
     img.style.height = "100%";
-    img.style.objectFit = "cover";
+    img.style.objectFit = small ? "cover" : "contain";
     img.style.display = "block";
     img.onerror = function () {
       // 이미지가 깨지면 커피잔 이모지 자리표시자로 교체

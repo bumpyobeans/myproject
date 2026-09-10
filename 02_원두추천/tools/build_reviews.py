@@ -14,7 +14,7 @@ reviews.js 가 갱신됩니다.
     python tools\\build_reviews.py
 
 입력 (읽기만 함, 절대 수정하지 않음)
-    - XLSX_PATH : 스마트스토어센터 리뷰 관리 > 엑셀 다운로드 파일
+    - XLSX_PATHS : 스마트스토어센터 리뷰 관리 > 엑셀 다운로드 파일 목록 (여러 개 가능)
 
 출력
     - reviews.js (전역변수 REVIEWS 를 담은 파일. 이 스크립트가 자동 생성하므로
@@ -28,7 +28,10 @@ import re
 import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 02_원두추천
-XLSX_PATH = r"C:\Users\bebeb\Desktop\review_20260906_003018.xlsx"
+XLSX_PATHS = [
+    r"C:\Users\bebeb\Desktop\review_20260906_003018.xlsx",
+    r"C:\Users\bebeb\Desktop\review_20260910_171909.xlsx",
+]
 OUTPUT_PATH = os.path.join(BASE_DIR, "reviews.js")
 
 MAX_PER_PRODUCT = 8
@@ -42,15 +45,17 @@ TAG_KEYWORDS = {
     "라떼": ["라떼", "우유", "두유"],
     "캡슐": ["캡슐", "네스프레소"],
     "콜드브루": ["콜드브루", "더치"],
-    "선물": ["선물"],
-    "여행캠핑": ["캠핑", "여행", "차박", "등산"],
+    "선물": ["선물", "생일", "답례"],
+    "여행캠핑": ["캠핑", "여행", "차박", "등산", "소풍", "피크닉", "나들이", "야외"],
     # q2 (맛 취향)
-    "고소": ["고소", "구수", "묵직", "진한", "찐하"],
-    "균형": ["부드럽", "균형", "데일리", "잔잔"],
+    "고소": ["고소", "구수", "묵직", "진한", "찐하", "꼬소", "꼬숩"],
+    "균형": ["부드럽", "균형", "데일리", "잔잔", "덜달", "덜 단", "안 달", "달지 않"],
     "산뜻한산미": ["산미", "상큼", "새콤", "산뜻"],
     "과실감": ["과일", "베리", "자몽", "살구", "리치"],
     # q4 (카페인)
     "디카페인": ["디카페인", "카페인 없", "카페인이 없"],
+    # 라떼 (두유)
+    "두유": ["두유라떼", "두유 라떼", "락토프리", "유당"],
     # q_amount (원두 구매 용량)
     "100": ["조금씩", "맛보기", "체험"],
     "200": ["혼자", "1인", "한잔씩", "나만"],
@@ -62,9 +67,14 @@ TAG_KEYWORDS = {
 def load_rows():
     import openpyxl
 
-    wb = openpyxl.load_workbook(XLSX_PATH, data_only=True)
-    ws = wb.worksheets[0]
-    rows = list(ws.iter_rows(min_row=2, values_only=True))
+    rows = []
+    for path in XLSX_PATHS:
+        if not os.path.exists(path):
+            print("[경고] 파일이 없어 건너뜁니다: {}".format(path))
+            continue
+        wb = openpyxl.load_workbook(path, data_only=True)
+        ws = wb.worksheets[0]
+        rows.extend(ws.iter_rows(min_row=2, values_only=True))
     return [r for r in rows if r and r[0]]
 
 
@@ -186,7 +196,7 @@ def main():
     total = sum(len(v) for v in final.values())
 
     if total == 0:
-        print("[오류] 조건을 만족하는 후기가 하나도 없습니다. XLSX_PATH를 확인하세요.")
+        print("[오류] 조건을 만족하는 후기가 하나도 없습니다. XLSX_PATHS를 확인하세요.")
         sys.exit(1)
 
     js_text = render_js(final)
