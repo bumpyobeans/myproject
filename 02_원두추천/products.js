@@ -13,12 +13,13 @@
    - method    : 음용 방식 배열
    - scene     : 추천 상황 배열
    - taste     : 맛 키워드 배열 (['다양']이면 옵션에서 여러 맛 중 선택)
-   - flavors   : 맛 옵션 배열 ([{name, taste}, ...]) — 여러 맛 중 고를 수 있는 상품에만 있음
+   - flavors   : 맛 옵션 배열 ([{name, taste, desc?}, ...]) — 여러 맛 중 고를 수 있는 상품에만 있음
    - signature : 시그니처 메뉴 여부 (범표라떼)
    - soyMilk   : 두유 베이스 여부 (두유라떼)
    - canFlavor : 수제 캔커피 맛 이름 (범표라떼 / 두유라떼 / 온아바라 / 맛보기)
    - story     : 메뉴에 얽힌 이야기 (있을 때만)
-   - decaf     : 디카페인 여부
+   - decaf     : 디카페인 여부 (상품 전체가 디카페인)
+   - decafOption : 주문 옵션에 디카페인이 있는 상품 (옵션 이름 힌트, 있을 때만)
    - sample    : 샘플/체험 상품 여부
    - exclude   : 추천 대상에서 제외할지 여부 (업소용 등)
    - priority  : 동점일 때 우선순위 (1~5, 클수록 우선)
@@ -59,6 +60,7 @@ var PRODUCTS = [
     scene: ["집", "사무실", "여행캠핑"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: false,
     exclude: false,
     flavors: [],
@@ -80,6 +82,7 @@ var PRODUCTS = [
     scene: ["집", "사무실"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: false,
     exclude: false,
     flavors: [],
@@ -185,6 +188,7 @@ var PRODUCTS = [
     scene: ["집", "사무실"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: false,
     exclude: false,
     flavors: [],
@@ -271,7 +275,7 @@ var PRODUCTS = [
     decaf: true,
     sample: false,
     exclude: false,
-    flavors: [],
+    flavors: [{ name: "디카페인호랑이-과테말라", taste: "디카페인", desc: "호밀 같은 고소함에 은은한 산미, 풍부한 밸런스. 라이트-미디엄 로스팅. 더치커피·에스프레소 머신에 특히 잘 맞아요." }, { name: "디카페인호랑이-브라질", taste: "디카페인", desc: "조청의 단맛과 옥수수염차의 고소함. 산미가 거의 없고 바디감이 밀도 있어요. 핸드드립·에스프레소 머신에 잘 맞아요." }],
     signature: false,
     soyMilk: false,
     canFlavor: "",
@@ -437,6 +441,7 @@ var PRODUCTS = [
     scene: ["집", "사무실"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: true,
     exclude: false,
     flavors: [],
@@ -521,6 +526,7 @@ var PRODUCTS = [
     scene: ["집", "사무실", "여행캠핑"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: false,
     exclude: false,
     flavors: [],
@@ -584,6 +590,7 @@ var PRODUCTS = [
     scene: ["집", "사무실"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: false,
     exclude: false,
     flavors: [],
@@ -605,6 +612,7 @@ var PRODUCTS = [
     scene: ["집", "사무실"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: false,
     exclude: false,
     flavors: [],
@@ -647,6 +655,7 @@ var PRODUCTS = [
     scene: ["집"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: false,
     exclude: false,
     flavors: [],
@@ -668,6 +677,7 @@ var PRODUCTS = [
     scene: ["집", "여행캠핑"],
     taste: ["다양"],
     decaf: false,
+    decafOption: "디카페인",
     sample: false,
     exclude: false,
     flavors: [],

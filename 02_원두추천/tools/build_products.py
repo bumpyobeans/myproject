@@ -87,8 +87,10 @@ def js_array_of_flavors(flavors):
         return "[]"
     items = []
     for f in flavors:
-        items.append("{{ name: {}, taste: {} }}".format(
-            js_string(f.get("name", "")), js_string(f.get("taste", ""))))
+        item = "name: {}, taste: {}".format(js_string(f.get("name", "")), js_string(f.get("taste", "")))
+        if f.get("desc"):
+            item += ", desc: {}".format(js_string(f.get("desc")))
+        items.append("{ " + item + " }")
     return "[" + ", ".join(items) + "]"
 
 
@@ -127,6 +129,7 @@ def build_product_entries():
             "scene": tag.get("scene", []),
             "taste": tag.get("taste", []),
             "decaf": bool(tag.get("decaf", False)),
+            "decafOption": tag.get("decafOption", ""),
             "sample": bool(tag.get("sample", False)),
             "exclude": bool(tag.get("exclude", False)),
             "flavors": tag.get("flavors", []),
@@ -162,12 +165,13 @@ def render_js(entries):
     lines.append("   - method    : 음용 방식 배열")
     lines.append("   - scene     : 추천 상황 배열")
     lines.append("   - taste     : 맛 키워드 배열 (['다양']이면 옵션에서 여러 맛 중 선택)")
-    lines.append("   - flavors   : 맛 옵션 배열 ([{name, taste}, ...]) — 여러 맛 중 고를 수 있는 상품에만 있음")
+    lines.append("   - flavors   : 맛 옵션 배열 ([{name, taste, desc?}, ...]) — 여러 맛 중 고를 수 있는 상품에만 있음")
     lines.append("   - signature : 시그니처 메뉴 여부 (범표라떼)")
     lines.append("   - soyMilk   : 두유 베이스 여부 (두유라떼)")
     lines.append("   - canFlavor : 수제 캔커피 맛 이름 (범표라떼 / 두유라떼 / 온아바라 / 맛보기)")
     lines.append("   - story     : 메뉴에 얽힌 이야기 (있을 때만)")
-    lines.append("   - decaf     : 디카페인 여부")
+    lines.append("   - decaf     : 디카페인 여부 (상품 전체가 디카페인)")
+    lines.append("   - decafOption : 주문 옵션에 디카페인이 있는 상품 (옵션 이름 힌트, 있을 때만)")
     lines.append("   - sample    : 샘플/체험 상품 여부")
     lines.append("   - exclude   : 추천 대상에서 제외할지 여부 (업소용 등)")
     lines.append("   - priority  : 동점일 때 우선순위 (1~5, 클수록 우선)")
@@ -189,6 +193,8 @@ def render_js(entries):
         lines.append("    scene: {},".format(js_array_of_strings(e["scene"])))
         lines.append("    taste: {},".format(js_array_of_strings(e["taste"])))
         lines.append("    decaf: {},".format("true" if e["decaf"] else "false"))
+        if e["decafOption"]:
+            lines.append("    decafOption: {},".format(js_string(e["decafOption"])))
         lines.append("    sample: {},".format("true" if e["sample"] else "false"))
         lines.append("    exclude: {},".format("true" if e["exclude"] else "false"))
         lines.append("    flavors: {},".format(js_array_of_flavors(e["flavors"])))

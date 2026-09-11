@@ -18,6 +18,8 @@
   var TIGER_TYPES = T.TIGER_TYPES, TIGER_GROUP = T.TIGER_GROUP, SAME_TYPE_PRODUCT = T.SAME_TYPE_PRODUCT, DRIPBAG_SET = T.DRIPBAG_SET, PAIR_RULES = T.PAIR_RULES;
   function getTasteTarget(a) { return T.getTasteTarget(a); }
   function tigerTypeOf(a) { return T.tigerTypeOf(a); }
+  /* q1(디카페인 형태 선택) 또는 q4(일반 흐름 카페인 질문) 어느 쪽으로 디카페인을 원했든 true */
+  function wantsDecaf(a) { return T.wantsDecaf(a); }
 
   /* ----------------------------------------------------------
      0. 질문 정의
@@ -36,8 +38,22 @@
         { label: "라떼·베리에이션을 즐겨요 🥛", value: "라떼", phrase: "라떼나 베리에이션을 즐기신다고 하셔서", ack: "라떼파시군요, 좋아요." },
         { label: "캡슐머신이 있어요 💊", value: "캡슐", phrase: "캡슐머신을 쓰신다고 하셔서", ack: "캡슐머신 있으시면 그거에 맞춰서 골라드려야겠네요." },
         { label: "콜드브루를 마셔요 🧊", value: "콜드브루", phrase: "콜드브루를 찾으신다고 하셔서", ack: "시원하게 콜드브루로 즐기시는군요." },
+        { label: "디카페인을 찾고 있어요 🌙", value: "디카페인", phrase: "디카페인을 찾으신다고 하셔서", ack: "요즘 디카페인 찾으시는 분이 정말 많아요. 원두·드립백·티백·파우더·콜드브루·캔라떼까지 전부 디카페인이 있으니 편한 형태로 골라드릴게요." },
         { label: "선물할 거예요 🎁", value: "선물", phrase: "선물용으로 찾으신다고 하셔서", ack: "선물용이시군요, 받는 분이 부담 없이 좋아할 걸로 찾아볼게요." },
         { label: "여행·캠핑에서 마실 거예요 🏕️", value: "여행캠핑", phrase: "여행이나 캠핑에서 즐기실 거라 하셔서", ack: "여행이나 캠핑에서 마실 커피라니, 낭만 있네요." }
+      ]
+    },
+    q_decaf_form: {
+      text: "디카페인은 어떤 형태가 편하세요?",
+      options: [
+        { label: "원두를 사서 직접 내려요 ☕", value: "원두", phrase: "원두로 직접 내려 드신다고 하셔서", ack: "그럼 디카페인 원두로 골라드릴게요." },
+        { label: "컵에 걸쳐 바로 내리는 드립백 🫗", value: "드립백", phrase: "드립백으로 편하게 드신다고 하셔서", ack: "드립백으로 편하게 내려 드시게 준비할게요." },
+        { label: "물에 우려 마시는 커피티백 🫖", value: "티백", phrase: "티백으로 편하게 우려 드신다고 하셔서", ack: "티백으로 간편하게 즐기실 수 있게 챙겨드릴게요." },
+        { label: "물에 타서 바로 마시는 파우더 🥄", value: "파우더", phrase: "파우더로 간편하게 타 드신다고 하셔서", ack: "파우더는 물에 타기만 하면 돼서 정말 간편해요." },
+        { label: "시원하게 콜드브루 🧊", value: "콜드브루", phrase: "콜드브루로 시원하게 드신다고 하셔서", ack: "시원한 콜드브루로 준비해드릴게요." },
+        { label: "수제 캔라떼로 마실래요 🥛", value: "캔커피", phrase: "캔라떼로 편하게 드신다고 하셔서", ack: "캔라떼는 냉장고에 두고 바로 드시면 돼요." },
+        { label: "캡슐머신이 있어요 💊", value: "캡슐", phrase: "캡슐머신에 쓰신다고 하셔서", ack: "캡슐머신에 바로 쓰실 수 있게 골라드릴게요." },
+        { label: "골고루 맛보고 싶어요 🎁", value: "골고루", phrase: "골고루 맛보고 싶다고 하셔서", ack: "여러 형태가 한 상자에 담긴 컬렉션으로 골라드릴게요." }
       ]
     },
     q_amount: {
@@ -101,9 +117,10 @@
     }
   };
 
-  /* 질문 진행 순서. q_amount 는 조건부(q1 이 "핸드드립" 일 때만),
-     q5 는 조건부(q2 가 "모름" 일 때만) */
-  var FLOW = ["q1", "q_amount", "q_milk", "q_latte", "q2", "q3", "q4", "q5", "result"];
+  /* 질문 진행 순서. q_decaf_form 은 조건부(q1 이 "디카페인" 일 때만),
+     q_amount 는 조건부(q1 이 "핸드드립" 이거나 디카페인+원두일 때만),
+     q5 는 조건부(q2 가 "모름" 일 때만, 디카페인 경로는 항상 건너뜀). 자세한 조건은 shouldSkip() 참고 */
+  var FLOW = ["q1", "q_decaf_form", "q_amount", "q_milk", "q_latte", "q2", "q3", "q4", "q5", "result"];
 
   /* q1 답 -> method 또는 scene 필터 */
   var FILTER_BY_Q1 = {
@@ -136,7 +153,8 @@
     "캡슐": "캡슐머신에 넣는 캡슐",
     "콜드브루": "차갑게 바로 마시는 콜드브루",
     "캔커피": "바로 마시는 수제 캔커피",
-    "선물세트": "포장까지 된 선물세트"
+    "선물세트": "포장까지 된 선물세트",
+    "골고루": "여러 형태를 골고루 담은 컬렉션"
   };
 
   /* 맛 키워드 -> 사람이 읽는 표현 */
@@ -171,6 +189,13 @@
   }
   function eunNeun(word) { return word + (hasJong(word) ? "은" : "는"); }
   function eulReul(word) { return word + (hasJong(word) ? "을" : "를"); }
+  /* "로/으로" 조사: 받침이 없거나 받침이 ㄹ이면 "로", 그 외엔 "으로" (은/는·을/를 과 달리 ㄹ 받침 예외가 있음) */
+  function roEuro(word) {
+    if (!hasJong(word)) return "로";
+    var c = word.charCodeAt(word.length - 1);
+    if (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 === 8) return "로"; // ㄹ 받침
+    return "으로";
+  }
 
   /* 가격을 "9,900원" 형태로 */
   function formatPrice(n) {
@@ -227,13 +252,14 @@
     return null;
   }
 
-  /* 상품 자체가 디카페인이거나, 디카페인 맛 옵션을 가지고 있으면 디카페인 조건 통과 */
+  /* 상품 자체가 디카페인이거나, 디카페인 맛 옵션(칩)이 있거나, 주문 옵션에 디카페인이 있으면 디카페인 조건 통과.
+     q1="디카페인" 전용 흐름과 일반 흐름(q4) 모두 이 판정을 쓴다. */
   function isDecafOk(p) {
-    return p.decaf === true || !!decafFlavorOf(p);
+    return p.decaf === true || !!p.decafOption || !!decafFlavorOf(p);
   }
 
   function filterByDecaf(list, a) {
-    if (a.q4 !== "디카페인") return list;
+    if (!wantsDecaf(a)) return list;
     return list.filter(function (p) { return isDecafOk(p); });
   }
 
@@ -279,6 +305,8 @@
       s += 1;
     }
     if (p.signature === true) s += 2;
+    // 디카페인을 찾을 때, 고른 음용 방식에 맞는 "전용 디카페인 상품"(옵션이 아니라 상품 전체가 디카페인)을 우선
+    if (wantsDecaf(a) && p.decaf === true && passesQ1(p, a.q1)) s += 2;
     s += p.priority * 0.5;
     return s;
   }
@@ -321,11 +349,14 @@
     var candidates = PRODUCTS.filter(function (p) {
       return p.sample === true && !p.exclude && p.stock > 0 && passesQ1(p, a.q1);
     });
+    // 이미 카드에 나온 상품은 제외. 디카페인을 찾으면 디카페인 샘플(컬렉션 등)을 우선
+    candidates = candidates.filter(function (p) { return p.id !== chosen.id && !(newProduct && p.id === newProduct.id); });
+    if (wantsDecaf(a)) {
+      var decafSamples = candidates.filter(isDecafOk);
+      if (decafSamples.length > 0) candidates = decafSamples;
+    }
     if (candidates.length === 0) return null;
-
-    var top = sortByPriority(candidates)[0];
-    if (top.id === chosen.id || (newProduct && top.id === newProduct.id)) return null;
-    return top;
+    return sortByPriority(candidates)[0];
   }
 
   function canByFlavor(name) {
@@ -342,13 +373,98 @@
     return { chosen: chosen, newProduct: newProduct, sampleProduct: sampleProduct, fallback: false, relaxedQ1: false, tasteTarget: getTasteTarget(a), tiger: tigerTypeOf(a) };
   }
 
+  /* 디카페인 후보: 제외/품절 뺀 전체 중 isDecafOk (샘플 상품도 포함 - 컬렉션/캡슐이 여기 걸림) */
+  function decafCandidates() {
+    return PRODUCTS.filter(function (p) { return !p.exclude && p.stock > 0 && isDecafOk(p); });
+  }
+
+  /* q_decaf_form(제형) 값 -> "새로운 커피 경험"으로 보여줄 제형 우선순위 */
+  var DECAF_NEW_LINE_BY_FORM = {
+    "원두": "드립백",
+    "드립백": "티백",
+    "티백": "드립백",
+    "파우더": "티백",
+    "콜드브루": "캔커피",
+    "캔커피": "콜드브루",
+    "캡슐": "드립백",
+    "골고루": "원두"
+  };
+
+  /* 디카페인 컬렉션(동결건조 스틱·캡슐·드립백·티백·콜드브루가 한 상자) 상품 id */
+  var DECAF_COLLECTION_ID = "12738150675";
+
+  /* list 중 line 이 일치하는 것에서 sample 아닌 것 우선, 없으면 sample 포함, priority 1등 */
+  function pickFromLinePreferNonSample(list, line, excludeId) {
+    var pool = list.filter(function (p) { return p.line === line && p.id !== excludeId; });
+    if (pool.length === 0) return null;
+    var nonSample = pool.filter(function (p) { return !p.sample; });
+    var finalPool = nonSample.length > 0 ? nonSample : pool;
+    return sortByPriority(finalPool)[0];
+  }
+
+  /* q1="디카페인" 전용 추천: 형태(q_decaf_form)에 맞는 디카페인 상품을 오늘의 추천으로,
+     다른 형태의 디카페인 상품을 새로운 경험으로, 디카페인 컬렉션을 샘플로 보여준다. */
+  function recommendDecaf(a) {
+    var candidates = decafCandidates();
+    if (candidates.length === 0) return null;
+
+    var form = a.q_decaf_form;
+    var chosen;
+    if (form === "골고루") {
+      chosen = productById(DECAF_COLLECTION_ID) || sortByPriority(candidates)[0];
+    } else {
+      chosen = pickFromLinePreferNonSample(candidates, form, null) || sortByPriority(candidates)[0];
+    }
+
+    var newLine = DECAF_NEW_LINE_BY_FORM[form];
+    var newProduct = newLine ? pickFromLinePreferNonSample(candidates, newLine, chosen.id) : null;
+    if (!newProduct) {
+      var others = candidates.filter(function (p) { return p.line !== chosen.line && p.id !== chosen.id; });
+      var nonSampleOthers = others.filter(function (p) { return !p.sample; });
+      var pool = nonSampleOthers.length > 0 ? nonSampleOthers : others;
+      newProduct = pool.length > 0 ? sortByPriority(pool)[0] : null;
+    }
+    if (!newProduct) {
+      var any = candidates.filter(function (p) { return p.id !== chosen.id; });
+      newProduct = any.length > 0 ? sortByPriority(any)[0] : chosen;
+    }
+
+    var collection = productById(DECAF_COLLECTION_ID);
+    var sampleProduct = (collection && collection.id !== chosen.id && (!newProduct || collection.id !== newProduct.id)) ? collection : null;
+
+    return {
+      chosen: chosen,
+      newProduct: newProduct,
+      sampleProduct: sampleProduct,
+      fallback: false,
+      relaxedQ1: false,
+      tasteTarget: getTasteTarget(a),
+      tiger: tigerTypeOf(a),
+      decafForm: form
+    };
+  }
+
   function recommend(a) {
     if (a.q1 === "라떼") { var _r = recommendLatte(a); if (_r) return _r; }
+    if (a.q1 === "디카페인") { var _dr = recommendDecaf(a); if (_dr) return _dr; }
     var tasteTarget = getTasteTarget(a);
     var base = baseCandidates();
     var afterQ1 = filterByQ1(base, a);
     var afterAmount = filterByAmount(afterQ1, a);
     var afterDecaf = filterByDecaf(afterAmount, a);
+    if (afterDecaf.length === 0 && wantsDecaf(a)) {
+      // 디카페인은 용량 종류가 적어서(원두는 500g 뿐) 용량 조건을 풀고 다시 찾는다
+      var decafAnyAmount = filterByDecaf(afterQ1, a);
+      if (decafAnyAmount.length > 0) {
+        afterDecaf = decafAnyAmount;
+      } else {
+        // 샘플 상품만 디카페인인 제형(예: 캡슐 6종 10개입)은 샘플도 오늘의 추천 후보로 올린다
+        var decafSamples = PRODUCTS.filter(function (p) {
+          return p.sample === true && !p.exclude && p.stock > 0 && passesQ1(p, a.q1) && isDecafOk(p) && p.id !== DECAF_COLLECTION_ID;
+        });
+        if (decafSamples.length > 0) afterDecaf = decafSamples;
+      }
+    }
     var finalPool = filterByAcidAvoid(afterDecaf, a);
 
     var fallback = false;
@@ -431,10 +547,50 @@
     return labels.join(", ");
   }
 
+  /* q1="디카페인" 전용 추천 이유 (제형 설명 + 옵션 안내 + 원두/그 외 제형 설명 + 골고루 설명) */
+  function buildDecafMainReason(a, p) {
+    var parts = [];
+    var formDesc = LINE_DESC[a.q_decaf_form] || a.q_decaf_form || "";
+    if (formDesc) {
+      parts.push("디카페인을 찾으신다고 하셔서 " + formDesc + roEuro(formDesc) + " 골랐어요.");
+    } else {
+      parts.push("디카페인을 찾으신다고 하셔서 골랐어요.");
+    }
+
+    if (p.decafOption) {
+      parts.push("주문할 때 옵션에서 '디카페인'을 골라 주세요.");
+    }
+
+    var decafFlavor = decafFlavorOf(p);
+    if (decafFlavor) {
+      parts.push("범표원두 디카페인 원두는 CO₂ 공법(초임계 이산화탄소 추출)으로 카페인을 빼서 향미가 살아 있어요. 과테말라와 브라질 중 고를 수 있어요.");
+      if (a.q2 === "고소") {
+        parts.push("고소하고 묵직한 맛을 좋아하셔서 조청의 단맛과 옥수수염차의 고소함이 있는 브라질을 골라 두었어요. 산미가 거의 없어요.");
+      } else {
+        parts.push("호밀 같은 고소함에 은은한 산미가 있는 과테말라를 골라 두었어요. 추출 세팅을 맞출수록 매력이 살아나는 원두예요.");
+      }
+      if (a.q_amount && a.q_amount !== "500") {
+        parts.push("디카페인 원두는 500g 으로 준비돼요.");
+      }
+    } else {
+      parts.push("모든 디카페인 제품은 과테말라 디카페인 원두로 만들어요. 호밀 같은 고소함에 은은한 산미가 있어요.");
+    }
+
+    if (a.q_decaf_form === "골고루") {
+      parts.push("동결건조 스틱·캡슐·드립백·티백·콜드브루가 한 상자에 들어 있어 어떤 형태가 나한테 맞는지 찾기 좋아요.");
+    }
+
+    return parts.join(" ");
+  }
+
   function buildMainReason(a, p, fallback, relaxedQ1) {
     var parts = [];
     var gift = a.q1 === "선물";
     var latte = a.q1 === "라떼";
+
+    if (a.q1 === "디카페인") {
+      return buildDecafMainReason(a, p);
+    }
 
     if (latte) {
       var lparts = ["라떼를 즐기신다고 하셔서 저희 수제 캔커피로 골랐어요."];
@@ -447,7 +603,7 @@
       if (p.signature === true) lparts.push("범표원두를 세상에 알린 시그니처 메뉴예요. 궁극의 고소함이 그대로 담겨 있어요.");
       if (p.story) lparts.push(p.story);
       lparts.push("용량은 350ml 두 샷, 500ml 세 샷이에요. 용량이 커지면 샷도 그만큼 늘어서 진하기는 비슷하니, 마실 양으로 고르시면 돼요. 상품 페이지 옵션에서 선택할 수 있어요.");
-      if (a.q4 === "디카페인") {
+      if (wantsDecaf(a)) {
         lparts.push("카페인은 디카페인으로 원하셔서요. 범표원두 캔커피는 전부 디카페인으로도 주문할 수 있어요. 상품 페이지 옵션에서 디카페인을 고르시면 돼요.");
         if (p.signature === true) lparts.push("디카페인만 찾으시던 단골손님도 이 고소함에 반해 다시 오시더라고요.");
       }
@@ -472,6 +628,9 @@
     if (a.q_amount && extractWeightG(p) === parseInt(a.q_amount, 10)) {
       var pAmt = phraseOf("q_amount", a.q_amount);
       if (pAmt) parts.push(pAmt + " 그에 맞는 용량으로 준비했어요.");
+    } else if (a.q_amount && wantsDecaf(a) && p.decaf === true && extractWeightG(p)) {
+      // 디카페인 원두는 500g 한 가지뿐이라 원하신 용량과 다를 수 있음을 솔직하게
+      parts.push("디카페인 원두는 " + extractWeightG(p) + "g 으로 준비돼요.");
     }
 
     // 맛 취향(q2 / q5)
@@ -511,13 +670,15 @@
     }
 
     // 카페인(q4)
-    if (a.q4 === "디카페인") {
+    if (wantsDecaf(a)) {
       if (p.decaf === true) {
         parts.push("카페인은 디카페인으로 원하셔서 디카페인 상품만 골랐어요.");
       } else {
-        var decafFlavor = decafFlavorOf(p);
-        if (decafFlavor) {
-          parts.push("카페인은 디카페인으로 원하셔서 " + decafFlavor.name + " 맛을 골라 두었어요.");
+        var decafFlavor2 = decafFlavorOf(p);
+        if (decafFlavor2) {
+          parts.push("카페인은 디카페인으로 원하셔서 " + decafFlavor2.name + " 맛을 골라 두었어요.");
+        } else if (p.decafOption) {
+          parts.push("카페인은 디카페인으로 원하셔서 주문할 때 옵션에서 '디카페인'을 골라 주세요.");
         } else {
           parts.push("디카페인으로 원하셨는데 이 조건에 맞는 디카페인 상품은 아직 없어요.");
         }
@@ -525,6 +686,12 @@
     }
 
     return parts.join(" ");
+  }
+
+  /* 제품군 설명. 디카페인 컬렉션은 line 이 드립백이지만 여러 형태가 섞인 상품이라 따로 설명 */
+  function lineDescOf(p) {
+    if (p.id === DECAF_COLLECTION_ID) return "여러 형태를 골고루 담은 컬렉션";
+    return LINE_DESC[p.line] || p.line;
   }
 
   function buildNewReason(a, np, chosen) {
@@ -536,9 +703,17 @@
       else nt = "색다르게 즐겨보실 수 있어요.";
       return eunNeun(np.name) + " 어떠세요? " + nt + " 부담 없이 새로운 커피를 경험해 보실 수 있어요.";
     }
+    if (a.q1 === "디카페인") {
+      var dd1 = lineDescOf(chosen), dd2 = lineDescOf(np);
+      var dtext = eunNeun(np.name) + " 어떠세요? 오늘의 추천이 " + dd1 + (hasJong(dd1) ? "이라면" : "라면") + ", 이건 " + dd2 + (hasJong(dd2) ? "이에요." : "예요.") + " 똑같이 카페인 걱정 없어요.";
+      if (np.decafOption) {
+        dtext += " 주문할 때 옵션에서 '디카페인'을 골라 주세요.";
+      }
+      return dtext;
+    }
     var diff;
     if (np.line !== chosen.line) {
-      var d1 = LINE_DESC[chosen.line] || chosen.line, d2 = LINE_DESC[np.line] || np.line;
+      var d1 = lineDescOf(chosen), d2 = lineDescOf(np);
       diff = "오늘의 추천이 " + d1 + (hasJong(d1) ? "이라면" : "라면") + ", 이건 " + d2 + (hasJong(d2) ? "이에요." : "예요.");
     } else if (!sameTasteSet(np.taste, chosen.taste)) {
       diff = "오늘의 추천이 " + tasteLabelOf(chosen) + " 커피라면, 이건 " + tasteLabelOf(np) + " 커피예요.";
@@ -547,10 +722,12 @@
     }
     var text = eunNeun(np.name) + " 어떠세요? " + diff + " 부담 없이 새로운 커피를 경험해 보실 수 있어요.";
 
-    if (a.q4 === "디카페인" && np.decaf !== true) {
+    if (wantsDecaf(a) && np.decaf !== true) {
       var decafFlavor = decafFlavorOf(np);
       if (decafFlavor) {
         text += " " + decafFlavor.name + " 맛으로 골라 두었어요.";
+      } else if (np.decafOption) {
+        text += " 주문할 때 옵션에서 '디카페인'을 골라 주세요.";
       }
     }
 
@@ -581,12 +758,29 @@
     var chipRow = document.createElement("div");
     chipRow.className = "flavor-chips";
 
-    var decafWanted = answers.q4 === "디카페인";
-    var defaultIndex = 0;
-    for (var i = 0; i < p.flavors.length; i++) {
-      if (decafWanted && p.flavors[i].taste === "디카페인") { defaultIndex = i; break; }
-      if (!decafWanted && p.flavors[i].taste === rec.tasteTarget) { defaultIndex = i; break; }
+    var decafWanted = wantsDecaf(answers);
+    var hasBrazilGuatemala = false;
+    for (var gi = 0; gi < p.flavors.length; gi++) {
+      if (p.flavors[gi].name.indexOf("브라질") !== -1 || p.flavors[gi].name.indexOf("과테말라") !== -1) { hasBrazilGuatemala = true; break; }
     }
+
+    var defaultIndex = 0;
+    if (decafWanted && hasBrazilGuatemala) {
+      // 디카페인 원두(과테말라/브라질) - 고소하거나 신맛을 피하고 싶으면 브라질, 그 외엔 과테말라
+      var preferBrazil = (answers.q2 === "고소" || answers.q3 === "신맛회피");
+      var wantName = preferBrazil ? "브라질" : "과테말라";
+      for (var i = 0; i < p.flavors.length; i++) {
+        if (p.flavors[i].name.indexOf(wantName) !== -1) { defaultIndex = i; break; }
+      }
+    } else {
+      for (var j2 = 0; j2 < p.flavors.length; j2++) {
+        if (decafWanted && p.flavors[j2].taste === "디카페인") { defaultIndex = j2; break; }
+        if (!decafWanted && p.flavors[j2].taste === rec.tasteTarget) { defaultIndex = j2; break; }
+      }
+    }
+
+    var descEl = document.createElement("div");
+    descEl.className = "flavor-desc";
 
     p.flavors.forEach(function (flavor, i) {
       var chip = document.createElement("button");
@@ -597,20 +791,35 @@
         var chips = chipRow.querySelectorAll(".flavor-chip");
         for (var j = 0; j < chips.length; j++) chips[j].classList.remove("active");
         chip.classList.add("active");
+        descEl.textContent = flavor.desc || "";
+        descEl.hidden = !flavor.desc;
         BP.track("chip", { product_id: p.id, flavor: flavor.name });
       });
       chipRow.appendChild(chip);
     });
 
     box.appendChild(chipRow);
+
+    var defaultFlavor = p.flavors[defaultIndex];
+    descEl.textContent = (defaultFlavor && defaultFlavor.desc) || "";
+    descEl.hidden = !(defaultFlavor && defaultFlavor.desc);
+    box.appendChild(descEl);
+
     return box;
   }
 
-  /* 상품에 flavors 가 있으면 맛 칩을, 없으면 기존 텍스트 안내를 프래그먼트에 붙인다. */
+  /* 상품에 flavors 가 있으면 맛 칩을, 없으면 기존 텍스트 안내(또는 디카페인 옵션 안내)를 프래그먼트에 붙인다. */
   function appendTasteOption(frag, p, rec) {
     var picker = buildFlavorPicker(p, rec);
     if (picker) {
       frag.appendChild(picker);
+      return;
+    }
+    if (p.decafOption && wantsDecaf(answers)) {
+      var decafHintEl = document.createElement("div");
+      decafHintEl.className = "prod-hint";
+      decafHintEl.textContent = "🌙 주문 옵션에서 '디카페인'을 골라 주세요";
+      frag.appendChild(decafHintEl);
       return;
     }
     var hint = buildOptionHint(p);
@@ -622,13 +831,30 @@
     }
   }
 
-  /* 지금 고객 답변을 리뷰 태그와 같은 값으로 정리 (q1/q2 목표맛/q4/q_amount) */
+  /* q1="디카페인" 일 때, 제형(q_decaf_form)에 맞춰 일반 흐름의 q1 값과 같은 성격의 태그로 바꿔준다 */
+  var DECAF_FORM_TO_Q1_TAG = {
+    "원두": "핸드드립",
+    "드립백": "아메리카노간편",
+    "티백": "아메리카노간편",
+    "파우더": "아메리카노간편",
+    "콜드브루": "콜드브루",
+    "캔커피": "라떼",
+    "캡슐": "캡슐"
+    /* "골고루" 는 대응하는 태그 없음 */
+  };
+
+  /* 지금 고객 답변을 리뷰 태그와 같은 값으로 정리 (q1/q2 목표맛/디카페인 여부/q_amount) */
   function currentSituationTags(a) {
     var tags = [];
-    if (a.q1) tags.push(a.q1);
+    if (a.q1 === "디카페인") {
+      var formTag = DECAF_FORM_TO_Q1_TAG[a.q_decaf_form];
+      if (formTag) tags.push(formTag);
+    } else if (a.q1) {
+      tags.push(a.q1);
+    }
     var tasteTarget = getTasteTarget(a);
     if (tasteTarget) tags.push(tasteTarget);
-    if (a.q4 === "디카페인") tags.push("디카페인");
+    if (wantsDecaf(a)) tags.push("디카페인");
     if (a.q_milk === "두유") tags.push("두유");
     if (a.q_amount) tags.push(a.q_amount);
     return tags;
@@ -712,6 +938,29 @@
     return box;
   }
 
+  /* "디카페인, 이런 형태로도 있어요" 타일에 쓸 대표 상품들.
+     line 순서(원두→드립백→티백→파우더→콜드브루→캔커피→캡슐)로 각 1개씩,
+     이미 오늘의 추천/새로운 경험/샘플로 나온 상품은 뺀다. */
+  var DECAF_TILE_LINES = ["원두", "드립백", "티백", "파우더", "콜드브루", "캔커피", "캡슐"];
+  function decafFormProducts(rec, a) {
+    var excludeIds = {};
+    if (rec.chosen) excludeIds[rec.chosen.id] = true;
+    if (rec.newProduct) excludeIds[rec.newProduct.id] = true;
+    if (rec.sampleProduct) excludeIds[rec.sampleProduct.id] = true;
+
+    var candidates = decafCandidates();
+    var tiles = [];
+    for (var i = 0; i < DECAF_TILE_LINES.length; i++) {
+      var line = DECAF_TILE_LINES[i];
+      var pool = candidates.filter(function (p) { return p.line === line && !excludeIds[p.id]; });
+      if (pool.length === 0) continue;
+      var nonSample = pool.filter(function (p) { return !p.sample; });
+      var finalPool = nonSample.length > 0 ? nonSample : pool;
+      tiles.push(sortByPriority(finalPool)[0]);
+    }
+    return tiles;
+  }
+
   /* ----------------------------------------------------------
      4. 화면 그리기
      ---------------------------------------------------------- */
@@ -720,6 +969,8 @@
   if (typeof module !== "undefined" && module.exports) {
     module.exports = {
       recommend: recommend,
+      recommendDecaf: recommendDecaf,
+      decafFormProducts: decafFormProducts,
       buildMainReason: buildMainReason,
       buildNewReason: buildNewReason,
       buildOptionHint: buildOptionHint,
@@ -815,11 +1066,19 @@
 
   /* 이 질문을 건너뛸지 결정 */
   function shouldSkip(key) {
-    if (key === "q_amount") return answers.q1 !== "핸드드립";
+    var decaf = answers.q1 === "디카페인";
+    if (key === "q_decaf_form") return !decaf;
+    if (key === "q_amount") return !(answers.q1 === "핸드드립" || (decaf && answers.q_decaf_form === "원두"));
     if (key === "q_milk") return answers.q1 !== "라떼";
     if (key === "q_latte") return answers.q1 !== "라떼" || answers.q_milk === "두유";
-    if (key === "q2" || key === "q3") return answers.q1 === "라떼";
-    if (key === "q5") return answers.q2 !== "모름";
+    if (key === "q2") {
+      if (answers.q1 === "라떼") return true;
+      if (decaf) return answers.q_decaf_form !== "원두";
+      return false;
+    }
+    if (key === "q3") return answers.q1 === "라떼" || decaf;
+    if (key === "q4") return decaf;
+    if (key === "q5") return answers.q2 !== "모름" || decaf;
     return false;
   }
 
@@ -1082,6 +1341,55 @@
     return box;
   }
 
+  /* "디카페인, 이런 형태로도 있어요" - 형태별 대표 상품을 2열 타일로 보여준다 */
+  function buildDecafFormsBlock(rec) {
+    if (!wantsDecaf(answers)) return null;
+    var tiles = decafFormProducts(rec, answers);
+    if (tiles.length === 0) return null;
+
+    var box = document.createElement("div");
+    box.className = "decaf-forms-card";
+
+    box.appendChild(sectionHeaderEl("🌙", "디카페인, 이런 형태로도 있어요", "형태만 다르고 전부 카페인 걱정 없는 커피예요", ""));
+
+    var grid = document.createElement("div");
+    grid.className = "decaf-grid";
+
+    tiles.forEach(function (p) {
+      var tile = document.createElement("a");
+      tile.className = "decaf-tile";
+      tile.href = p.url || "#";
+      tile.target = "_blank";
+      tile.rel = "noopener";
+
+      tile.appendChild(productImageEl(p, true));
+
+      var lineEl = document.createElement("div");
+      lineEl.className = "decaf-tile-line";
+      lineEl.textContent = p.line;
+      tile.appendChild(lineEl);
+
+      var nameEl = document.createElement("div");
+      nameEl.className = "decaf-tile-name";
+      nameEl.textContent = p.name;
+      tile.appendChild(nameEl);
+
+      var priceEl = document.createElement("div");
+      priceEl.className = "decaf-tile-price";
+      priceEl.textContent = formatPrice(p.price);
+      tile.appendChild(priceEl);
+
+      tile.addEventListener("click", function () {
+        BP.track("shop_click", { product_id: p.id, name: p.name, position: "decaf_form" });
+      });
+
+      grid.appendChild(tile);
+    });
+
+    box.appendChild(grid);
+    return box;
+  }
+
   function buildShareBlock(rec) {
     var box = document.createElement("div");
     box.className = "share-card";
@@ -1301,6 +1609,14 @@
       card.appendChild(sampleEl);
     }
 
+    var decafFormsEl = buildDecafFormsBlock(rec);
+    if (decafFormsEl) {
+      var divider3 = document.createElement("div");
+      divider3.className = "result-divider";
+      card.appendChild(divider3);
+      card.appendChild(decafFormsEl);
+    }
+
     card.appendChild(buildMapBlock(rec));
     card.appendChild(buildShareBlock(rec));
 
@@ -1319,7 +1635,8 @@
       tiger: rec.tiger,
       friend_type: friendType,
       pair: (friendType && pairOf(rec.tiger, friendType) || {}).name || null,
-      map_id: joinMapId || null
+      map_id: joinMapId || null,
+      decaf_form: answers.q_decaf_form || null
     });
 
     var tInfo = TIGER_TYPES[rec.tiger] || { emoji: "🐯" };

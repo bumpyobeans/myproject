@@ -37,8 +37,14 @@ var BP_TYPES = (function () {
     return "균형";
   }
 
+  /* q1(디카페인 형태 선택 흐름) 또는 q4(일반 흐름의 카페인 질문) 어느 쪽이든
+     디카페인을 원하면 true. app.js 와 types.js 양쪽에서 같은 기준으로 쓴다. */
+  function wantsDecaf(a) {
+    return a.q1 === "디카페인" || a.q4 === "디카페인";
+  }
+
   function tigerTypeOf(a) {
-    if (a.q4 === "디카페인") return "디카페인호랑이";
+    if (wantsDecaf(a)) return "디카페인호랑이";
     var t = getTasteTarget(a);
     if (t === "고소") return a.q3 === "쓴맛회피" ? "조선호랑이" : "인도호랑이";
     if (t === "균형") return "호랑이형님";
@@ -58,6 +64,6 @@ var BP_TYPES = (function () {
     return { key: key, name: rule.name, score: rule.score, desc: rule.desc, productId: productId };
   }
 
-  return { TIGER_TYPES: TIGER_TYPES, TIGER_GROUP: TIGER_GROUP, SAME_TYPE_PRODUCT: SAME_TYPE_PRODUCT, DRIPBAG_SET: DRIPBAG_SET, PAIR_RULES: PAIR_RULES, getTasteTarget: getTasteTarget, tigerTypeOf: tigerTypeOf, pairRule: pairRule };
+  return { TIGER_TYPES: TIGER_TYPES, TIGER_GROUP: TIGER_GROUP, SAME_TYPE_PRODUCT: SAME_TYPE_PRODUCT, DRIPBAG_SET: DRIPBAG_SET, PAIR_RULES: PAIR_RULES, getTasteTarget: getTasteTarget, tigerTypeOf: tigerTypeOf, pairRule: pairRule, wantsDecaf: wantsDecaf };
 })();
 if (typeof module !== "undefined" && module.exports) { module.exports = BP_TYPES; }
