@@ -1410,7 +1410,7 @@
     btn.addEventListener("click", function () {
       var url = location.origin + location.pathname;
       if (location.protocol === "file:") {
-        url = "https://beompyo-wondu-chucheon.vercel.app";
+        url = "https://bumpyobeans.shop";
       }
       url += (url.indexOf("?") === -1 ? "?" : "&") + "src=friend";
       url += "&from=" + encodeURIComponent(rec.tiger);

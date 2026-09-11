@@ -1,9 +1,9 @@
 # HANDOFF — 범표원두 원두추천 프로젝트
 
-마지막 업데이트: 2026-09-11 (8일차, 디카페인 제형 흐름 작업 중)
+마지막 업데이트: 2026-09-12 (9일차, 개인 도메인 bumpyobeans.shop 연결)
 작업 폴더: `C:\Users\bebeb\OneDrive - 범표원두\★.김현정\claude_2026`
 git 브랜치: `update-settings` (마지막 커밋 `db098f4`, 작업 트리 깨끗함. push 안 됨. `03_수서점상권분석/`은 다른 세션 것 — untracked로 두기)
-실서비스: **https://beompyo-wondu-chucheon.vercel.app** (`db098f4`까지 배포 완료)
+실서비스: **https://bumpyobeans.shop** (개인 도메인, 가비아 A `@`→`76.76.21.21`, 만료 2027-02). 예전 주소 https://beompyo-wondu-chucheon.vercel.app 도 계속 동작
 Supabase: 프로젝트 `dash board` (ref `pwwerrxitfesworulijr`, 서울, 무료). 표 4개 만들어져 있고 기록 쌓이는 중
 
 ---
@@ -81,6 +81,9 @@ Supabase: 프로젝트 `dash board` (ref `pwwerrxitfesworulijr`, 서울, 무료)
 5. 셀럽 방문 스토리(전미도·김온아·곽민정 사진)는 **초상권 동의 확인 전이라 보류**. 이름 없는 문장 하나만("디카페인만 찾으시던 단골손님도…", `54d0d93`)
 
 전부 브라우저(5501)에서 주인·친구·지도 흐름 끝까지 확인, 배포·커밋 완료.
+
+### 9/12 — 개인 도메인 bumpyobeans.shop 연결 (9일차, 배포 완료)
+놀고 있던 가비아 도메인 `bumpyobeans.shop`(2027-02 만료)을 원두추천 서비스에 붙임. Vercel 프로젝트 Settings→Domains 에 루트 도메인 추가(www 리디렉션 체크 해제), 가비아 DNS 는 "도메인 연결" 서비스가 잡고 있던 옛 네이버 IP 레코드(`@`/`www`/`m` → 125.209.230.216)를 도메인 연결 페이지에서 해제한 뒤 `A @ 76.76.21.21` 한 줄만 남김. https 인증서는 Vercel 이 자동 발급. 앱 안 옛 주소 5곳(app.js 공유 URL, index.html og:image/og:url/twitter:image, map.html og:image)을 `https://bumpyobeans.shop` 으로 교체 후 배포·커밋. www 는 Vercel 에 안 넣었음(필요하면 도메인 추가 + 루트로 리디렉션).
 
 ### 9/11 — 디카페인 제형 선택 흐름 (8일차, 커밋 `db098f4`·배포 완료)
 사용자: "디카페인 찾는 사람이 많다. 원두·드립백·커피티백·파우더·콜드브루 전부 디카페인이 있으니 제형에 따라 고르게 도와달라." 확인해 준 사실: 커피티백 3종·파우더 7개입/스틱 20개입/리필팩 22개입·미니 콜드브루·호환캡슐 10개입에 디카페인 옵션 있음, 디카페인 원두 500g 2종 = 과테말라/브라질, 그 외 디카페인 제품은 모두 과테말라 원두. (콜드브루 500ml 도 옵션 있다고 가정 — 미확인)
@@ -317,6 +320,6 @@ python 02_원두추천\tools\build_reviews.py
 cd 02_원두추천
 vercel --prod --yes
 ```
-끝에 `readyState: READY` 가 나오면 성공. 확인: `curl -s https://beompyo-wondu-chucheon.vercel.app/app.js | grep 특정문자열`
+끝에 `readyState: READY` 가 나오면 성공. 확인: `curl -s https://bumpyobeans.shop/app.js | grep 특정문자열`
 
 커밋 메시지 끝에 `Co-Authored-By: Claude ... <noreply@anthropic.com>` 관례(세션마다 모델명 다름).
