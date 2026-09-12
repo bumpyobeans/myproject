@@ -1,0 +1,205 @@
+:root {
+  color-scheme: light;
+  --fg: #111;
+  --fg-muted: #666;
+  --bg: #fff;
+  --border: #ddd;
+  --accent: #111;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, "Pretendard", "Noto Sans KR", sans-serif;
+  line-height: 1.7;
+  word-break: keep-all;
+  overflow-x: hidden;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px 60px;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+}
+
+/* 헤더 / 내비게이션 */
+.site-header {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px 16px;
+}
+
+.site-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  text-decoration: none;
+  display: inline-block;
+  color: var(--fg);
+}
+
+.site-tagline {
+  color: var(--fg-muted);
+  font-size: 0.95rem;
+  margin: 0 0 18px;
+}
+
+.site-nav {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.site-nav a {
+  text-decoration: none;
+  color: var(--fg-muted);
+}
+
+.site-nav a:hover {
+  color: var(--fg);
+}
+
+/* 카테고리 알약 */
+.pill-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 20px 0 32px;
+}
+
+.pill {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+.pill:hover {
+  border-color: var(--accent);
+}
+
+.pill.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* 글 목록 */
+.post-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.post-list li {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.post-list li:first-child {
+  padding-top: 0;
+}
+
+.post-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.post-meta {
+  color: var(--fg-muted);
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.post-meta a {
+  text-decoration: none;
+  color: var(--fg-muted);
+}
+
+.post-description {
+  color: #333;
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.empty {
+  color: var(--fg-muted);
+  padding: 20px 0;
+}
+
+/* 글 상세 */
+article h1 {
+  font-size: 1.6rem;
+  margin: 0 0 8px;
+}
+
+.article-meta {
+  color: var(--fg-muted);
+  font-size: 0.85rem;
+  margin-bottom: 28px;
+}
+
+.article-meta a {
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+
+article .content h2 {
+  font-size: 1.25rem;
+  margin-top: 2em;
+}
+
+article .content p {
+  margin: 1em 0;
+}
+
+article .content a {
+  text-decoration: underline;
+}
+
+/* 푸터 */
+.site-footer {
+  max-width: 720px;
+  margin: 40px auto 0;
+  padding: 20px 20px 40px;
+  border-top: 1px solid var(--border);
+  color: var(--fg-muted);
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.site-footer a {
+  color: var(--fg-muted);
+}

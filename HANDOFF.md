@@ -1,9 +1,10 @@
 # HANDOFF — 범표원두 원두추천 프로젝트
 
-마지막 업데이트: 2026-09-12 (9일차, 개인 도메인 bumpyobeans.shop 연결)
+마지막 업데이트: 2026-09-12 (9일차, 개인 도메인 연결 + 범표원두 노트 사이트 신설)
 작업 폴더: `C:\Users\bebeb\OneDrive - 범표원두\★.김현정\claude_2026`
 git 브랜치: `update-settings` (마지막 커밋 `db098f4`, 작업 트리 깨끗함. push 안 됨. `03_수서점상권분석/`은 다른 세션 것 — untracked로 두기)
-실서비스: **https://bumpyobeans.shop** (개인 도메인, 가비아 A `@`→`76.76.21.21`, 만료 2027-02). 예전 주소 https://beompyo-wondu-chucheon.vercel.app 도 계속 동작
+실서비스(원두추천): **https://coffee.bumpyobeans.shop** (Vercel `beompyo-wondu-chucheon`, 가비아 CNAME `coffee`→`891ec0fa2470f8f3.vercel-dns-017.com`). 예전 주소 https://beompyo-wondu-chucheon.vercel.app 도 계속 동작
+노트 사이트: **https://bumpyobeans.shop** (Vercel `bumpyo-note`, 폴더 `05_범표노트/`, 가비아 A `@`→`76.76.21.21`). 도메인 만료 2027-02, 1월쯤 가비아에서 연장 여부 결정
 Supabase: 프로젝트 `dash board` (ref `pwwerrxitfesworulijr`, 서울, 무료). 표 4개 만들어져 있고 기록 쌓이는 중
 
 ---
@@ -82,8 +83,10 @@ Supabase: 프로젝트 `dash board` (ref `pwwerrxitfesworulijr`, 서울, 무료)
 
 전부 브라우저(5501)에서 주인·친구·지도 흐름 끝까지 확인, 배포·커밋 완료.
 
-### 9/12 — 개인 도메인 bumpyobeans.shop 연결 (9일차, 배포 완료)
-놀고 있던 가비아 도메인 `bumpyobeans.shop`(2027-02 만료)을 원두추천 서비스에 붙임. Vercel 프로젝트 Settings→Domains 에 루트 도메인 추가(www 리디렉션 체크 해제), 가비아 DNS 는 "도메인 연결" 서비스가 잡고 있던 옛 네이버 IP 레코드(`@`/`www`/`m` → 125.209.230.216)를 도메인 연결 페이지에서 해제한 뒤 `A @ 76.76.21.21` 한 줄만 남김. https 인증서는 Vercel 이 자동 발급. 앱 안 옛 주소 5곳(app.js 공유 URL, index.html og:image/og:url/twitter:image, map.html og:image)을 `https://bumpyobeans.shop` 으로 교체 후 배포·커밋. www 는 Vercel 에 안 넣었음(필요하면 도메인 추가 + 루트로 리디렉션).
+### 9/12 — 개인 도메인 연결 + 범표원두 노트 사이트 (9일차, 배포·커밋 완료)
+놀고 있던 가비아 도메인 `bumpyobeans.shop`(2027-02 만료)을 처음엔 원두추천에 붙였다가, 사용자가 "도메인을 추천 하나에만 쓰긴 아깝다, 커피 수다·가맹점·입점·프로젝트 이야기를 쓰는 나만의 노트로 만들고 싶다(공개/비공개 구분, AI 검색 잘 되게)"고 해서 구조를 바꿈. 최종: 루트 = 노트 사이트(`bumpyo-note`), `coffee.` 서브도메인 = 원두추천. 가비아 DNS 는 "도메인 연결" 서비스가 잡고 있던 옛 네이버 IP 레코드(`@`/`www`/`m`)를 도메인 연결 페이지에서 해제한 뒤 `A @ 76.76.21.21` + `CNAME coffee → 891ec0fa2470f8f3.vercel-dns-017.com` 두 줄만 남김. https 인증서는 Vercel 자동. 원두추천 안 옛 주소 5곳(app.js 공유 URL, index.html og:image/og:url/twitter:image, map.html og:image)은 `https://coffee.bumpyobeans.shop` 으로 교체 후 배포. 루트 도메인은 Vercel 화면(bumpyo-note → Settings → Domains → Add Existing → Move) 으로 옮김. `vercel domains add` 는 자동 모드 분류기가 막아서 도메인 추가/이동은 사용자가 Vercel 화면에서 직접 함.
+
+**노트 사이트 `05_범표노트/`** — Astro 5 정적 사이트(Sonnet 서브에이전트가 뼈대 작성, 브라우저 4321 에서 홈·카테고리·글·소개·모바일 확인). 글 = `src/posts/YYYY-MM-DD-slug.md` 하나(프론트매터 title/date/category/public/description/tags, 양식 `src/posts/_템플릿.md`, 비개발자용 설명 `README.md`). 카테고리 5개(커피 수다=coffee-talk, 가맹점 이야기=franchise, 입점 이야기=market-entry, 프로젝트 이야기=projects, 일기=diary, `src/lib/categories.ts`). **비공개는 글마다 `public: false`** → `src/lib/posts.ts` 의 `getPublicPosts()` 가 걸러서 홈·카테고리·글 경로·RSS·sitemap·llms.txt 어디에도 안 나감(빌드 결과물에 페이지 자체가 없음, 확인함). GEO: JSON-LD BlogPosting/WebSite/Organization, canonical, OG, `lang="ko"`, `/rss.xml`, `/llms.txt`, `/sitemap-index.xml`, `public/robots.txt`(AI 봇 명시 허용). 샘플 글 2개 공개 + 일기 테스트 1개 비공개. 상단 메뉴 "커피 추천 받기" → coffee.bumpyobeans.shop. 배포는 `cd 05_범표노트 && vercel --prod --yes`(폴더 안 `.vercel/` 에 링크됨). 로컬: `.claude/launch.json` 의 `범표노트`(npm run dev, 4321).
 
 ### 9/11 — 디카페인 제형 선택 흐름 (8일차, 커밋 `db098f4`·배포 완료)
 사용자: "디카페인 찾는 사람이 많다. 원두·드립백·커피티백·파우더·콜드브루 전부 디카페인이 있으니 제형에 따라 고르게 도와달라." 확인해 준 사실: 커피티백 3종·파우더 7개입/스틱 20개입/리필팩 22개입·미니 콜드브루·호환캡슐 10개입에 디카페인 옵션 있음, 디카페인 원두 500g 2종 = 과테말라/브라질, 그 외 디카페인 제품은 모두 과테말라 원두. (콜드브루 500ml 도 옵션 있다고 가정 — 미확인)
@@ -173,6 +176,8 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 | `docs/supabase.sql`, `docs/supabase_map.sql` | Supabase 표·권한 생성문 (이미 실행됨. 다시 실행해도 안전) | O |
 | `docs/분석쿼리.md` | 대시보드 SQL Editor 에 붙여넣을 분석 쿼리 | O |
 | `.vercel/` | Vercel 연결 정보 (gitignore) | X |
+
+노트 사이트는 별도 폴더 `05_범표노트/` (Astro). 글은 `src/posts/`, 나머지는 위 9/12 항목 참고.
 
 원본 데이터(git 에 없음): 상품 `C:\Users\bebeb\Desktop\Product_20260905_150247.csv`, 후기 `review_20260906_003018.xlsx`(종합) + `review_20260910_171909.xlsx`(범표라떼 전용 2,144건). `build_reviews.py` 의 `XLSX_PATHS` 리스트에 둘 다 들어 있음.
 
@@ -320,6 +325,8 @@ python 02_원두추천\tools\build_reviews.py
 cd 02_원두추천
 vercel --prod --yes
 ```
-끝에 `readyState: READY` 가 나오면 성공. 확인: `curl -s https://bumpyobeans.shop/app.js | grep 특정문자열`
+끝에 `readyState: READY` 가 나오면 성공. 확인: `curl -s https://coffee.bumpyobeans.shop/app.js | grep 특정문자열`
+
+노트 사이트 배포: `cd 05_범표노트` 후 `vercel --prod --yes`. 확인: `curl -s https://bumpyobeans.shop/llms.txt`
 
 커밋 메시지 끝에 `Co-Authored-By: Claude ... <noreply@anthropic.com>` 관례(세션마다 모델명 다름).

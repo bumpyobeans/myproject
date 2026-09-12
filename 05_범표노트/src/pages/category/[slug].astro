@@ -1,0 +1,45 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getPublicPosts } from '../../lib/posts';
+import { categories, getCategoryBySlug } from '../../lib/categories';
+
+export async function getStaticPaths() {
+  const posts = await getPublicPosts();
+  return categories.map((c) => ({
+    params: { slug: c.slug },
+    props: {
+      posts: posts.filter((p) => p.data.category === c.name),
+    },
+  }));
+}
+
+const { slug } = Astro.params;
+const { posts } = Astro.props as { posts: Awaited<ReturnType<typeof getPublicPosts>> };
+const category = getCategoryBySlug(slug as string)!;
+---
+
+<Base title={category.name} path={`/category/${category.slug}/`} description={`범표원두 노트의 '${category.name}' 카테고리 글 목록`}>
+  <div class="pill-list">
+    {categories.map((c) => (
+      <a class:list={['pill', { active: c.slug === category.slug }]} href={`/category/${c.slug}/`}>{c.name}</a>
+    ))}
+  </div>
+
+  {posts.length === 0 ? (
+    <p class="empty">이 카테고리에는 아직 공개된 글이 없습니다.</p>
+  ) : (
+    <ul class="post-list">
+      {posts.map((post) => (
+        <li>
+          <a class="post-title" href={`/posts/${post.id}/`}>{post.data.title}</a>
+          <p class="post-meta">
+            <time datetime={post.data.date.toISOString()}>
+              {post.data.date.toLocaleDateString('ko-KR')}
+            </time>
+          </p>
+          {post.data.description && <p class="post-description">{post.data.description}</p>}
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>

@@ -1,0 +1,68 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  path: string; // 예: "/", "/about/", "/posts/foo/"
+  ogType?: 'website' | 'article';
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const {
+  title,
+  description = '범표원두가 20년째 커피를 볶으며 쓰는 노트.',
+  path,
+  ogType = 'website',
+  jsonLd,
+} = Astro.props;
+
+const siteName = '범표원두 노트';
+const canonicalURL = new URL(path, Astro.site);
+const fullTitle = path === '/' ? title : `${title} · ${siteName}`;
+const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+---
+
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="alternate" type="application/rss+xml" title={siteName} href={new URL('/rss.xml', Astro.site)} />
+
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:locale" content="ko_KR" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+
+    {jsonLdList.map((item) => (
+      <script type="application/ld+json" set:html={JSON.stringify(item)} />
+    ))}
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="/">범표원두 노트</a>
+      <p class="site-tagline">20년 스페셜티 커피 로스터리 범표원두가 직접 쓰는 이야기</p>
+      <nav class="site-nav">
+        <a href="/">홈</a>
+        <a href="/about/">소개</a>
+        <a href="https://coffee.bumpyobeans.shop" target="_blank" rel="noopener noreferrer">커피 추천 받기 ↗</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <span>&copy; {new Date().getFullYear()} 범표원두</span>
+      <a href="/rss.xml">RSS</a>
+    </footer>
+  </body>
+</html>

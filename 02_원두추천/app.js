@@ -1410,7 +1410,7 @@
     btn.addEventListener("click", function () {
       var url = location.origin + location.pathname;
       if (location.protocol === "file:") {
-        url = "https://bumpyobeans.shop";
+        url = "https://coffee.bumpyobeans.shop";
       }
       url += (url.indexOf("?") === -1 ? "?" : "&") + "src=friend";
       url += "&from=" + encodeURIComponent(rec.tiger);

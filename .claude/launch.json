@@ -4,14 +4,41 @@
     {
       "name": "원두추천",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5500", "--directory", "02_원두추천"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5500",
+        "--directory",
+        "02_원두추천"
+      ],
       "port": 5500
     },
     {
       "name": "원두추천-5501",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5501", "--directory", "02_원두추천"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5501",
+        "--directory",
+        "02_원두추천"
+      ],
       "port": 5501
+    },
+    {
+      "name": "범표노트",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "4321",
+        "--host",
+        "127.0.0.1"
+      ],
+      "cwd": "05_범표노트",
+      "port": 4321
     }
   ]
 }

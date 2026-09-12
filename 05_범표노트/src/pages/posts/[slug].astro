@@ -1,0 +1,52 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { getPublicPosts } from '../../lib/posts';
+import { getCategoryByName } from '../../lib/categories';
+
+export async function getStaticPaths() {
+  const posts = await getPublicPosts();
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props as { post: Awaited<ReturnType<typeof getPublicPosts>>[number] };
+const { Content } = await render(post);
+const category = getCategoryByName(post.data.category);
+const dateISO = post.data.date.toISOString();
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  datePublished: dateISO,
+  dateModified: dateISO,
+  author: { '@type': 'Organization', name: '범표원두' },
+  publisher: { '@type': 'Organization', name: '범표원두' },
+  description: post.data.description ?? post.data.title,
+  mainEntityOfPage: new URL(`/posts/${post.id}/`, Astro.site).toString(),
+  articleSection: post.data.category,
+};
+---
+
+<Base
+  title={post.data.title}
+  description={post.data.description ?? post.data.title}
+  path={`/posts/${post.id}/`}
+  ogType="article"
+  jsonLd={jsonLd}
+>
+  <article>
+    <h1>{post.data.title}</h1>
+    <p class="article-meta">
+      <time datetime={dateISO}>{post.data.date.toLocaleDateString('ko-KR')}</time>
+      {' · '}
+      {category ? <a href={`/category/${category.slug}/`}>{category.name}</a> : post.data.category}
+    </p>
+    <div class="content">
+      <Content />
+    </div>
+  </article>
+</Base>
