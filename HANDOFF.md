@@ -2,7 +2,7 @@
 
 마지막 업데이트: 2026-09-12 (9일차, 개인 도메인 연결 + 범표원두 노트 사이트 신설)
 작업 폴더: `C:\Users\bebeb\OneDrive - 범표원두\★.김현정\claude_2026`
-git 브랜치: `update-settings` (마지막 커밋 `db098f4`, 작업 트리 깨끗함. push 안 됨. `03_수서점상권분석/`은 다른 세션 것 — untracked로 두기)
+git 브랜치: `update-settings` (마지막 커밋 `f22b36c`, 작업 트리 깨끗함. push 안 됨. `03_수서점상권분석/`·`04_다산점상권분석/`은 다른 세션 것 — untracked로 두기)
 실서비스(원두추천): **https://coffee.bumpyobeans.shop** (Vercel `beompyo-wondu-chucheon`, 가비아 CNAME `coffee`→`891ec0fa2470f8f3.vercel-dns-017.com`). 예전 주소 https://beompyo-wondu-chucheon.vercel.app 도 계속 동작
 노트 사이트: **https://bumpyobeans.shop** (Vercel `bumpyo-note`, 폴더 `05_범표노트/`, 가비아 A `@`→`76.76.21.21`). 도메인 만료 2027-02, 1월쯤 가비아에서 연장 여부 결정
 Supabase: 프로젝트 `dash board` (ref `pwwerrxitfesworulijr`, 서울, 무료). 표 4개 만들어져 있고 기록 쌓이는 중
@@ -288,7 +288,12 @@ q1 → q_amount(q1="핸드드립") → q_milk·q_latte(q1="라떼") → q2 → q
 
 ## 11. 다음 첫 단계
 
-**Supabase 기록을 한 번 들여다본다.** 대시보드 SQL Editor 에서 `docs/분석쿼리.md` 1·3·4번을 돌려 (테스트 행 `src='test'` 제외) 방문·결과도달·상품클릭·공유가 찍히는지 보고, 이상한 값(예: `type` 누락, `tiger` null)이 있으면 app.js 훅을 점검. 그다음 스마트스토어 우측 배너(링크 `?src=store`)로.
+**막힌 점 없음.** 도메인·노트 사이트 작업은 완료됐고 사용자 확인만 남음 — 이어서 진행할 두 갈래:
+
+1. **(원두추천 쪽, 원래 하던 일)** Supabase 기록을 한 번 들여다본다. 대시보드 SQL Editor 에서 `docs/분석쿼리.md` 1·3·4번을 돌려 (테스트 행 `src='test'` 제외) 방문·결과도달·상품클릭·공유가 찍히는지 보고, 이상한 값(예: `type` 누락, `tiger` null)이 있으면 app.js 훅을 점검. 그다음 스마트스토어 우측 배너(링크 `?src=store`)로.
+2. **(노트 사이트 쪽, 9/12 신설)** 사용자가 카카오 링크 디버거(https://developers.kakao.com/tool/debugger/sharing)에서 `coffee.bumpyobeans.shop`·`bumpyobeans.shop` 캐시 초기화를 했는지 확인. 안 했으면 먼저 안내. 그다음 첫 진짜 글(가맹점 이야기 등)을 받아 `05_범표노트/src/posts/` 에 만들고 배포, 이후 구글 서치콘솔·네이버 서치어드바이저에 `bumpyobeans.shop` 등록 + 사이트맵(`/sitemap-index.xml`) 제출 안내.
+
+사용자가 둘 중 어느 쪽부터 할지 먼저 물어보고 시작할 것.
 
 ---
 
