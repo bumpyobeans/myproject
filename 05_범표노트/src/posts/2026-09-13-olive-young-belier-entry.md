@@ -6,6 +6,11 @@ public: true
 description: "올리브영이 새로 선보인 웰니스 특화 매장 올리브베러 3호점 오픈에 맞춰 입점 제안을 받은 이야기입니다."
 image: "/images/2026-09-13-olive-young-belier-entry.jpg"
 tags: ["올리브영", "올리브베러", "입점"]
+links:
+  - label: "올리브영 브랜드관 보기"
+    url: "https://www.oliveyoung.co.kr/store/display/getBrandShopDetail.do?onlBrndCd=A021242&t_page=%ED%86%B5%ED%95%A9%EA%B2%80%EC%83%89%EA%B2%B0%EA%B3%BC%ED%8E%98%EC%9D%B4%EC%A7%80&t_click=%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B4%80%EB%B0%94%EB%A1%9C%EA%B0%80%EA%B8%B0&t_brand_name=%EB%B2%94%ED%91%9C%EC%9B%90%EB%91%90"
+  - label: "인스타그램 @bumpyobeans"
+    url: "https://www.instagram.com/bumpyobeans/"
 ---
 
 올리브베러는 올리브영이 2026년 1월 새롭게 선보인 웰니스 특화 매장입니다. 기존 올리브영이 뷰티·헬스 위주였다면, 올리브베러는 "잘 먹기·채우기·움직이기·가꾸기·쉬기·케어하기"라는 여섯 가지 영역으로 일상을 나누어 상품을 큐레이팅하는 콘셉트예요. 프로틴 간식이나 건강기능식품, 차, 아로마, 수면 관련 제품처럼 몸과 마음을 돌보는 상품들을 다루고, 올리브영 앱 안에서 별도 서비스처럼 이용할 수 있게 되어 있습니다. 1호점은 경복궁과 광화문광장 근처인 광화문에 자리 잡았고, 이후 강남역점 등으로 매장을 넓혀가고 있어요.

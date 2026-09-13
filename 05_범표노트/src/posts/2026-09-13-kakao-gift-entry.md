@@ -6,6 +6,11 @@ public: true
 description: "2022년 호랑이의 해, 카카오톡딜 제안으로 시작해 카카오선물하기 입점까지 이어진 이야기입니다."
 image: "/images/2026-09-13-kakao-gift-entry.jpg"
 tags: ["카카오선물하기", "입점"]
+links:
+  - label: "카카오선물하기에서 보기"
+    url: "https://gift.kakao.com/brand/12320"
+  - label: "인스타그램 @bumpyobeans"
+    url: "https://www.instagram.com/bumpyobeans/"
 ---
 
 2022년, 호랑이의 해였습니다. "호랑이의 해, 범표원두와 함께하는 톡딜!!" 이라는 제안이 들어왔어요. 카카오톡딜에 입점해보지 않겠냐는 연락이었는데, 저희로서는 큰 플랫폼과 처음 함께해보는 기회라 설레면서도 긴장됐던 기억이 납니다.
