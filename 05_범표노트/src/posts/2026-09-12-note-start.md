@@ -4,6 +4,7 @@ date: 2026-09-12
 category: "커피 수다"
 public: true
 description: "20년째 커피를 볶아온 범표원두가 노트를 시작하며 남기는 첫 글입니다."
+image: "/images/2026-09-12-note-start.jpg"
 tags: ["소개"]
 ---
 
