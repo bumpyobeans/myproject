@@ -52,11 +52,15 @@ const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   </head>
   <body>
     <header class="site-header">
-      <a class="site-title" href="/">범표원두 노트</a>
+      <a class="site-brand" href="/">
+        <img src="/tiger-logo.png" alt="" class="site-logo" width="40" height="48" />
+        <span class="site-title">범표원두 노트</span>
+      </a>
       <p class="site-tagline">20년 스페셜티 커피 로스터리 범표원두가 직접 쓰는 이야기</p>
       <nav class="site-nav">
         <a href="/" class:list={['nav-home', { active: path === '/' }]}>홈</a>
         <a href="/about/">소개</a>
+        <a href="/contact/" class:list={{ active: path === '/contact/' }}>협업 문의</a>
         <a href="https://coffee.bumpyobeans.shop" target="_blank" rel="noopener noreferrer">커피 추천 받기 ↗</a>
       </nav>
     </header>
@@ -64,8 +68,17 @@ const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
       <slot />
     </main>
     <footer class="site-footer">
-      <span>&copy; {new Date().getFullYear()} 범표원두</span>
-      <a href="/rss.xml">RSS</a>
+      <div class="footer-business">
+        <p class="footer-brand">주식회사 범표원두</p>
+        <p>대표자 김현정 · 사업자등록번호 557-86-03278</p>
+        <p>통신판매업신고 제2021-경기구리-0679호</p>
+        <p>경기도 구리시 갈매순환로204번길 51-14, 1층(갈매동)</p>
+        <p><a href="mailto:bumpyobeans@naver.com">bumpyobeans@naver.com</a></p>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; {new Date().getFullYear()} 범표원두</span>
+        <a href="/rss.xml">RSS</a>
+      </div>
     </footer>
   </body>
 </html>
