@@ -203,3 +203,204 @@ article .content a {
 .site-footer a {
   color: var(--fg-muted);
 }
+
+/* 댓글 */
+.comments {
+  border-top: 1px solid var(--border);
+  margin-top: 48px;
+  padding-top: 32px;
+}
+
+.comments h2 {
+  font-size: 1.25rem;
+  margin: 0 0 16px;
+}
+
+.comment-list {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+}
+
+.comment-list li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.comment-list li:first-child {
+  padding-top: 0;
+}
+
+.comment-empty {
+  color: var(--fg-muted);
+}
+
+.comment-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.comment-date {
+  color: var(--fg-muted);
+  font-size: 0.8rem;
+}
+
+.comment-list li p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment-form input,
+.comment-form textarea {
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  width: 100%;
+  resize: vertical;
+}
+
+.comment-form button {
+  align-self: flex-start;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 20px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.comment-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.comment-error {
+  color: #b00020;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.comment-account-line {
+  color: var(--fg-muted);
+  font-size: 0.85rem;
+}
+
+.comment-delete {
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  color: #b00020;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  align-self: flex-start;
+}
+
+/* 로그인/가입 모달 */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.auth-modal-overlay[hidden] {
+  display: none;
+}
+
+.auth-modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  max-width: 360px;
+  width: 90%;
+  position: relative;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--fg);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 1rem;
+}
+
+.auth-form input {
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.auth-form button {
+  align-self: flex-start;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 20px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-error {
+  color: #b00020;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.auth-toggle {
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+  margin: 1rem 0 0;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+}
+
+/* .comment-form button 규칙(검은 배경 버튼)이 comment-account-line 안의
+   로그인/로그아웃 link-btn 에도 걸려버리는 걸 막기 위한 우선순위 보정 */
+.comment-form .link-btn {
+  background: none;
+  color: var(--fg);
+  padding: 0;
+}

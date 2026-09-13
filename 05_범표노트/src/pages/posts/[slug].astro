@@ -48,5 +48,447 @@ const jsonLd = {
     <div class="content">
       <Content />
     </div>
+
+    <section class="comments" id="comments">
+      <h2>댓글</h2>
+      <ul class="comment-list" id="comment-list"></ul>
+      <form id="comment-form" class="comment-form">
+        <p class="comment-error" id="comment-error" hidden></p>
+        <p class="comment-account-line" id="comment-account-line" hidden></p>
+        <input
+          type="text"
+          name="name"
+          id="comment-name"
+          placeholder="이름 (비워두면 '익명'으로 등록)"
+          maxlength="30"
+        />
+        <textarea
+          name="body"
+          id="comment-body"
+          placeholder="댓글을 남겨주세요"
+          maxlength="1000"
+          rows="4"
+          required
+        ></textarea>
+        <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off" />
+        <button type="submit" id="comment-submit">댓글 등록</button>
+      </form>
+    </section>
+
+    <div id="auth-modal-overlay" class="auth-modal-overlay" hidden>
+      <div class="auth-modal" role="dialog" aria-modal="true">
+        <button type="button" id="auth-modal-close" class="auth-modal-close" aria-label="닫기">×</button>
+        <h3 id="auth-modal-title">범표노트에서 소통하기</h3>
+        <p id="auth-modal-desc">로그인하면 내가 남긴 댓글을 직접 지울 수 있어요.</p>
+        <form id="auth-form" class="auth-form">
+          <input type="email" id="auth-email" placeholder="이메일" required />
+          <input type="password" id="auth-password" placeholder="비밀번호 (6자 이상)" required minlength="6" />
+          <p class="auth-error" id="auth-error" hidden></p>
+          <button type="submit" id="auth-submit">로그인</button>
+        </form>
+        <p class="auth-toggle">
+          <span id="auth-toggle-text">처음이신가요?</span>{' '}
+          <button type="button" id="auth-toggle-btn" class="link-btn">이메일로 시작하기</button>
+        </p>
+      </div>
+    </div>
   </article>
 </Base>
+
+<script src="/config.js" is:inline></script>
+<script src="/comments.js" is:inline></script>
+<script define:vars={{ postSlug: post.id }} is:inline>
+  (function () {
+    var AUTH_STORAGE_KEY = 'bp_note_auth';
+    var ADMIN_EMAIL = 'bebebek1005@gmail.com';
+
+    var listEl = document.getElementById('comment-list');
+    var formEl = document.getElementById('comment-form');
+    var nameEl = document.getElementById('comment-name');
+    var bodyEl = document.getElementById('comment-body');
+    var websiteEl = formEl.querySelector('input[name="website"]');
+    var submitEl = document.getElementById('comment-submit');
+    var errorEl = document.getElementById('comment-error');
+    var accountLineEl = document.getElementById('comment-account-line');
+
+    var overlayEl = document.getElementById('auth-modal-overlay');
+    var modalCloseEl = document.getElementById('auth-modal-close');
+    var authFormEl = document.getElementById('auth-form');
+    var authEmailEl = document.getElementById('auth-email');
+    var authPasswordEl = document.getElementById('auth-password');
+    var authErrorEl = document.getElementById('auth-error');
+    var authSubmitEl = document.getElementById('auth-submit');
+    var authToggleTextEl = document.getElementById('auth-toggle-text');
+    var authToggleBtnEl = document.getElementById('auth-toggle-btn');
+
+    var currentSession = null;
+    var authMode = 'login';
+
+    function formatDate(iso) {
+      try {
+        return new Date(iso).toLocaleDateString('ko-KR');
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function renderEmpty() {
+      listEl.innerHTML = '';
+      var li = document.createElement('li');
+      li.className = 'comment-empty';
+      li.textContent = '첫 댓글을 남겨주세요.';
+      listEl.appendChild(li);
+    }
+
+    function handleDeleteClick(comment, li, btn) {
+      btn.disabled = true;
+      Promise.resolve(
+        window.NOTE_COMMENTS.deleteComment(comment.id, currentSession ? currentSession.access_token : undefined)
+      ).then(function (result) {
+        if (result === true) {
+          li.remove();
+          if (!listEl.querySelector('li')) renderEmpty();
+          return;
+        }
+        btn.disabled = false;
+        var errSpan = li.querySelector('.comment-delete-error');
+        if (!errSpan) {
+          errSpan = document.createElement('span');
+          errSpan.className = 'comment-delete-error comment-error';
+          li.appendChild(errSpan);
+        }
+        errSpan.textContent = (result && result.error) || '삭제에 실패했어요.';
+      }).catch(function () {
+        btn.disabled = false;
+      });
+    }
+
+    function renderComment(comment) {
+      var emptyEl = listEl.querySelector('.comment-empty');
+      if (emptyEl) emptyEl.remove();
+
+      var li = document.createElement('li');
+      if (comment.id) li.dataset.commentId = comment.id;
+
+      var head = document.createElement('div');
+      head.className = 'comment-head';
+
+      var nameStrong = document.createElement('strong');
+      nameStrong.textContent = comment.name;
+      head.appendChild(nameStrong);
+
+      var dateSpan = document.createElement('span');
+      dateSpan.className = 'comment-date';
+      dateSpan.textContent = formatDate(comment.created_at);
+      head.appendChild(dateSpan);
+
+      li.appendChild(head);
+
+      var bodyP = document.createElement('p');
+      bodyP.textContent = comment.body;
+      li.appendChild(bodyP);
+
+      var myId = currentSession && currentSession.user && currentSession.user.id;
+      var isAdmin = !!(currentSession && currentSession.user && currentSession.user.email === ADMIN_EMAIL);
+      var isOwn = !!(myId && comment.user_id && myId === comment.user_id);
+      if (comment.id && (isOwn || isAdmin)) {
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'comment-delete';
+        delBtn.textContent = '삭제';
+        delBtn.addEventListener('click', function () {
+          handleDeleteClick(comment, li, delBtn);
+        });
+        li.appendChild(delBtn);
+      }
+
+      listEl.appendChild(li);
+      return li;
+    }
+
+    function renderList(comments) {
+      listEl.innerHTML = '';
+      if (!comments || comments.length === 0) {
+        renderEmpty();
+        return;
+      }
+      comments.forEach(renderComment);
+    }
+
+    function refreshCommentList() {
+      if (!window.NOTE_COMMENTS) return;
+      window.NOTE_COMMENTS.fetchComments(postSlug).then(renderList);
+    }
+
+    function showError(message) {
+      errorEl.textContent = message;
+      errorEl.hidden = false;
+    }
+
+    function hideError() {
+      errorEl.hidden = true;
+      errorEl.textContent = '';
+    }
+
+    function showAuthError(message) {
+      authErrorEl.textContent = message;
+      authErrorEl.hidden = false;
+    }
+
+    function hideAuthError() {
+      authErrorEl.hidden = true;
+      authErrorEl.textContent = '';
+    }
+
+    function renderAccountLine() {
+      accountLineEl.innerHTML = '';
+      accountLineEl.hidden = false;
+
+      if (currentSession && currentSession.user) {
+        var textNode = document.createTextNode((currentSession.user.email || '') + ' 님으로 댓글을 남깁니다 · ');
+        accountLineEl.appendChild(textNode);
+
+        var logoutBtn = document.createElement('button');
+        logoutBtn.type = 'button';
+        logoutBtn.id = 'logout-btn';
+        logoutBtn.className = 'link-btn';
+        logoutBtn.textContent = '로그아웃';
+        logoutBtn.addEventListener('click', function () {
+          Promise.resolve(
+            window.NOTE_COMMENTS ? window.NOTE_COMMENTS.signOut(currentSession.access_token) : undefined
+          ).then(function () {
+            currentSession = null;
+            try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (e) {}
+            nameEl.hidden = false;
+            renderAccountLine();
+            refreshCommentList();
+          }).catch(function () {
+            currentSession = null;
+            try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (e) {}
+            nameEl.hidden = false;
+            renderAccountLine();
+            refreshCommentList();
+          });
+        });
+        accountLineEl.appendChild(logoutBtn);
+
+        nameEl.hidden = true;
+      } else {
+        var textNode2 = document.createTextNode('이름을 비우면 익명으로 등록됩니다. · ');
+        accountLineEl.appendChild(textNode2);
+
+        var loginBtn = document.createElement('button');
+        loginBtn.type = 'button';
+        loginBtn.id = 'login-open-btn';
+        loginBtn.className = 'link-btn';
+        loginBtn.textContent = '로그인';
+        loginBtn.addEventListener('click', function () {
+          openAuthModal();
+        });
+        accountLineEl.appendChild(loginBtn);
+
+        nameEl.hidden = false;
+      }
+    }
+
+    function openAuthModal() {
+      authMode = 'login';
+      updateAuthModeUI();
+      hideAuthError();
+      overlayEl.hidden = false;
+    }
+
+    function closeAuthModal() {
+      overlayEl.hidden = true;
+      authFormEl.reset();
+      hideAuthError();
+    }
+
+    function updateAuthModeUI() {
+      if (authMode === 'signup') {
+        authSubmitEl.textContent = '가입하고 시작하기';
+        authToggleTextEl.textContent = '이미 계정이 있으신가요?';
+        authToggleBtnEl.textContent = '로그인하기';
+      } else {
+        authSubmitEl.textContent = '로그인';
+        authToggleTextEl.textContent = '처음이신가요?';
+        authToggleBtnEl.textContent = '이메일로 시작하기';
+      }
+    }
+
+    function applySession(session) {
+      var expiresAt = Date.now() + (Number(session.expires_in || 0) * 1000);
+      currentSession = {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: expiresAt,
+        user: session.user
+      };
+      try {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentSession));
+      } catch (e) {}
+      closeAuthModal();
+      renderAccountLine();
+      refreshCommentList();
+    }
+
+    function restoreSession() {
+      var raw = null;
+      try {
+        raw = localStorage.getItem(AUTH_STORAGE_KEY);
+      } catch (e) {
+        raw = null;
+      }
+      if (!raw) return Promise.resolve();
+
+      var stored;
+      try {
+        stored = JSON.parse(raw);
+      } catch (e) {
+        try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (e2) {}
+        return Promise.resolve();
+      }
+      if (!stored || !stored.access_token) return Promise.resolve();
+
+      if (stored.expires_at && stored.expires_at > Date.now()) {
+        currentSession = stored;
+        return Promise.resolve();
+      }
+
+      if (!window.NOTE_COMMENTS || !stored.refresh_token) {
+        try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (e) {}
+        return Promise.resolve();
+      }
+
+      return window.NOTE_COMMENTS.refreshSession(stored.refresh_token).then(function (result) {
+        if (result && result.session && result.session.access_token) {
+          var expiresAt = Date.now() + (Number(result.session.expires_in || 0) * 1000);
+          currentSession = {
+            access_token: result.session.access_token,
+            refresh_token: result.session.refresh_token,
+            expires_at: expiresAt,
+            user: result.session.user
+          };
+          try {
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentSession));
+          } catch (e) {}
+        } else {
+          try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (e) {}
+        }
+      }).catch(function () {
+        try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (e) {}
+      });
+    }
+
+    // 모달 열기/닫기 (login-open-btn 클릭은 renderAccountLine에서 매번 다시 그릴 때 바인딩)
+    modalCloseEl.addEventListener('click', closeAuthModal);
+    overlayEl.addEventListener('click', function (event) {
+      if (event.target === overlayEl) closeAuthModal();
+    });
+
+    authToggleBtnEl.addEventListener('click', function () {
+      authMode = (authMode === 'signup') ? 'login' : 'signup';
+      updateAuthModeUI();
+      hideAuthError();
+    });
+
+    authFormEl.addEventListener('submit', function (event) {
+      event.preventDefault();
+      hideAuthError();
+
+      if (!window.NOTE_COMMENTS) {
+        showAuthError('기능을 사용할 수 없어요.');
+        return;
+      }
+
+      var email = authEmailEl.value.trim();
+      var password = authPasswordEl.value;
+      if (!email || !password) return;
+
+      authSubmitEl.disabled = true;
+
+      var task = (authMode === 'signup')
+        ? window.NOTE_COMMENTS.signUp(email, password)
+        : window.NOTE_COMMENTS.signIn(email, password);
+
+      Promise.resolve(task).then(function (result) {
+        if (result && result.session && result.session.access_token) {
+          applySession(result.session);
+          return;
+        }
+        if (result && result.needsConfirmation) {
+          authMode = 'login';
+          updateAuthModeUI();
+          authPasswordEl.value = '';
+          showAuthError('가입 확인 메일을 보냈어요. 메일함을 확인한 뒤 로그인해주세요.');
+          return;
+        }
+        showAuthError((result && result.error) || '요청에 실패했어요.');
+      }).catch(function () {
+        showAuthError('요청에 실패했어요.');
+      }).finally(function () {
+        authSubmitEl.disabled = false;
+      });
+    });
+
+    // 초기 흐름: 세션 복원 → 계정 줄/댓글 목록 렌더
+    renderAccountLine();
+
+    if (window.NOTE_COMMENTS) {
+      window.NOTE_COMMENTS.fetchComments(postSlug).then(renderList);
+    } else {
+      renderEmpty();
+    }
+
+    restoreSession().then(function () {
+      renderAccountLine();
+      refreshCommentList();
+    });
+
+    formEl.addEventListener('submit', function (event) {
+      event.preventDefault();
+      hideError();
+
+      if (websiteEl.value) {
+        // 허니팟에 값이 채워짐 → 스팸으로 간주, 조용히 무시
+        formEl.reset();
+        return;
+      }
+
+      var name = nameEl.value.trim() || '익명';
+      var body = bodyEl.value.trim();
+      if (!body) return;
+
+      submitEl.disabled = true;
+
+      Promise.resolve(
+        window.NOTE_COMMENTS
+          ? window.NOTE_COMMENTS.postComment(postSlug, name, body, currentSession ? currentSession.access_token : undefined)
+          : { error: '댓글 기능을 사용할 수 없어요.' }
+      )
+        .then(function (result) {
+          if (result && result.error) {
+            showError('댓글 등록에 실패했어요. 잠시 후 다시 시도해주세요.');
+            return;
+          }
+          var created = (result && typeof result === 'object')
+            ? result
+            : { name: name, body: body, created_at: new Date().toISOString() };
+          renderComment({
+            id: created.id,
+            name: created.name || name,
+            body: created.body || body,
+            created_at: created.created_at || new Date().toISOString(),
+            user_id: created.user_id
+          });
+          formEl.reset();
+        })
+        .catch(function () {
+          showError('댓글 등록에 실패했어요. 잠시 후 다시 시도해주세요.');
+        })
+        .finally(function () {
+          submitEl.disabled = false;
+        });
+    });
+  })();
+</script>
