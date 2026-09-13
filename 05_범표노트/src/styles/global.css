@@ -206,7 +206,7 @@ a {
   font-weight: 600;
 }
 
-/* 매장 지도 (일러스트) */
+/* 매장 지도 */
 .stores {
   margin: 40px 0 0;
   padding-top: 32px;
@@ -226,68 +226,25 @@ a {
   color: var(--fg-muted);
 }
 
-.stores-map-illustration {
+.stores-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.store-chip {
+  cursor: pointer;
+  font: inherit;
+}
+
+.stores-map {
   width: 100%;
-  height: auto;
-  display: block;
-}
-
-.map-blob {
-  fill: var(--placeholder-bg);
-  stroke: var(--border2);
-  stroke-width: 1.5;
-}
-
-.map-river {
-  fill: none;
-  stroke: var(--border2);
-  stroke-width: 2;
-  opacity: 0.7;
-}
-
-.map-leader {
-  stroke: var(--border2);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 4;
-  fill: none;
-}
-
-.map-pin {
-  fill: var(--accent);
-  stroke: var(--bg);
-  stroke-width: 2;
-}
-
-.map-pin-soon {
-  fill: var(--fg-mute3);
-}
-
-.map-card {
-  fill: var(--bg);
-  stroke: var(--border);
-  stroke-width: 1.5;
-  transition: stroke 0.15s ease;
-}
-
-a:has(.map-card):hover .map-card {
-  stroke: var(--accent);
-}
-
-.map-card-name {
-  font-family: var(--font-serif);
-  font-weight: 700;
-  font-size: 14px;
-  fill: var(--fg);
-}
-
-.map-card-type {
-  font-size: 11px;
-  fill: var(--fg-muted);
-}
-
-.map-card-tip {
-  font-size: 10.5px;
-  fill: var(--accent);
+  height: 420px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--placeholder-bg);
 }
 
 .stores-note {
