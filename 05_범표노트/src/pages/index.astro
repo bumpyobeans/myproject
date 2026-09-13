@@ -24,6 +24,21 @@ const jsonLd = [
 ---
 
 <Base title="범표원두 노트" path="/" jsonLd={jsonLd}>
+  <section class="hero">
+    <img src="/images/hero-store.jpg" alt="범표원두 갈매점 내부" class="hero-bg" />
+    <div class="hero-overlay"></div>
+    <div class="hero-inner">
+      <p class="hero-eyebrow">BUMPYO BEANS · SINCE 2004</p>
+      <h1 class="hero-title">20년째, 정직하게 볶은 커피</h1>
+      <p class="hero-subtitle">범표원두가 직접 로스팅한 원두와, 그 안의 이야기를 만나보세요.</p>
+      <div class="hero-buttons">
+        <a href="#post-list" class="hero-btn hero-btn-primary">글 보러가기</a>
+        <a href="https://coffee.bumpyobeans.shop" target="_blank" rel="noopener noreferrer" class="hero-btn hero-btn-outline">커피 추천 받기</a>
+        <a href="/contact/" class="hero-btn hero-btn-outline">협업 문의</a>
+      </div>
+    </div>
+  </section>
+
   <div class="pill-list">
     <a class="pill active" href="/">전체</a>
     {categories.map((c) => (
@@ -34,7 +49,7 @@ const jsonLd = [
   {posts.length === 0 ? (
     <p class="empty">아직 글이 없습니다.</p>
   ) : (
-    <ul class="post-list">
+    <ul class="post-list" id="post-list">
       {posts.map((post) => {
         const cat = getCategoryByName(post.data.category);
         return (
