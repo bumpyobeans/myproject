@@ -25,6 +25,7 @@ const jsonLd = [
 
 <Base title="범표원두 노트" path="/" jsonLd={jsonLd}>
   <div class="pill-list">
+    <a class="pill active" href="/">전체</a>
     {categories.map((c) => (
       <a class="pill" href={`/category/${c.slug}/`}>{c.name}</a>
     ))}
@@ -37,16 +38,23 @@ const jsonLd = [
       {posts.map((post) => {
         const cat = getCategoryByName(post.data.category);
         return (
-          <li>
-            <a class="post-title" href={`/posts/${post.id}/`}>{post.data.title}</a>
-            <p class="post-meta">
-              <time datetime={post.data.date.toISOString()}>
-                {post.data.date.toLocaleDateString('ko-KR')}
-              </time>
-              {' · '}
-              {cat ? <a href={`/category/${cat.slug}/`}>{cat.name}</a> : post.data.category}
-            </p>
-            {post.data.description && <p class="post-description">{post.data.description}</p>}
+          <li class="post-card">
+            {post.data.image && (
+              <div class="post-thumb">
+                <img src={post.data.image} alt="" loading="lazy" />
+              </div>
+            )}
+            <div class="post-body">
+              <a class="post-title" href={`/posts/${post.id}/`}>{post.data.title}</a>
+              <p class="post-meta">
+                <time datetime={post.data.date.toISOString()}>
+                  {post.data.date.toLocaleDateString('ko-KR')}
+                </time>
+                {' · '}
+                {cat ? <a href={`/category/${cat.slug}/`}>{cat.name}</a> : post.data.category}
+              </p>
+              {post.data.description && <p class="post-description">{post.data.description}</p>}
+            </div>
           </li>
         );
       })}

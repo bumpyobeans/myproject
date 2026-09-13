@@ -1,10 +1,19 @@
 :root {
   color-scheme: light;
-  --fg: #111;
-  --fg-muted: #666;
-  --bg: #fff;
-  --border: #ddd;
-  --accent: #111;
+  --fg: #2b1c12;
+  --fg-muted: #6b5a45;
+  --fg-mute2: #8a7a5c;
+  --fg-mute3: #a8967d;
+  --bg: #f7f1e6;
+  --border: #e2d5bf;
+  --border2: #e6dabf;
+  --accent: #a8481f;
+  --accent-fg: #fbeee1;
+  --pill-bg: #efe3cf;
+  --pill-fg: #7a5a2e;
+  --placeholder-bg: #e9dfc8;
+  --placeholder-border: #c9b78e;
+  --font-serif: 'Gowun Batang', serif;
 }
 
 * {
@@ -49,18 +58,21 @@ a {
 }
 
 .site-title {
-  font-size: 1.5rem;
-  font-weight: 700;
   margin: 0 0 6px;
   text-decoration: none;
   display: inline-block;
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
   color: var(--fg);
+  letter-spacing: -.2px;
 }
 
 .site-tagline {
-  color: var(--fg-muted);
-  font-size: 0.95rem;
   margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg-muted);
 }
 
 .site-nav {
@@ -81,6 +93,11 @@ a {
   color: var(--fg);
 }
 
+.site-nav a.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* 카테고리 알약 */
 .pill-list {
   display: flex;
@@ -91,13 +108,13 @@ a {
 
 .pill {
   display: inline-block;
-  padding: 6px 14px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.85rem;
   text-decoration: none;
-  color: var(--fg);
-  background: var(--bg);
+  border: none;
+  background: var(--pill-bg);
+  color: var(--pill-fg);
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 5px 12px;
 }
 
 .pill:hover {
@@ -106,7 +123,7 @@ a {
 
 .pill.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-fg);
   border-color: var(--accent);
 }
 
@@ -117,49 +134,88 @@ a {
   padding: 0;
 }
 
-.post-list li {
-  padding: 18px 0;
-  border-bottom: 1px solid var(--border);
+.post-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border2);
 }
 
-.post-list li:first-child {
-  padding-top: 0;
+.post-card:last-child {
+  border-bottom: none;
+}
+
+.post-thumb {
+  flex: 1 1 220px;
+  max-width: 220px;
+  aspect-ratio: 4/3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--placeholder-bg);
+}
+
+.post-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.post-body {
+  flex: 2 1 280px;
+  min-width: 0;
 }
 
 .post-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
   font-weight: 700;
-  font-size: 1.05rem;
-  text-decoration: none;
+  color: var(--fg);
+  line-height: 1.4;
+  margin-top: 6px;
   display: block;
-  margin-bottom: 4px;
+  text-decoration: none;
 }
 
 .post-meta {
-  color: var(--fg-muted);
-  font-size: 0.8rem;
-  margin-bottom: 6px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 11.5px;
+  margin: 0;
 }
 
 .post-meta a {
   text-decoration: none;
-  color: var(--fg-muted);
+  color: var(--accent);
 }
 
 .post-description {
-  color: #333;
-  font-size: 0.92rem;
-  margin: 0;
+  font-size: 13px;
+  color: var(--fg-muted);
+  margin-top: 8px;
+  line-height: 1.65;
 }
 
 .empty {
-  color: var(--fg-muted);
+  color: var(--fg-mute3);
   padding: 20px 0;
 }
 
 /* 글 상세 */
 article h1 {
+  font-family: var(--font-serif);
   font-size: 1.6rem;
   margin: 0 0 8px;
+}
+
+.post-hero {
+  width: 100%;
+  max-height: 360px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: block;
 }
 
 .article-meta {
@@ -186,13 +242,22 @@ article .content a {
   text-decoration: underline;
 }
 
+article .content img,
+article .content video {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 1.5em 0;
+}
+
 /* 푸터 */
 .site-footer {
   max-width: 720px;
   margin: 40px auto 0;
   padding: 20px 20px 40px;
   border-top: 1px solid var(--border);
-  color: var(--fg-muted);
+  color: var(--fg-mute3);
   font-size: 0.85rem;
   display: flex;
   justify-content: space-between;
@@ -201,7 +266,7 @@ article .content a {
 }
 
 .site-footer a {
-  color: var(--fg-muted);
+  color: var(--fg-mute3);
 }
 
 /* 댓글 */

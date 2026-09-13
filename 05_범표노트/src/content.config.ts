@@ -17,6 +17,7 @@ const posts = defineCollection({
     // 기본값 true: 별도로 지정하지 않으면 공개 글
     public: z.boolean().default(true),
     description: z.string().optional(),
+    image: z.string().optional(),
     tags: z.array(z.string()).optional(),
   }),
 });

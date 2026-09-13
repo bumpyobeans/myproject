@@ -29,6 +29,9 @@ const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
     <link rel="canonical" href={canonicalURL} />
     <link rel="alternate" type="application/rss+xml" title={siteName} href={new URL('/rss.xml', Astro.site)} />
 
@@ -52,7 +55,7 @@ const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
       <a class="site-title" href="/">범표원두 노트</a>
       <p class="site-tagline">20년 스페셜티 커피 로스터리 범표원두가 직접 쓰는 이야기</p>
       <nav class="site-nav">
-        <a href="/">홈</a>
+        <a href="/" class:list={['nav-home', { active: path === '/' }]}>홈</a>
         <a href="/about/">소개</a>
         <a href="https://coffee.bumpyobeans.shop" target="_blank" rel="noopener noreferrer">커피 추천 받기 ↗</a>
       </nav>

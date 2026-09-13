@@ -20,6 +20,7 @@ const category = getCategoryBySlug(slug as string)!;
 
 <Base title={category.name} path={`/category/${category.slug}/`} description={`범표원두 노트의 '${category.name}' 카테고리 글 목록`}>
   <div class="pill-list">
+    <a class="pill" href="/">전체</a>
     {categories.map((c) => (
       <a class:list={['pill', { active: c.slug === category.slug }]} href={`/category/${c.slug}/`}>{c.name}</a>
     ))}
@@ -30,14 +31,21 @@ const category = getCategoryBySlug(slug as string)!;
   ) : (
     <ul class="post-list">
       {posts.map((post) => (
-        <li>
-          <a class="post-title" href={`/posts/${post.id}/`}>{post.data.title}</a>
-          <p class="post-meta">
-            <time datetime={post.data.date.toISOString()}>
-              {post.data.date.toLocaleDateString('ko-KR')}
-            </time>
-          </p>
-          {post.data.description && <p class="post-description">{post.data.description}</p>}
+        <li class="post-card">
+          {post.data.image && (
+            <div class="post-thumb">
+              <img src={post.data.image} alt="" loading="lazy" />
+            </div>
+          )}
+          <div class="post-body">
+            <a class="post-title" href={`/posts/${post.id}/`}>{post.data.title}</a>
+            <p class="post-meta">
+              <time datetime={post.data.date.toISOString()}>
+                {post.data.date.toLocaleDateString('ko-KR')}
+              </time>
+            </p>
+            {post.data.description && <p class="post-description">{post.data.description}</p>}
+          </div>
         </li>
       ))}
     </ul>

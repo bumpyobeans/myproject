@@ -39,6 +39,7 @@ const jsonLd = {
   jsonLd={jsonLd}
 >
   <article>
+    {post.data.image && <img src={post.data.image} alt="" class="post-hero" />}
     <h1>{post.data.title}</h1>
     <p class="article-meta">
       <time datetime={dateISO}>{post.data.date.toLocaleDateString('ko-KR')}</time>
