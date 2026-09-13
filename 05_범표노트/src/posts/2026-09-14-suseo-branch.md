@@ -4,6 +4,7 @@ date: 2026-09-14
 category: "가맹점 이야기"
 public: true
 description: "2026년 10월 말 문을 여는 범표원두 두 번째 가맹점, 수서점을 미리 소개합니다."
+image: "/images/2026-09-14-suseo-open-soon.jpg"
 tags: ["가맹점", "수서점"]
 links:
   - label: "인스타그램 @bumpyobeans"

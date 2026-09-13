@@ -84,5 +84,12 @@ const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
         </span>
       </div>
     </footer>
+
+    <div id="lightbox-overlay" class="lightbox-overlay" hidden>
+      <button type="button" id="lightbox-close" class="lightbox-close" aria-label="닫기">×</button>
+      <img id="lightbox-img" class="lightbox-img" src="" alt="" />
+    </div>
   </body>
 </html>
+
+<script src="/lightbox.js" is:inline></script>

@@ -485,6 +485,39 @@ article h1 {
   color: var(--accent);
 }
 
+/* 채널 아이콘 링크 (소개 페이지) */
+.channel-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 32px;
+}
+
+.channel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.channel-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.channel-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--pill-bg);
+}
+
 .article-meta {
   color: var(--fg-muted);
   font-size: 0.85rem;
@@ -906,4 +939,49 @@ article .content video {
   color: var(--accent);
   font-size: 0.85rem;
   margin: 0;
+}
+
+/* 이미지 확대(라이트박스) */
+.zoomable {
+  cursor: zoom-in;
+}
+
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 12, 6, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 40px 20px;
+}
+
+.lightbox-overlay[hidden] {
+  display: none;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+  cursor: zoom-out;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.lightbox-close:hover {
+  opacity: 1;
 }

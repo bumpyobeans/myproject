@@ -4,6 +4,7 @@ date: 2026-09-14
 category: "가맹점 이야기"
 public: true
 description: "2026년 1월 문을 연 범표원두 첫 가맹점, 다산정약용도서관점을 소개합니다."
+image: "/images/2026-09-14-dasan-open.jpg"
 tags: ["가맹점", "다산점"]
 links:
   - label: "네이버 플레이스에서 보기"
@@ -15,8 +16,6 @@ links:
 ---
 
 범표원두 다산정약용도서관점은 2026년 1월에 문을 연 저희 첫 가맹점이에요. 남양주 다산신도시, 다산정약용도서관 근처에 자리 잡았습니다.
-
-![다산정약용도서관점 오픈 당시 매장 모습](/images/2026-09-14-dasan-open.jpg)
 
 <div class="info-block">
 
