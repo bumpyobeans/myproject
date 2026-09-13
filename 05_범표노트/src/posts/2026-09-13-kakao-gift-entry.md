@@ -4,6 +4,7 @@ date: 2026-09-13
 category: "입점 이야기"
 public: true
 description: "2022년 호랑이의 해, 카카오톡딜 제안으로 시작해 카카오선물하기 입점까지 이어진 이야기입니다."
+image: "/images/2026-09-13-kakao-gift-entry.png"
 tags: ["카카오선물하기", "입점"]
 ---
 

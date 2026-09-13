@@ -158,7 +158,7 @@ a {
 .post-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -211,8 +211,9 @@ article h1 {
 
 .post-hero {
   width: 100%;
-  max-height: 360px;
-  object-fit: cover;
+  max-height: 480px;
+  object-fit: contain;
+  background: var(--placeholder-bg);
   border-radius: 6px;
   margin-bottom: 20px;
   display: block;

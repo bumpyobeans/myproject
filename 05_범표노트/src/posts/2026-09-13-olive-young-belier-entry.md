@@ -4,6 +4,7 @@ date: 2026-09-13
 category: "입점 이야기"
 public: true
 description: "올리브영이 새로 선보인 웰니스 특화 매장 올리브베러 3호점 오픈에 맞춰 입점 제안을 받은 이야기입니다."
+image: "/images/2026-09-13-olive-young-belier-entry.png"
 tags: ["올리브영", "올리브베러", "입점"]
 ---
 

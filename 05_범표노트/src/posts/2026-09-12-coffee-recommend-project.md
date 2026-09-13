@@ -4,6 +4,7 @@ date: 2026-09-12
 category: "프로젝트 이야기"
 public: true
 description: "질문 몇 개로 취향에 맞는 원두를 추천하고, 카톡으로 친구와 궁합도 볼 수 있는 페이지를 AI와 함께 만든 이야기입니다."
+image: "/images/2026-09-12-coffee-recommend-project.png"
 tags: ["프로젝트", "AI"]
 ---
 
