@@ -8,11 +8,15 @@ tags: ["가맹점", "다산점"]
 links:
   - label: "네이버 플레이스에서 보기"
     url: "https://naver.me/5lf3Tsks"
+  - label: "쿠키런 콜라보 이야기 보기"
+    url: "/posts/2026-09-14-cookierun-collab/"
   - label: "인스타그램 @bumpyobeans"
     url: "https://www.instagram.com/bumpyobeans/"
 ---
 
 범표원두 다산정약용도서관점은 2026년 1월에 문을 연 저희 첫 가맹점이에요. 남양주 다산신도시, 다산정약용도서관 근처에 자리 잡았습니다.
+
+![다산정약용도서관점 오픈 당시 매장 모습](/images/2026-09-14-dasan-open.jpg)
 
 <div class="info-block">
 
@@ -41,3 +45,7 @@ links:
 </div>
 
 </div>
+
+비슷한 시기에 진행한 쿠키런 콜라보 소식도 함께 봐주세요.
+
+![범표원두X쿠키런 콜라보 전시 포스터](/images/2026-09-14-cookierun-collab.jpg)

@@ -12,5 +12,70 @@ import Base from '../layouts/Base.astro';
       </p>
       <p>이 노트의 글은 모두 범표원두 대표가 직접 씁니다.</p>
     </div>
+
+    <section class="stores">
+      <h2 class="stores-title">범표원두가 있는 곳</h2>
+      <p class="stores-subtitle">직영 3곳 · 가맹 2곳 · 로스팅공장 1곳. 이름을 누르면 네이버 플레이스로 연결됩니다.</p>
+
+      <svg class="stores-map-illustration" viewBox="0 0 640 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="범표원두 매장 위치 일러스트 지도">
+        <path class="map-blob" d="M330,140 C390,140 420,180 425,230 C430,280 420,320 400,350 C420,400 410,450 380,490 C350,530 320,545 290,530 C250,515 230,480 220,450 C200,400 195,340 210,290 C220,250 230,200 260,170 C280,150 305,140 330,140 Z" />
+        <path class="map-river" d="M215,300 C260,290 300,310 340,300 C380,290 400,310 420,300" />
+
+        <!-- 별내점 -->
+        <line class="map-leader" x1="340" y1="175" x2="460" y2="110" />
+        <circle class="map-pin" cx="340" cy="175" r="7" />
+        <a href="https://map.naver.com/p/entry/place/1192703168" target="_blank" rel="noopener noreferrer">
+          <rect class="map-card" x="460" y="88" width="150" height="46" rx="8" />
+          <text class="map-card-name" x="475" y="110">별내점</text>
+          <text class="map-card-type" x="475" y="126">직영</text>
+        </a>
+
+        <!-- 구리갈매점 -->
+        <line class="map-leader" x1="368" y1="205" x2="470" y2="205" />
+        <circle class="map-pin" cx="368" cy="205" r="7" />
+        <rect class="map-card" x="470" y="182" width="150" height="46" rx="8" />
+        <text class="map-card-name" x="485" y="204">구리갈매점</text>
+        <text class="map-card-type" x="485" y="220">직영 · 본점</text>
+
+        <!-- 범표원두팩토리 -->
+        <line class="map-leader" x1="318" y1="215" x2="90" y2="250" />
+        <circle class="map-pin" cx="318" cy="215" r="7" />
+        <a href="https://naver.me/FzsVjpZN" target="_blank" rel="noopener noreferrer">
+          <rect class="map-card" x="20" y="228" width="180" height="58" rx="8" />
+          <text class="map-card-name" x="35" y="250">범표원두팩토리</text>
+          <text class="map-card-type" x="35" y="266">로스팅공장</text>
+          <text class="map-card-tip" x="35" y="280">원두 구매·납품문의 가능</text>
+        </a>
+
+        <!-- 다산정약용도서관점 -->
+        <line class="map-leader" x1="415" y1="260" x2="480" y2="320" />
+        <circle class="map-pin" cx="415" cy="260" r="7" />
+        <a href="https://naver.me/5lf3Tsks" target="_blank" rel="noopener noreferrer">
+          <rect class="map-card" x="480" y="298" width="150" height="58" rx="8" />
+          <text class="map-card-name" x="495" y="320">다산정약용</text>
+          <text class="map-card-name" x="495" y="336">도서관점</text>
+          <text class="map-card-type" x="495" y="350">가맹 1호점</text>
+        </a>
+
+        <!-- 역삼점 -->
+        <line class="map-leader" x1="222" y1="480" x2="90" y2="460" />
+        <circle class="map-pin" cx="222" cy="480" r="7" />
+        <a href="https://map.naver.com/p/entry/place/1680652900" target="_blank" rel="noopener noreferrer">
+          <rect class="map-card" x="20" y="438" width="150" height="46" rx="8" />
+          <text class="map-card-name" x="35" y="460">역삼점</text>
+          <text class="map-card-type" x="35" y="476">직영</text>
+        </a>
+
+        <!-- 수서점 -->
+        <line class="map-leader" x1="310" y1="515" x2="460" y2="560" />
+        <circle class="map-pin map-pin-soon" cx="310" cy="515" r="7" />
+        <rect class="map-card" x="460" y="538" width="160" height="58" rx="8" />
+        <text class="map-card-name" x="475" y="560">수서점</text>
+        <text class="map-card-type" x="475" y="576">가맹 · 10월 말</text>
+        <text class="map-card-tip" x="475" y="590">오픈 예정</text>
+      </svg>
+
+      <p class="stores-note">📍 범표원두팩토리(로스팅공장)에서도 원두를 직접 구매하실 수 있어요. 주변 제조업체의 납품 문의도 환영합니다.</p>
+    </section>
   </article>
 </Base>
