@@ -1,5 +1,15 @@
 ---
 import Base from '../layouts/Base.astro';
+import koreaMapSvg from '../assets/korea-map.svg?raw';
+
+const stores = [
+  { name: '구리갈매점', type: '직영 · 본점', url: null },
+  { name: '별내점', type: '직영', url: 'https://map.naver.com/p/entry/place/1192703168' },
+  { name: '역삼점', type: '직영', url: 'https://map.naver.com/p/entry/place/1680652900' },
+  { name: '다산정약용도서관점', type: '가맹 1호점', url: 'https://naver.me/5lf3Tsks' },
+  { name: '수서점', type: '가맹 · 10월 말 오픈 예정', url: null },
+  { name: '범표원두팩토리', type: '로스팅공장 · 원두 구매 가능', url: 'https://naver.me/FzsVjpZN' },
+];
 ---
 
 <Base title="소개" path="/about/" description="범표원두 소개: 20년 스페셜티 커피 로스터리">
@@ -14,116 +24,31 @@ import Base from '../layouts/Base.astro';
     </div>
 
     <section class="stores">
-      <h2 class="stores-title">범표원두가 있는 곳</h2>
-      <p class="stores-subtitle">직영 3곳 · 가맹 2곳 · 로스팅공장 1곳. 이름을 누르면 그 위치로 이동해요.</p>
-      <div class="stores-chips" id="stores-chips"></div>
-      <div id="stores-map" class="stores-map"></div>
+      <h2 class="stores-title">범표라떼 맛보기 지도</h2>
+      <p class="stores-subtitle">직영 3곳 · 가맹 2곳 · 로스팅공장 1곳. 아직은 서울·경기에서만 만나요.</p>
+
+      <div class="korea-map-wrap">
+        <div class="korea-map-svg" set:html={koreaMapSvg} />
+        <div class="korea-callout">
+          <p class="korea-callout-title">서울 · 경기</p>
+          <ul class="korea-callout-list">
+            {stores.map((s) => (
+              <li>
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer">
+                    {s.name} <span>{s.type}</span>
+                  </a>
+                ) : (
+                  <span class="korea-callout-plain">{s.name} <span>{s.type}</span></span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
       <p class="stores-note">📍 범표원두팩토리(로스팅공장)에서도 원두를 직접 구매하실 수 있어요. 주변 제조업체의 납품 문의도 환영합니다.</p>
+      <p class="stores-credit">지도: simplemaps.com</p>
     </section>
   </article>
 </Base>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" is:inline></script>
-<script is:inline>
-  (function () {
-    var STORES = [
-      {
-        name: '구리갈매점',
-        type: '직영 · 본점',
-        address: '경기 구리시 갈매순환로204번길 51-14, 1층(갈매동)',
-        lat: 37.63896,
-        lng: 127.12357,
-        url: null,
-      },
-      {
-        name: '별내점',
-        type: '직영',
-        address: '경기 남양주시 별내2로 117 가동 1층',
-        lat: 37.64540,
-        lng: 127.12252,
-        url: 'https://map.naver.com/p/entry/place/1192703168',
-      },
-      {
-        name: '역삼점',
-        type: '직영',
-        address: '서울 강남구 테헤란로37길 42 지하1층',
-        lat: 37.50287,
-        lng: 127.04082,
-        url: 'https://map.naver.com/p/entry/place/1680652900',
-      },
-      {
-        name: '다산정약용도서관점',
-        type: '가맹 1호점',
-        address: '경기 남양주시 다산동, 다산중앙로82번안길 143-9 1층',
-        lat: 37.61292,
-        lng: 127.16703,
-        url: 'https://naver.me/5lf3Tsks',
-      },
-      {
-        name: '수서점',
-        type: '가맹 · 10월 말 오픈 예정',
-        address: '서울 강남구 수서동 713 수서현대벤처빌 1층 1162호',
-        lat: 37.48809,
-        lng: 127.10173,
-        url: null,
-      },
-      {
-        name: '범표원두팩토리',
-        type: '로스팅공장',
-        address: '경기 구리시 갈매순환로166번길 46 금강펜테리움IX타워 지식산업센터동 3층 03-006호',
-        lat: 37.63582,
-        lng: 127.12480,
-        url: 'https://naver.me/FzsVjpZN',
-        note: '원두 직접 구매 가능 · 제조업체 납품 문의 환영',
-      },
-    ];
-
-    var mapEl = document.getElementById('stores-map');
-    var chipsEl = document.getElementById('stores-chips');
-    if (!mapEl || !chipsEl || typeof L === 'undefined') return;
-
-    var map = L.map(mapEl);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri',
-      maxZoom: 19,
-    }).addTo(map);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      maxZoom: 19,
-      opacity: 0.9,
-    }).addTo(map);
-
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-      });
-    }
-
-    var markers = STORES.map(function (s) {
-      var html =
-        '<strong>' + escapeHtml(s.name) + '</strong><br>' +
-        escapeHtml(s.type) + '<br>' +
-        escapeHtml(s.address) +
-        (s.note ? '<br><em>' + escapeHtml(s.note) + '</em>' : '') +
-        (s.url ? '<br><a href="' + s.url + '" target="_blank" rel="noopener noreferrer">네이버 플레이스에서 보기</a>' : '');
-      var marker = L.marker([s.lat, s.lng]).addTo(map).bindPopup(html);
-      return marker;
-    });
-
-    var group = L.featureGroup(markers);
-    map.fitBounds(group.getBounds().pad(0.25));
-
-    STORES.forEach(function (s, i) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'pill store-chip';
-      btn.textContent = s.name;
-      btn.addEventListener('click', function () {
-        map.setView([s.lat, s.lng], 15);
-        markers[i].openPopup();
-      });
-      chipsEl.appendChild(btn);
-    });
-  })();
-</script>

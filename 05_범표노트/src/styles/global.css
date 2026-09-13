@@ -226,25 +226,87 @@ a {
   color: var(--fg-muted);
 }
 
-.stores-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.store-chip {
-  cursor: pointer;
-  font: inherit;
-}
-
-.stores-map {
+.korea-map-wrap {
+  position: relative;
   width: 100%;
-  height: 420px;
-  border-radius: 6px;
-  overflow: hidden;
+}
+
+.korea-map-svg svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.korea-map-svg path {
+  fill: var(--placeholder-bg);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.korea-map-svg path#KR11,
+.korea-map-svg path#KR41 {
+  fill: var(--accent);
+}
+
+.korea-map-svg #points,
+.korea-map-svg #label_points {
+  display: none;
+}
+
+.korea-callout {
+  position: absolute;
+  left: 3%;
+  top: 11%;
+  width: 34%;
+  min-width: 150px;
+  background: var(--bg);
   border: 1px solid var(--border);
-  background: var(--placeholder-bg);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.korea-callout-title {
+  margin: 0 0 8px;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--fg);
+}
+
+.korea-callout-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.korea-callout-list a,
+.korea-callout-plain {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+  line-height: 1.4;
+}
+
+.korea-callout-list a:hover {
+  color: var(--accent);
+}
+
+.korea-callout-list span:not(.korea-callout-plain) {
+  display: block;
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: var(--fg-mute3);
+}
+
+.stores-credit {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: var(--fg-mute3);
 }
 
 .stores-note {
