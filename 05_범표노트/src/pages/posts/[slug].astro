@@ -50,6 +50,17 @@ const jsonLd = {
       <Content />
     </div>
 
+    {post.data.links && post.data.links.length > 0 && (
+      <div class="post-links">
+        <p class="post-links-label">LINKS</p>
+        <div class="post-links-row">
+          {post.data.links.map((l) => (
+            <a href={l.url} target="_blank" rel="noopener noreferrer" class="post-link-btn">{l.label}</a>
+          ))}
+        </div>
+      </div>
+    )}
+
     <section class="comments" id="comments">
       <h2>댓글</h2>
       <ul class="comment-list" id="comment-list"></ul>

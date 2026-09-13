@@ -247,7 +247,7 @@ a {
 .post-thumb {
   flex: 1 1 220px;
   max-width: 220px;
-  aspect-ratio: 4/3;
+  aspect-ratio: 16/9;
   border-radius: 6px;
   overflow: hidden;
   background: var(--placeholder-bg);
@@ -256,7 +256,7 @@ a {
 .post-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 
@@ -309,12 +309,48 @@ article h1 {
 
 .post-hero {
   width: 100%;
-  max-height: 480px;
-  object-fit: contain;
+  aspect-ratio: 16/9;
+  object-fit: cover;
   background: var(--placeholder-bg);
   border-radius: 6px;
   margin-bottom: 20px;
   display: block;
+}
+
+/* 글 LINKS */
+.post-links {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.post-links-label {
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--fg-mute3);
+}
+
+.post-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.post-link-btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.post-link-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .article-meta {
