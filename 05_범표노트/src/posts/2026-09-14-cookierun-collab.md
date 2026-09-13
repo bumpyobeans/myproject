@@ -4,6 +4,7 @@ date: 2026-09-14
 category: "프로젝트 이야기"
 public: true
 description: "쿠키런 '사라진 국가유산을 찾아서' 특별전시에 범표원두X쿠키런 콜라보 패키지로 함께했습니다."
+image: "/images/2026-09-14-cookierun-product.jpg"
 tags: ["콜라보", "쿠키런"]
 links:
   - label: "인스타그램 @bumpyobeans"
