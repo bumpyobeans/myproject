@@ -1635,7 +1635,10 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (t && t > d) e.t = t;
     var mn = $("evMenu").value.trim(); if (mn) e.menu = mn;
     $("evMsg").innerHTML = "";
-    evSave(e).then(function () { $("evTitle").value = ""; $("evMenu").value = ""; $("evT").value = ""; });
+    evSave(e).then(function () {
+      $("evTitle").value = ""; $("evMenu").value = ""; $("evT").value = "";
+      if (!$("evMsg").innerHTML) $("evMsg").innerHTML = '<div class="msg">‘' + esc(e.title) + '’을(를) 적었습니다. 바로 아래 목록에서 전후 비교를, 위쪽 매출 추이 차트에서 점선 표시를 확인하세요.</div>';
+    });
   });
   $("evList").addEventListener("click", function (ev) {
     var b = ev.target.closest(".ev-del"); if (!b) return;
@@ -2311,7 +2314,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       renderSoon(); maybeAutoSync();
     });
     db.collection("events").onSnapshot(function (snap) {
-      state.events = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; }); renderSoon();
+      state.events = snap.docs.map(function (d) { var x = Object.assign({}, d.data()); x.id = d.id; return x; }); renderSoon();
     });
     db.collection("imports").onSnapshot(function (snap) {
       var m = {}; snap.docs.forEach(function (d) { m[d.id] = d.data(); }); shared.imports = m; renderSyncLog();
