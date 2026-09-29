@@ -414,7 +414,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   var DOW_ORDER = [1, 2, 3, 4, 5, 6, 0];
   var GRP = ["음료", "베이커리", "원두·홈카페", "옵션·기타", "선불카드"];
   var MENU_GRP = { "음료": 1, "베이커리": 1, "원두·홈카페": 1 };
-  var DESSERT_RE = /(빵|케이크|케익|쿠키|크루아상|크로와상|마카롱|스콘|베이글|샌드위치|와플|크로플|크룽지|머핀|브라우니|타르트|휘낭시에|마들렌|토스트|디저트|파이|도넛|카스테라|떡|아슈크림|아이스크림)/;
+  var DESSERT_RE = /(빵|케이크|케익|쿠키|크루아상|크로와상|마카롱|스콘|베이글|샌드위치|와플|크로플|크룽지|머핀|브라우니|타르트|휘낭시에|마들렌|토스트|디저트|파이|도넛|카스테라|떡|아슈크림|아이스크림|베이첼|파운드|크로크|무슈)/;
 
   // ---------- 상태 ----------
   var STORES = ["K1", "K3", "K2"]; // CUBE 카운터, CUBE 키오스크, O2POS 키오스크
@@ -453,9 +453,9 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (/(VIP카드|상품권|충전|기프트카드|선불|멤버십카드|정기권)/i.test(n)) return "선불카드";
     if (/(ICE-?UP|^ICE$|기본ICE|^HOT|얼음[OX○●×]|사이즈|\d+ml얼음|홀빈|선물포장|분쇄|샷추가|디카페인변경|시럽추가|휘핑추가|크림치즈$|비닐|봉투|쇼핑백|캐리어|옵션|할인|변경$|추가$)/i.test(n)) return "옵션·기타";
     if (/\+/.test(n)) return "음료"; // 아메리카노+케이크 같은 세트
-    if (/(보냉백|텀블러|머그|굿즈|에코백)/.test(n)) return "옵션·기타";
-    if (/(원두|드립백|캡슐|티백|블랜딩|리필팩|가루커피|\d+g$|\d+kg$|(블랜딩|디카페인|콜드브루|원액)\d+(ml|L)$)/i.test(n) || /(원두|드립백)/.test(c)) return "원두·홈카페";
-    if (/(라떼|아메리카노|에이드|프라페|스무디|밀크티|커피|주스|티$|아포카토)/.test(n)) return "음료";
+    if (/(보냉백|텀블러|머그|굿즈|에코백|체험|포트|키트|컵\(|머들러|더스트백|범티|택배비)/.test(n) || /(굿즈|선물포장)/.test(c)) return "옵션·기타";
+    if (/(원두|드립백|캡슐|티백|블랜딩|리필팩|가루커피|\d+g$|\d+kg\)?$|(블랜딩|디카페인|콜드브루|원액)\d+(ml|L)$)/i.test(n) || /(원두|드립백|커피제품|1kg)/.test(c)) return "원두·홈카페";
+    if (/(라떼|아메리카노|에이드|프라페|스무디|밀크티|커피|주스|티$|아포카토|드립|콜드브루|HOT|ICE)/i.test(n)) return "음료";
     if (DESSERT_RE.test(n) || /(베이커리|빵|디저트|케이크|푸드|bakery|dessert)/i.test(c)) return "베이커리";
     return "음료";
   }
@@ -872,6 +872,9 @@ footer { font-size: 12px; color: var(--ink-3); }
       hs[r.h] = 1; void n;
     });
     var keys = Object.keys(hs).map(Number).sort(function (a, b) { return a - b; });
+    var ht = {}, tot = 0; S.hours.forEach(function (r) { ht[r.h] = (ht[r.h] || 0) + r.a; tot += r.a; });
+    while (keys.length > 1 && ht[keys[0]] < tot * 0.01) keys.shift(); // 문 열기 전·닫은 뒤 가끔 찍힌 주문
+    while (keys.length > 1 && ht[keys[keys.length - 1]] < tot * 0.01) keys.pop();
     var hours = []; if (keys.length) for (var h = keys[0]; h <= keys[keys.length - 1]; h++) hours.push(h);
     ks.forEach(function (s) { per[s].nd = Object.keys(per[s].days).length || 1; });
     return { per: per, hours: hours };
@@ -1497,13 +1500,13 @@ footer { font-size: 12px; color: var(--ink-3); }
         var a = amountOf(r);
         if (!tm || isNaN(a)) { bad++; return; }
         var st = str(g(r, "status"));
-        if (/(취소|반품)/.test(st)) { cancel++; return; } // 취소·반품 줄은 판매금액이 0원이라 수량만 부풀림
+        if (/취소/.test(st)) { cancel++; return; } // 취소 줄은 판매금액이 0원이라 수량만 부풀림 (반품은 마이너스로 반영)
         var cat = str(g(r, "cat")), oid = str(g(r, "order"));
         var s = meta.s === "split" ? (/(키오스크|kiosk)/i.test(str(g(r, "pos"))) ? "K3" : "K1") : meta.s;
-        var sd = Math.abs(n0(g(r, "sd"))), od = Math.abs(n0(g(r, "od"))), hasSplit = map.sd != null || map.od != null;
+        var sd = n0(g(r, "sd")), od = n0(g(r, "od")), hasSplit = map.sd != null || map.od != null;
         var dineV = str(g(r, "dine"));
         tx.push({ s: s, d: dp.d, h: tm.h, o: oid || dp.d + " " + pad(tm.h) + ":" + pad(tm.m), p: product, c: cat, g: classify(product, cat), q: (function () { var q = parseNum(g(r, "qty")); return isNaN(q) ? 1 : q; })(), a: a,
-          dc: hasSplit ? sd + od : Math.abs(n0(g(r, "dc"))), od: hasSplit ? od : null, sd: hasSplit ? sd : null, dine: dineV ? !/포장/.test(dineV) : null });
+          dc: hasSplit ? sd + od : n0(g(r, "dc")), od: hasSplit ? od : null, sd: hasSplit ? sd : null, dine: dineV ? !/포장/.test(dineV) : null });
       });
       out = aggregateTx(tx);
     }
@@ -1587,7 +1590,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       html = '<table><thead><tr><th>메뉴</th><th>상품군</th><th class="r">수량</th><th class="r">실매출</th><th class="r">할인</th></tr></thead><tbody>' +
         list.slice(0, 6).map(function (r) { return "<tr><td>" + esc(r.p) + '</td><td class="muted">' + r.g + '</td><td class="r num">' + num(r.q) + '</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.dc ? won(r.dc) : "—") + "</td></tr>"; }).join("") + "</tbody></table>";
       if (res.shareSum != null && res.shareSum < 99.5) html += '<div class="msg err" style="margin-top:6px">이 파일은 판매 상위 순위만 들어 있습니다 (점유율 합계 ' + res.shareSum.toFixed(1) + "%). 빠진 메뉴 매출 약 " + won(sumBy(list, function (r) { return r.a; }) * (100 / res.shareSum - 1)) + ". POS에서 순위 제한 없이 받을 수 있으면 전체로 받아 주세요.</div>";
-      html += '<p class="sub" style="margin:4px 0 0">메뉴 ' + num(Object.keys(list.reduce(function (m, r) { m[r.p] = 1; return m; }, {})).length) + "종류 · 실매출 합계 <b>" + won(sumBy(list, function (r) { return r.a; })) + "</b> · 할인 " + won(sumBy(list, function (r) { return r.dc + (r.ndl || 0); })) + (fm.meta.s === "split" ? " · " + ["K1", "K3"].map(function (k) { return kName(k) + " " + won(sumBy(list.filter(function (r) { return r.s === k; }), function (r) { return r.a; })); }).join(", ") : "") + (res.cancel ? " · 취소·반품 줄 " + res.cancel + "개 제외" : "") + (res.subs ? " · 분류 소계 줄 " + res.subs + "개 제외" : "") + (res.bad ? " · 합계·빈 줄 " + res.bad + "개 제외" : "") + " — POS 화면의 합계와 같은지 확인하세요.</p>";
+      html += '<p class="sub" style="margin:4px 0 0">메뉴 ' + num(Object.keys(list.reduce(function (m, r) { m[r.p] = 1; return m; }, {})).length) + "종류 · 실매출 합계 <b>" + won(sumBy(list, function (r) { return r.a; })) + "</b> · 할인 " + won(sumBy(list, function (r) { return r.dc + (r.ndl || 0); })) + (fm.meta.s === "split" ? " · " + ["K1", "K3"].map(function (k) { return kName(k) + " " + won(sumBy(list.filter(function (r) { return r.s === k; }), function (r) { return r.a; })); }).join(", ") : "") + (res.cancel ? " · 취소 줄 " + res.cancel + "개 제외" : "") + (res.subs ? " · 분류 소계 줄 " + res.subs + "개 제외" : "") + (res.bad ? " · 합계·빈 줄 " + res.bad + "개 제외" : "") + " — POS 화면의 합계와 같은지 확인하세요.</p>";
     } else if (fm.type === "hour" || fm.type === "hourwide") {
       if (fm.type === "hourwide") { var ds = {}; d.hour.forEach(function (r) { ds[r.f] = 1; }); html = '<p class="sub" style="margin:0 0 4px">' + Object.keys(ds).length + "일 × 시간대 · 아래는 첫 줄들</p>"; } else html = "";
       html += '<table><thead><tr><th>시간</th><th class="r">매출</th><th class="r">주문</th></tr></thead><tbody>' + d.hour.slice(0, 6).map(function (r) { return '<tr><td class="num">' + (fm.type === "hourwide" ? r.f.slice(5) + " " : "") + r.h + '시</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.o == null ? "—" : num(r.o)) + "</td></tr>"; }).join("") + "</tbody></table>" +
