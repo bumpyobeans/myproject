@@ -117,11 +117,27 @@ button { cursor: pointer; }
 
 /* heatmap */
 .heat-scroll { overflow-x: auto; }
-.heat { display: grid; gap: 2px; min-width: 520px; }
-.heat .hl { font-family: var(--font-num); font-size: 11px; color: var(--ink-3); display: flex; align-items: center; justify-content: center; }
-.heat .rl { justify-content: flex-start; padding-right: 6px; font-family: var(--font-body); font-size: 12px; color: var(--ink-2); }
-.heat .cell { height: 26px; border-radius: 3px; cursor: default; }
+.heat { display: grid; gap: 3px; }
+.heat .hl { white-space: nowrap; font-family: var(--font-num); font-size: 11px; color: var(--ink-3); display: flex; align-items: center; justify-content: center; }
+.heat .rl { justify-content: flex-start; padding-right: 6px; font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.heat .rl.off, .heat .avg-l { font-weight: 400; color: var(--ink-3); }
+.heat .tot-h { font-family: var(--font-body); justify-content: flex-end; }
+.heat .cell { height: 34px; border-radius: 4px; cursor: default; display: flex; align-items: center; justify-content: center; font-family: var(--font-num); font-size: 11.5px; font-variant-numeric: tabular-nums; }
 .heat .cell:hover { outline: 2px solid var(--ink); outline-offset: -1px; }
+.heat .cell.peak { box-shadow: inset 0 0 0 2px #f2b53a; font-weight: 700; }
+.heat .cell.closed { height: 26px; color: var(--ink-3); font-family: var(--font-body); font-size: 12px; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--line) 6px 7px); border: 1px dashed var(--line); }
+.heat .tot { position: relative; display: flex; align-items: center; justify-content: flex-end; padding: 0 4px; font-family: var(--font-num); font-size: 12px; color: var(--ink); }
+.heat .tot b { position: relative; font-weight: 600; }
+.heat .tot.off { color: var(--ink-3); }
+.heat .tot-bar { position: absolute; right: 0; top: 7px; bottom: 7px; background: var(--heat-lo); border-radius: 3px; }
+.heat .avg-t { border-top: 1px solid var(--line); }
+.heat .colavg { height: 26px; display: flex; align-items: flex-end; border-top: 1px solid var(--line); padding-top: 3px; }
+.heat .colavg span { display: block; width: 100%; background: var(--ink-3); opacity: .45; border-radius: 2px 2px 0 0; }
+.heat-note { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0 10px; font-size: 13px; color: var(--ink-2); }
+.heat-note b { color: var(--ink); }
+.heat-note .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.heat-note .dot.pk { box-shadow: inset 0 0 0 2px #f2b53a; background: var(--heat-hi); }
+.heat-note .dot.sl { background: var(--heat-lo); border: 1px solid var(--line); }
 .heat-key { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-3); font-family: var(--font-num); }
 .heat-key .bar { width: 140px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--heat-lo), var(--heat-hi)); }
 
@@ -188,6 +204,12 @@ td.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .map label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
 .krows.pp { grid-template-columns: auto auto minmax(0, 1fr); column-gap: 14px; }
 .krows.pp .c:last-child { text-align: left; }
+.krows.pp .c.muted { text-align: left; }
+@media (max-width: 560px) {
+  .krows.pp { grid-template-columns: auto minmax(0, 1fr); }
+  .krows.pp .c.muted { grid-column: 1 / -1; padding-top: 0; font-size: 12px; }
+  .krows.pp > div:not(.muted) { border-bottom: 0; padding-bottom: 2px; }
+}
 .folder-in { flex: 1 1 260px; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--panel); }
 .is-shared #sampleBtn { display: none; }
 .is-readonly #drop, .is-readonly #syncBtn, .is-readonly #clearBtn, .is-readonly .names, .is-readonly #folderId { display: none; }
@@ -215,7 +237,6 @@ pre.tpl { font-family: var(--font-num); font-size: 12px; background: var(--bg); 
 .gbar div { height: 100%; }
 .gbar div:last-child { border-radius: 0 4px 4px 0; }
 .grow .gv { white-space: nowrap; font-size: 12px; }
-.heat .cell.none { background: transparent; border: 1px dashed var(--line); }
 .guide { border-top: 1px solid var(--grid); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 .guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; font-size: 13px; }
 .guide ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink-2); }
@@ -304,10 +325,11 @@ footer { font-size: 12px; color: var(--ink-3); }
     <section class="panel" aria-labelledby="heatH">
       <div class="panel-head">
         <h2 id="heatH">요일 × 시간 매출 지도</h2>
-        <div class="heat-key" id="heatKey"><span id="heatMin">0</span><span class="bar"></span><span id="heatMax"></span></div>
+        <div class="heat-key" id="heatKey"><span id="heatMin">단위 만원 · 0</span><span class="bar"></span><span id="heatMax"></span></div>
       </div>
+      <div class="heat-note" id="heatNote"></div>
       <div class="heat-scroll"><div class="heat" id="heat"></div></div>
-      <span class="sub">칸 = 해당 요일·시간의 하루 평균 매출. 진할수록 바쁜 시간입니다.</span>
+      <span class="sub">칸 숫자 = 그 요일·시간의 하루 평균 매출(만원). 진할수록 바쁜 시간, 노란 테두리는 가장 바쁜 칸. 맨 아래 막대는 영업 요일 평균입니다.</span>
     </section>
   </div>
 
@@ -764,7 +786,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     renderDataStats();
     var rg = currentRange();
     if (!rg) {
-      ["ideas", "dailyChart", "kioskCmp", "hourChart", "heat", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
+      ["ideas", "dailyChart", "kioskCmp", "hourChart", "heat", "heatNote", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
       $("kpis").innerHTML = '<div class="kpi" style="grid-column:1/-1">' + emptyHtml(shared.on ? "아직 공유 자료가 없습니다. POS 파일을 구글 드라이브 폴더에 넣고 아래 ‘지금 불러오기’를 누르거나, 파일을 직접 올려 주세요." : "아직 데이터가 없습니다. 아래 “데이터 관리”에서 POS 엑셀 파일을 불러오세요.") + "</div>";
       $("rangeLabel").textContent = "";
       return;
@@ -915,12 +937,9 @@ footer { font-size: 12px; color: var(--ink-3); }
 
   function renderHeat(S, ks) {
     var el = $("heat"), single = S.hours.filter(function (r) { return r.f === r.t; });
-    var hs = {}; single.forEach(function (r) { hs[r.h] = 1; });
-    var keys = Object.keys(hs).map(Number).sort(function (a, b) { return a - b; });
-    $("heatKey").hidden = !keys.length;
-    if (!keys.length) { el.style.gridTemplateColumns = "1fr"; el.style.minWidth = "0"; el.innerHTML = emptyHtml("하루 단위 시간대별 자료가 쌓이면 요일·시간별로 바쁜 때가 보입니다."); return; }
+    $("heatKey").hidden = !single.length; $("heatNote").innerHTML = "";
+    if (!single.length) { el.style.gridTemplateColumns = "1fr"; el.style.minWidth = "0"; el.innerHTML = emptyHtml("하루 단위 시간대별 자료가 쌓이면 요일·시간별로 바쁜 때가 보입니다."); return; }
     el.style.minWidth = "";
-    var hours = []; for (var h = keys[0]; h <= keys[keys.length - 1]; h++) hours.push(h);
     var dates = {}, sums = {}, ords = {};
     single.forEach(function (r) {
       var w = dowOf(r.f), key = w + "|" + r.h;
@@ -929,27 +948,73 @@ footer { font-size: 12px; color: var(--ink-3); }
       if (r.o != null) ords[key] = (ords[key] || 0) + r.o;
     });
     function dc(w) { return dates[w] ? Object.keys(dates[w]).length : 0; }
-    var max = 0;
-    Object.keys(sums).forEach(function (k) { var v = sums[k] / (dc(+k.split("|")[0]) || 1); if (v > max) max = v; });
+    // 자료가 다른 요일의 1/4도 안 되는 요일은 휴무일로 본다 (가끔 연 날 몇 번이 지도를 흐리지 않게)
+    var maxDc = Math.max.apply(null, DOW_ORDER.map(dc));
+    function closed(w) { return dc(w) < Math.max(2, maxDc * 0.25); }
+    function avg(w, h) { return (sums[w + "|" + h] || 0) / (dc(w) || 1); }
+    var open = DOW_ORDER.filter(function (w) { return !closed(w); });
+    if (!open.length) open = DOW_ORDER.filter(dc);
+    var max = 0, peak = null, total = 0;
+    var hk = {}; Object.keys(sums).forEach(function (k) { hk[+k.split("|")[1]] = 1; });
+    var keys = Object.keys(hk).map(Number).sort(function (a, b) { return a - b; });
+    open.forEach(function (w) { keys.forEach(function (h) { var v = avg(w, h); total += v; if (v > max) { max = v; peak = [w, h]; } }); });
+    // 영업일 기준 평균이 가장 바쁜 칸의 3%도 안 되는 앞뒤 시간은 잘라낸다
+    function colMax(h) { return Math.max.apply(null, open.map(function (w) { return avg(w, h); })); }
+    var h0 = keys[0], h1 = keys[keys.length - 1];
+    while (h0 < h1 && colMax(h0) < max * 0.03) h0++;
+    while (h1 > h0 && colMax(h1) < max * 0.03) h1--;
+    var hours = []; for (var h = h0; h <= h1; h++) hours.push(h);
     var lo = hexToRgb(css("--heat-lo")), hi = hexToRgb(css("--heat-hi"));
-    el.style.gridTemplateColumns = "34px repeat(" + hours.length + ", minmax(22px, 1fr))";
-    var html = '<div class="hl"></div>' + hours.map(function (h) { return '<div class="hl">' + h + "</div>"; }).join("");
+    function shade(v) {
+      var t = max ? Math.sqrt(v / max) : 0, c = lo.map(function (x, i) { return Math.round(x + (hi[i] - x) * t); });
+      var lum = (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255;
+      return "background:rgb(" + c.join(",") + ");color:" + (lum < 0.55 ? "#fff" : "#1a1c19");
+    }
+    function man(v) { var m = v / 10000; return m >= 10 ? String(Math.round(m)) : m >= 0.05 ? m.toFixed(1).replace(/\.0$/, "") : ""; }
+    var dayTot = {}; open.forEach(function (w) { dayTot[w] = hours.reduce(function (t, h) { return t + avg(w, h); }, 0); });
+    var maxTot = Math.max.apply(null, open.map(function (w) { return dayTot[w]; })) || 1;
+    el.style.gridTemplateColumns = "34px repeat(" + hours.length + ", minmax(30px, 1fr)) 58px";
+    el.style.minWidth = (34 + 58 + hours.length * 30 + (hours.length + 1) * 3) + "px";
+    var html = '<div class="hl"></div>' + hours.map(function (h) { return '<div class="hl">' + h + "시</div>"; }).join("") + '<div class="hl tot-h">하루</div>';
     DOW_ORDER.forEach(function (w) {
-      html += '<div class="hl rl">' + DOW[w] + "</div>";
+      var n = dc(w), isOff = closed(w);
+      html += '<div class="hl rl' + (isOff ? " off" : "") + '">' + DOW[w] + "</div>";
+      if (isOff) {
+        html += '<div class="cell closed" style="grid-column:span ' + hours.length + '" data-t="' + DOW[w] + '요일" data-c="' + n + '">' + (n ? "휴무 (영업 기록 " + n + "일)" : "휴무") + "</div>";
+        html += '<div class="tot off">–</div>';
+        return;
+      }
       hours.forEach(function (h) {
-        var n = dc(w), key = w + "|" + h;
-        if (!n) { html += '<div class="cell none" data-t="' + DOW[w] + "요일 " + h + '시" data-n="0"></div>'; return; }
-        var v = (sums[key] || 0) / n, o = ords[key] != null ? ords[key] / n : -1;
-        html += '<div class="cell" style="background:' + mix(lo, hi, max ? Math.sqrt(v / max) : 0) + '" data-t="' + DOW[w] + "요일 " + h + '시" data-v="' + v + '" data-o="' + o + '" data-n="' + n + '"></div>';
+        var v = avg(w, h), key = w + "|" + h, o = ords[key] != null ? ords[key] / n : -1;
+        var pk = peak && peak[0] === w && peak[1] === h;
+        html += '<div class="cell' + (pk ? " peak" : "") + '" style="' + shade(v) + '" data-t="' + DOW[w] + "요일 " + h + '시" data-v="' + v + '" data-o="' + o + '" data-n="' + n + '" data-w="' + w + '">' + man(v) + "</div>";
       });
+      html += '<div class="tot"><span class="tot-bar" style="width:' + (dayTot[w] / maxTot * 100).toFixed(1) + '%"></span><b>' + shortWon(dayTot[w]) + "</b></div>";
     });
+    // 맨 아래: 영업 요일 평균
+    html += '<div class="hl rl avg-l">평균</div>';
+    var colAvg = hours.map(function (h) { return open.reduce(function (t, w) { return t + avg(w, h); }, 0) / open.length; });
+    var cmax = Math.max.apply(null, colAvg) || 1;
+    colAvg.forEach(function (v, i) { html += '<div class="colavg" title="' + hours[i] + '시 평균 ' + won(v) + '"><span style="height:' + Math.max(2, v / cmax * 100).toFixed(1) + '%"></span></div>'; });
+    html += '<div class="tot avg-t"><b>' + shortWon(open.reduce(function (t, w) { return t + dayTot[w]; }, 0) / open.length) + "</b></div>";
     el.innerHTML = html;
     $("heatMax").textContent = shortWon(max) + "원";
+    // 한 줄 요약: 가장 바쁜 때 / 가장 한산한 영업 시간 / 가장 강한 요일
+    var slow = null;
+    open.forEach(function (w) { hours.forEach(function (h) { var v = avg(w, h); if (colAvg[hours.indexOf(h)] >= cmax * 0.25 && (!slow || v < slow[2])) slow = [w, h, v]; }); });
+    var best = open.slice().sort(function (a, b) { return dayTot[b] - dayTot[a]; });
+    var note = [];
+    if (peak) note.push('<span class="hn"><i class="dot pk"></i>가장 바쁜 때 <b>' + DOW[peak[0]] + " " + peak[1] + "시</b> · " + shortWon(max) + "원</span>");
+    if (slow) note.push('<span class="hn"><i class="dot sl"></i>영업 중 가장 한산한 때 <b>' + DOW[slow[0]] + " " + slow[1] + "시</b> · " + shortWon(slow[2]) + "원</span>");
+    if (best.length > 1) note.push('<span class="hn">매출 높은 요일 <b>' + DOW[best[0]] + "</b> · 낮은 요일 <b>" + DOW[best[best.length - 1]] + "</b></span>");
+    $("heatNote").innerHTML = note.join("");
     el.querySelectorAll(".cell").forEach(function (c) {
       bindTip(c, function () {
-        if (c.getAttribute("data-n") === "0") return tipRows(c.getAttribute("data-t"), [{ l: "자료", v: "없음" }]);
-        var o = +c.getAttribute("data-o"), rows = [{ l: "평균 매출", v: won(+c.getAttribute("data-v")) }];
+        if (c.classList.contains("closed")) return tipRows(c.getAttribute("data-t"), [{ l: "상태", v: "휴무일" }, { l: "영업 기록", v: c.getAttribute("data-c") + "일 (지도에서 제외)" }]);
+        var v = +c.getAttribute("data-v"), o = +c.getAttribute("data-o"), w = +c.getAttribute("data-w");
+        var rows = [{ l: "평균 매출", v: won(v) }];
         if (o >= 0) rows.push({ l: "평균 주문", v: o.toFixed(1) + "건" });
+        if (dayTot[w]) rows.push({ l: "그날 매출 중", v: pct(v / dayTot[w]) });
         rows.push({ l: "자료가 있는 날", v: c.getAttribute("data-n") + "일" });
         return tipRows(c.getAttribute("data-t"), rows);
       });
