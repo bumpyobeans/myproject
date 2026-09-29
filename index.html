@@ -1180,8 +1180,10 @@ footer { font-size: 12px; color: var(--ink-3); }
     ks.forEach(function (s) { Object.keys(S.dt[s]).forEach(function (d) { var w = dowOf(d); byDow[w] = (byDow[w] || 0) + S.dt[s][d].a; }); });
     Object.keys(S.dt[ks[0]] || {}).concat(ks[1] ? Object.keys(S.dt[ks[1]]) : []).forEach(function (d) { (cnt[dowOf(d)] || (cnt[dowOf(d)] = {}))[d] = 1; });
     var dAvg = Object.keys(cnt).map(function (w) { return { w: +w, v: byDow[w] / Object.keys(cnt[w]).length, n: Object.keys(cnt[w]).length }; });
-    if (dAvg.length === 7 && dAvg.every(function (x) { return x.n >= 2; })) {
-      var mean = sumBy(dAvg, function (x) { return x.v; }) / 7;
+    // 영업한 날이 2일 미만인 요일(정기 휴무)은 빼고 비교
+    dAvg = dAvg.filter(function (x) { return x.n >= 2; });
+    if (dAvg.length >= 5) {
+      var mean = sumBy(dAvg, function (x) { return x.v; }) / dAvg.length;
       var weak = dAvg.slice().sort(function (a, b) { return a.v - b.v; })[0], strong = dAvg.slice().sort(function (a, b) { return b.v - a.v; })[0];
       if (weak.v < mean * 0.9) ideas.push({
         tag: "chance", t: DOW[weak.w] + "요일 살리기",
