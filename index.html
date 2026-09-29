@@ -22,6 +22,7 @@
   --accent-soft: #e3eee7;
   --k1: #2a78d6;
   --k2: #eb6834;
+  --k3: #1baf7a;
   --heat-lo: #eef4fc;
   --heat-hi: #104281;
   --good: #0a7d0a;
@@ -36,7 +37,7 @@
   :root:not([data-theme="light"]) {
     --bg: #131412; --panel: #1b1c1a; --ink: #f1f2ee; --ink-2: #c0c3ba; --ink-3: #8b8f85;
     --line: #2f312d; --grid: #262825; --accent: #86c9a5; --accent-ink: #0e1a13; --accent-soft: #1f2f26;
-    --k1: #3987e5; --k2: #d95926; --heat-lo: #1e2530; --heat-hi: #86b6ef;
+    --k1: #3987e5; --k2: #d95926; --k3: #199e70; --heat-lo: #1e2530; --heat-hi: #86b6ef;
     --good: #4cc24c; --crit: #e66767; --warn-bg: #3a2f12; --warn-ink: #f5d78a;
     color-scheme: dark;
   }
@@ -44,7 +45,7 @@
 :root[data-theme="dark"] {
   --bg: #131412; --panel: #1b1c1a; --ink: #f1f2ee; --ink-2: #c0c3ba; --ink-3: #8b8f85;
   --line: #2f312d; --grid: #262825; --accent: #86c9a5; --accent-ink: #0e1a13; --accent-soft: #1f2f26;
-  --k1: #3987e5; --k2: #d95926; --heat-lo: #1e2530; --heat-hi: #86b6ef;
+  --k1: #3987e5; --k2: #d95926; --k3: #199e70; --heat-lo: #1e2530; --heat-hi: #86b6ef;
   --good: #4cc24c; --crit: #e66767; --warn-bg: #3a2f12; --warn-ink: #f5d78a;
   color-scheme: dark;
 }
@@ -245,6 +246,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     <div class="seg" id="kioskSeg">
       <button type="button" data-k="all" aria-pressed="true">전체</button>
       <button type="button" data-k="K1" id="kb1">1호기</button>
+      <button type="button" data-k="K3" id="kb3">CUBE 키오스크</button>
       <button type="button" data-k="K2" id="kb2">2호기</button>
     </div>
     <span class="spacer"></span>
@@ -373,15 +375,17 @@ footer { font-size: 12px; color: var(--ink-3); }
         <label for="cfgB1">1단계 추가 적립 (%)<input type="number" id="cfgB1" min="0" max="100"></label>
         <label for="cfgT2">2단계 충전 금액 (원 이상)<input type="number" id="cfgT2" min="0" step="10000"></label>
         <label for="cfgB2">2단계 추가 적립 (%)<input type="number" id="cfgB2" min="0" max="100"></label>
-        <label for="cfgPP1"><span><span id="ppK1">1호기</span> 선불 사용 기록</span><select id="cfgPP1"><option value="order">주문 할인 (할인금액 − 단품 할인)</option><option value="all">할인금액 전체</option><option value="none">사용 안 함</option></select></label>
-        <label for="cfgPP2"><span><span id="ppK2">2호기</span> 선불 사용 기록</span><select id="cfgPP2"><option value="order">주문 할인</option><option value="all">할인금액 전체</option><option value="none">사용 안 함</option></select></label>
+        <label for="cfgPP_K1"><span><span id="ppName_K1"></span> 선불 사용 기록</span><select id="cfgPP_K1"><option value="order">주문 할인 (전체 할인)</option><option value="all">할인금액 전체</option><option value="none">사용 안 함</option></select></label>
+        <label for="cfgPP_K3"><span><span id="ppName_K3"></span> 선불 사용 기록</span><select id="cfgPP_K3"><option value="order">주문 할인 (전체 할인)</option><option value="all">할인금액 전체</option><option value="none">사용 안 함</option></select></label>
+        <label for="cfgPP_K2"><span><span id="ppName_K2"></span> 선불 사용 기록</span><select id="cfgPP_K2"><option value="order">주문 할인 (전체 할인)</option><option value="all">할인금액 전체</option><option value="none">사용 안 함</option></select></label>
       </div>
       <p class="sub" style="margin:0">선불카드로 결제하면 POS에서 메뉴를 찍고 100% 할인하므로, 그 할인 금액을 ‘선불 사용’으로 봅니다. CUBE는 행사 할인이 ‘단품 할인’으로 따로 나와서 나머지를 선불 사용으로 계산합니다.</p>
     </div>
 
     <div class="names">
-      <label for="name1"><span class="sw" style="background:var(--k1)"></span>CUBE 이름 <input id="name1" maxlength="14"></label>
-      <label for="name2"><span class="sw" style="background:var(--k2)"></span>O2POS 이름 <input id="name2" maxlength="14"></label>
+      <label for="name_K1"><span class="sw" style="background:var(--k1)"></span>CUBE 카운터 <input id="name_K1" maxlength="16"></label>
+      <label for="name_K3"><span class="sw" style="background:var(--k3)"></span>CUBE 키오스크 <input id="name_K3" maxlength="16"></label>
+      <label for="name_K2"><span class="sw" style="background:var(--k2)"></span>O2POS 키오스크 <input id="name_K2" maxlength="16"></label>
     </div>
     <div class="stats" id="dataStats"></div>
     <div class="row">
@@ -409,8 +413,9 @@ footer { font-size: 12px; color: var(--ink-3); }
   var DESSERT_RE = /(빵|케이크|케익|쿠키|크루아상|크로와상|마카롱|스콘|베이글|샌드위치|와플|크로플|크룽지|머핀|브라우니|타르트|휘낭시에|마들렌|토스트|디저트|파이|도넛|카스테라|떡|아슈크림|아이스크림)/;
 
   // ---------- 상태 ----------
-  var state = { names: { K1: "CUBE · 키오스크+카운터", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], sample: true, lastF: null, lastT: null,
-    cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none" } } };
+  var STORES = ["K1", "K3", "K2"]; // CUBE 카운터, CUBE 키오스크, O2POS 키오스크
+  var state = { names: { K1: "CUBE · 카운터", K3: "CUBE · 키오스크", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], sample: true, lastF: null, lastT: null,
+    cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none", K3: "none" } } };
   var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu" };
   var queue = []; // 불러오기 대기 중인 파일
 
@@ -433,7 +438,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   function daysBetween(a, b) { return Math.round((parseYmd(b) - parseYmd(a)) / 86400000); }
   function dowOf(s) { return parseYmd(s).getDay(); }
   function kName(k) { return state.names[k] || k; }
-  function kColor(k) { return k === "K1" ? "var(--k1)" : "var(--k2)"; }
+  function kColor(k) { return "var(--" + k.toLowerCase() + ")"; }
   function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
   function norm(s) { return String(s == null ? "" : s).replace(/\s+/g, "").toLowerCase(); }
   function str(v) { return String(v == null ? "" : v).trim(); }
@@ -442,10 +447,10 @@ footer { font-size: 12px; color: var(--ink-3); }
   function classify(name, cat) {
     var n = String(name).replace(/\s+/g, ""), c = String(cat || "");
     if (/(VIP카드|상품권|충전|기프트카드|선불|멤버십카드|정기권)/i.test(n)) return "선불카드";
-    if (/(ICE-?UP|^ICE$|기본ICE|^HOT|얼음[OX]|사이즈|\d+ml얼음|홀빈|분쇄|샷추가|디카페인변경|시럽추가|휘핑추가|크림치즈$|비닐|봉투|쇼핑백|캐리어|옵션|할인|변경$|추가$)/i.test(n)) return "옵션·기타";
+    if (/(ICE-?UP|^ICE$|기본ICE|^HOT|얼음[OX○●×]|사이즈|\d+ml얼음|홀빈|선물포장|분쇄|샷추가|디카페인변경|시럽추가|휘핑추가|크림치즈$|비닐|봉투|쇼핑백|캐리어|옵션|할인|변경$|추가$)/i.test(n)) return "옵션·기타";
     if (/\+/.test(n)) return "음료"; // 아메리카노+케이크 같은 세트
     if (/(보냉백|텀블러|머그|굿즈|에코백)/.test(n)) return "옵션·기타";
-    if (/(원두|드립백|캡슐|티백|블랜딩|\d+g$|\d+kg$|\d+ml$|\d+L$)/i.test(n) || /(원두|드립백)/.test(c)) return "원두·홈카페";
+    if (/(원두|드립백|캡슐|티백|블랜딩|리필팩|가루커피|\d+g$|\d+kg$|(블랜딩|디카페인|콜드브루|원액)\d+(ml|L)$)/i.test(n) || /(원두|드립백)/.test(c)) return "원두·홈카페";
     if (/(라떼|아메리카노|에이드|프라페|스무디|밀크티|커피|주스|티$|아포카토)/.test(n)) return "음료";
     if (DESSERT_RE.test(n) || /(베이커리|빵|디저트|케이크|푸드|bakery|dessert)/i.test(c)) return "베이커리";
     return "음료";
@@ -465,10 +470,10 @@ footer { font-size: 12px; color: var(--ink-3); }
       if (!o) return false;
       if (o.names) {
         // 예전 기본 이름은 새 기본 이름으로 바꿈 (직접 바꾼 이름은 유지)
-        var oldK1 = { "1호기 · CUBE": 1, "1호기": 1 }, oldK2 = { "2호기 · O2POS": 1, "2호기": 1 };
-        state.names = { K1: o.names.K1 && !oldK1[o.names.K1] ? o.names.K1 : state.names.K1, K2: o.names.K2 && !oldK2[o.names.K2] ? o.names.K2 : state.names.K2 };
+        var old = { K1: { "1호기 · CUBE": 1, "1호기": 1, "CUBE · 키오스크+카운터": 1 }, K2: { "2호기 · O2POS": 1, "2호기": 1 }, K3: {} };
+        STORES.forEach(function (k) { if (o.names[k] && !old[k][o.names[k]]) state.names[k] = o.names[k]; });
       }
-      if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none" } }; } // 2호기(키오스크)는 선불 결제 불가
+      if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none", K3: (c.pp && c.pp.K3) || "none" }, v: c.v }; } // 2호기(키오스크)는 선불 결제 불가
       if ((o.prod && o.prod.length) || (o.hour && o.hour.length) || (o.day && o.day.length)) {
         state.prod = o.prod || []; state.hour = o.hour || []; state.day = o.day || [];
         state.lastF = o.lastF || null; state.lastT = o.lastT || null;
@@ -487,7 +492,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       var p = P[pk] || (P[pk] = out.prod[out.prod.push({ s: r.s, f: r.d, t: r.d, p: r.p, c: r.c || "", g: r.g, q: 0, a: 0, dc: 0 }) - 1]);
       p.q += r.q; p.a += r.a; p.dc += r.dc || 0;
       if (r.od != null) { p.od = (p.od || 0) + r.od; p.sd = (p.sd || 0) + (r.sd || 0); }
-      if (r.dine != null) {
+      if (r.dine != null && r.dine !== undefined) {
         if (p.dq == null) { p.dq = 0; p.da = 0; p.tq = 0; p.ta = 0; }
         if (r.dine) { p.dq += r.q; p.da += r.a; } else { p.tq += r.q; p.ta += r.a; }
       }
@@ -533,7 +538,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       for (h = 8; h <= 20; h++) {
         var n = Math.round(dayOrders * prof[h] / sum * (0.8 + R() * 0.4));
         for (var j = 0; j < n; j++) {
-          var s = R() < 0.6 ? "K1" : "K2", si = slotIdx(h), oid = s + d + (++seq), dine = s === "K1" ? R() < 0.45 : null;
+          var s = R() < 0.45 ? "K2" : R() < 0.75 ? "K1" : "K3", si = slotIdx(h), oid = s + d + (++seq), dine = s === "K1" ? R() < 0.45 : null;
           var prepaid = s === "K1" && R() < 0.14; // 선불카드로 결제 → POS에서 100% 주문 할인
           var items = [], nd = R() < 0.72 ? 1 : 2, x;
           for (x = 0; x < nd; x++) items.push([pick(drinks, si), "음료"]);
@@ -574,7 +579,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     }
     return { from: addDays(dr.max, -(+view.period - 1)), to: dr.max };
   }
-  function ksOf(k) { return k === "all" ? ["K1", "K2"] : [k]; }
+  function ksOf(k) { return k === "all" ? STORES.slice() : [k]; }
   function inR(r, from, to, ks) { return ks.indexOf(r.s) >= 0 && r.f >= from && r.t <= to; }
 
   // 하루 매출: 일별 자료 > 상품 자료 > 시간대 자료 순으로 사용 (중복 합산 방지)
@@ -728,8 +733,8 @@ footer { font-size: 12px; color: var(--ink-3); }
 
   // ---------- 렌더 ----------
   function render() {
-    $("kb1").textContent = kName("K1"); $("kb2").textContent = kName("K2");
-    $("name1").value = state.names.K1; $("name2").value = state.names.K2;
+    $("kb1").textContent = kName("K1"); $("kb2").textContent = kName("K2"); $("kb3").textContent = kName("K3");
+    STORES.forEach(function (k) { $("name_" + k).value = state.names[k]; });
     syncCfg();
     var pill = $("dataPill");
     pill.className = "pill " + (state.sample ? "sample" : "real");
@@ -745,17 +750,17 @@ footer { font-size: 12px; color: var(--ink-3); }
     $("rangeLabel").textContent = rg.from === rg.to ? rg.from.replace(/-/g, ".") + " (" + DOW[dowOf(rg.from)] + ")" : rg.from.replace(/-/g, ".") + " – " + rg.to.replace(/-/g, ".");
     var ks = ksOf(view.kiosk);
     var S = summary(rg.from, rg.to, ks);
-    var S1 = summary(rg.from, rg.to, ["K1"]), S2 = summary(rg.from, rg.to, ["K2"]);
+    var Ss = {}; STORES.forEach(function (k) { Ss[k] = summary(rg.from, rg.to, [k]); });
     renderKpis(S, rg, ks);
     renderDaily(S, rg, ks);
-    renderKiosk(S1, S2);
+    renderKiosk(Ss);
     renderHourly(S, ks);
     renderHeat(S, ks);
     var menu = renderMenu(S);
     renderGroups(S, ks);
     renderPrepaid(S);
     renderDisc(S);
-    renderIdeas(S, S1, S2, menu, rg);
+    renderIdeas(S, Ss, menu, rg);
   }
 
   function renderKpis(S, rg, ks) {
@@ -815,24 +820,23 @@ footer { font-size: 12px; color: var(--ink-3); }
     return tq > 0 ? tq / (tq + dq) : null; // 포장 열이 비어 있으면(포장 미사용) 표시하지 않음
   }
 
-  function renderKiosk(S1, S2) {
-    var el = $("kioskCmp"), tot = S1.menu + S2.menu;
-    if (!tot && !(S1.a + S2.a)) { el.innerHTML = emptyHtml("선택한 기간에 데이터가 없습니다."); return; }
-    tot = tot || 1;
-    var sh1 = S1.menu / tot, sh2 = S2.menu / tot;
+  function renderKiosk(Ss) {
+    var el = $("kioskCmp"), ks = STORES.filter(function (k) { return Ss[k].a || Ss[k].menu; });
+    if (!ks.length) { el.innerHTML = emptyHtml("선택한 기간에 데이터가 없습니다."); return; }
+    var tot = sumBy(ks, function (k) { return Ss[k].menu; }) || 1;
     function q(S) { return sumBy(S.prods, function (r) { return MENU_GRP[r.g] ? r.q : 0; }); }
-    var t1 = takeout(S1.prods), t2 = takeout(S2.prods);
-    var html = '<div class="legend"><span><i class="sw" style="background:var(--k1)"></i>' + esc(kName("K1")) + " " + pct(sh1, 0) + '</span><span><i class="sw" style="background:var(--k2)"></i>' + esc(kName("K2")) + " " + pct(sh2, 0) + '</span><span class="muted">메뉴 판매액 비중</span></div>';
-    html += '<div class="sharebar" role="img" aria-label="메뉴 판매액 비중">' + (sh1 > 0 ? '<div style="width:' + sh1 * 100 + '%;background:var(--k1)"></div>' : "") + (sh2 > 0 ? '<div style="width:' + sh2 * 100 + '%;background:var(--k2)"></div>' : "") + "</div>";
-    html += '<div class="krows"><div></div><div class="h c" style="justify-content:flex-end"><i class="sw" style="background:var(--k1)"></i>' + esc(kName("K1")) + '</div><div class="h c" style="justify-content:flex-end"><i class="sw" style="background:var(--k2)"></i>' + esc(kName("K2")) + "</div>";
     function aov(S) { return S.aov != null ? won(S.aov) : "—"; }
-    [["메뉴 판매액", won(S1.menu), won(S2.menu)], ["POS 실매출", won(S1.a), won(S2.a)],
-     ["선불 충전", won(S1.charge), won(S2.charge)], ["선불 사용", won(S1.used), won(S2.used)],
-     ["주문 건수", S1.aov != null ? num(S1.o) + "건" : "—", S2.aov != null ? num(S2.o) + "건" : "—"], ["객단가", aov(S1), aov(S2)],
-     ["판매 수량 (메뉴)", num(q(S1)) + "개", num(q(S2)) + "개"], ["행사 할인율", pct(S1.promoRate), pct(S2.promoRate)],
-     ["포장 비율", t1 == null ? "—" : pct(t1, 0), t2 == null ? "—" : pct(t2, 0)],
-     ["가장 바쁜 시간", peakHour(S1.hours), peakHour(S2.hours)], ["최다 판매 메뉴", topMenu(S1.prods), topMenu(S2.prods)]].forEach(function (r) {
-      html += '<div class="lab">' + r[0] + '</div><div class="c">' + esc(r[1]) + '</div><div class="c">' + esc(r[2]) + "</div>";
+    var html = '<div class="legend">' + ks.map(function (k) { return '<span><i class="sw" style="background:' + kColor(k) + '"></i>' + esc(kName(k)) + " " + pct(Ss[k].menu / tot, 0) + "</span>"; }).join("") + '<span class="muted">메뉴 판매액 비중</span></div>';
+    html += '<div class="sharebar" role="img" aria-label="메뉴 판매액 비중">' + ks.filter(function (k) { return Ss[k].menu > 0; }).map(function (k) { return '<div style="width:' + Ss[k].menu / tot * 100 + "%;background:" + kColor(k) + '"></div>'; }).join("") + "</div>";
+    html += '<div class="krows" style="grid-template-columns:auto repeat(' + ks.length + ', minmax(0, 1fr))"><div></div>' + ks.map(function (k) { return '<div class="h c" style="justify-content:flex-end"><i class="sw" style="background:' + kColor(k) + '"></i>' + esc(kName(k)) + "</div>"; }).join("");
+    [["메뉴 판매액", function (S) { return won(S.menu); }], ["POS 실매출", function (S) { return won(S.a); }],
+     ["하루 평균 (메뉴)", function (S) { return won(S.perDayMenu); }], ["자료 일수", function (S) { return S.days + "일"; }],
+     ["선불 충전", function (S) { return won(S.charge); }], ["선불 사용", function (S) { return won(S.used); }],
+     ["주문 건수", function (S) { return S.aov != null ? num(S.o) + "건" : "—"; }], ["객단가", aov],
+     ["판매 수량 (메뉴)", function (S) { return num(q(S)) + "개"; }], ["행사 할인율", function (S) { return pct(S.promoRate); }],
+     ["포장 비율", function (S) { var t = takeout(S.prods); return t == null ? "—" : pct(t, 0); }],
+     ["가장 바쁜 시간", function (S) { return peakHour(S.hours); }], ["최다 판매 메뉴", function (S) { return topMenu(S.prods); }]].forEach(function (r) {
+      html += '<div class="lab">' + r[0] + "</div>" + ks.map(function (k) { return '<div class="c">' + esc(r[1](Ss[k])) + "</div>"; }).join("");
     });
     el.innerHTML = html + '</div><span class="sub">— 는 해당 자료가 없다는 뜻입니다.</span>';
   }
@@ -917,9 +921,9 @@ footer { font-size: 12px; color: var(--ink-3); }
     var m = {};
     prods.forEach(function (r) {
       if (!MENU_GRP[r.g]) return;
-      var x = m[r.p] || (m[r.p] = { p: r.p, g: r.g, q: 0, a: 0, pu: 0, pr: 0, k1: 0, k2: 0 });
+      var x = m[r.p] || (m[r.p] = { p: r.p, g: r.g, q: 0, a: 0, pu: 0, pr: 0, by: {} });
       var v = sales(r);
-      x.q += r.q; x.a += v; x.pu += pu(r); x.pr += promo(r); if (r.s === "K1") x.k1 += v; else x.k2 += v;
+      x.q += r.q; x.a += v; x.pu += pu(r); x.pr += promo(r); x.by[r.s] = (x.by[r.s] || 0) + v;
     });
     var list = Object.keys(m).map(function (k) { return m[k]; });
     var total = sumBy(list, function (x) { return x.a; });
@@ -939,13 +943,17 @@ footer { font-size: 12px; color: var(--ink-3); }
     var ms = menuStats(S.prods), list = ms.list.slice(), el = $("menuTable");
     if (!list.length) { el.innerHTML = '<tr><td class="empty">선택한 기간에 상품별 자료가 없습니다.</td></tr>'; return ms; }
     if (view.menuSort === "q") list.sort(function (a, b) { return b.q - a.q; });
+    var ks = ksOf(view.kiosk);
     var maxA = Math.max.apply(null, list.map(function (x) { return x.a; })) || 1;
-    var html = '<thead><tr><th class="r">#</th><th>메뉴</th><th>상품군</th><th class="r"><button type="button" class="sortbtn" data-s="q" aria-pressed="' + (view.menuSort === "q") + '">판매 수량</button></th><th><button type="button" class="sortbtn" data-s="a" aria-pressed="' + (view.menuSort === "a") + '">판매액</button></th><th class="r">비중</th><th>' + esc(kName("K1")) + " : " + esc(kName("K2")) + '</th><th class="r">선불 결제</th><th class="r">행사 할인</th><th>등급</th></tr></thead><tbody>';
-    list.forEach(function (x, i) {
-      var t = x.k1 + x.k2 || 1;
-      html += '<tr><td class="r num muted">' + (i + 1) + "</td><td>" + esc(x.p) + '</td><td class="muted">' + x.g + '</td><td class="r num">' + num(x.q) + '</td><td class="num inbar"><i style="width:' + Math.max(0, x.a / maxA * 100) + '%"></i><b>' + won(x.a) + '</b></td><td class="r num">' + pct(x.share) + '</td><td><div class="split" title="' + pct(x.k1 / t, 0) + " : " + pct(x.k2 / t, 0) + '">' + (x.k1 > 0 ? '<div style="flex:' + x.k1 + ';background:var(--k1)"></div>' : "") + (x.k2 > 0 ? '<div style="flex:' + x.k2 + ';background:var(--k2)"></div>' : "") + '</div></td><td class="r num">' + (x.pu ? pct(x.puRate, 0) : "—") + '</td><td class="r num' + (x.prRate >= 0.3 ? '" style="color:var(--crit);font-weight:600' : "") + '">' + (x.pr ? pct(x.prRate, 0) : "—") + '</td><td><span class="grade ' + x.grade + '">' + x.grade + "</span></td></tr>";
+    var html = '<thead><tr><th class="r">#</th><th>메뉴</th><th>상품군</th><th class="r"><button type="button" class="sortbtn" data-s="q" aria-pressed="' + (view.menuSort === "q") + '">판매 수량</button></th><th><button type="button" class="sortbtn" data-s="a" aria-pressed="' + (view.menuSort === "a") + '">판매액</button></th><th class="r">비중</th><th>매출처 비율</th><th class="r">선불 결제</th><th class="r">행사 할인</th><th>등급</th></tr></thead><tbody>';
+    var shown = view.menuAll ? list : list.slice(0, 30);
+    shown.forEach(function (x, i) {
+      var t = x.a || 1, parts = ks.filter(function (k) { return x.by[k] > 0; });
+      html += '<tr><td class="r num muted">' + (i + 1) + "</td><td>" + esc(x.p) + '</td><td class="muted">' + x.g + '</td><td class="r num">' + num(x.q) + '</td><td class="num inbar"><i style="width:' + Math.max(0, x.a / maxA * 100) + '%"></i><b>' + won(x.a) + '</b></td><td class="r num">' + pct(x.share) + '</td><td><div class="split" title="' + esc(parts.map(function (k) { return kName(k) + " " + pct(x.by[k] / t, 0); }).join(" · ")) + '">' + parts.map(function (k) { return '<div style="flex:' + x.by[k] + ";background:" + kColor(k) + '"></div>'; }).join("") + '</div></td><td class="r num">' + (x.pu ? pct(x.puRate, 0) : "—") + '</td><td class="r num' + (x.prRate >= 0.3 ? '" style="color:var(--crit);font-weight:600' : "") + '">' + (x.pr ? pct(x.prRate, 0) : "—") + '</td><td><span class="grade ' + x.grade + '">' + x.grade + "</span></td></tr>";
     });
+    if (list.length > 30) html += '<tr><td colspan="10" style="text-align:center"><button type="button" class="btn" id="menuMore">' + (view.menuAll ? "상위 30개만 보기" : "전체 " + list.length + "개 보기") + "</button></td></tr>";
     el.innerHTML = html + "</tbody>";
+    if ($("menuMore")) $("menuMore").addEventListener("click", function () { view.menuAll = !view.menuAll; renderMenu(S); });
     el.querySelectorAll(".sortbtn").forEach(function (b) { b.addEventListener("click", function () { view.menuSort = b.getAttribute("data-s"); renderMenu(S); }); });
     return ms;
   }
@@ -953,21 +961,21 @@ footer { font-size: 12px; color: var(--ink-3); }
   function renderGroups(S, ks) {
     legend($("legGrp"));
     var el = $("grpChart"), g = {};
-    S.prods.forEach(function (r) { var x = g[r.g] || (g[r.g] = { K1: 0, K2: 0, q: 0 }); x[r.s] += r.g === "선불카드" ? r.a : sales(r); x.q += r.q; });
+    S.prods.forEach(function (r) { var x = g[r.g] || (g[r.g] = { t: 0, q: 0 }); var v = r.g === "선불카드" ? r.a : sales(r); x[r.s] = (x[r.s] || 0) + v; x.t += v; x.q += r.q; });
     var names = GRP.filter(function (n) { return g[n]; });
     if (!names.length) { el.innerHTML = emptyHtml("선택한 기간에 상품별 자료가 없습니다."); return; }
     var menuNames = names.filter(function (n) { return n !== "선불카드"; });
-    var tot = sumBy(menuNames, function (n) { return g[n].K1 + g[n].K2; }) || 1;
-    var max = Math.max.apply(null, names.map(function (n) { return g[n].K1 + g[n].K2; })) || 1;
+    var tot = sumBy(menuNames, function (n) { return g[n].t; }) || 1;
+    var max = Math.max.apply(null, names.map(function (n) { return g[n].t; })) || 1;
     el.innerHTML = names.map(function (n) {
-      var t = g[n].K1 + g[n].K2, card = n === "선불카드";
+      var t = g[n].t, card = n === "선불카드";
       var segs = ks.filter(function (k) { return g[n][k] > 0; }).map(function (k) { return '<div style="flex:' + g[n][k] + ";background:" + kColor(k) + (card ? ";opacity:.55" : "") + '"></div>'; }).join("");
       return '<div class="grow" data-g="' + esc(n) + '"><span class="gl">' + (card ? "선불 충전" : n) + '</span><div class="gtrack"><div class="gbar" style="width:' + Math.max(1, t / max * 100) + '%">' + segs + '</div></div><span class="gv num">' + shortWon(t) + ' <span class="muted">' + (card ? "별도" : pct(t / tot, 0)) + "</span></span></div>";
     }).join("");
     el.querySelectorAll(".grow").forEach(function (row) {
       bindTip(row, function () {
         var n = row.getAttribute("data-g"), x = g[n];
-        var rows = ks.map(function (k) { return { l: kName(k), v: won(x[k]), c: kColor(k) }; });
+        var rows = ks.filter(function (k) { return x[k]; }).map(function (k) { return { l: kName(k), v: won(x[k]), c: kColor(k) }; });
         rows.push({ l: n === "선불카드" ? "충전 건수" : "판매 수량", v: num(x.q) + (n === "선불카드" ? "건" : "개") });
         return tipRows(n === "선불카드" ? "선불카드 충전 (메뉴 판매액에는 포함 안 됨)" : n, rows);
       });
@@ -1009,7 +1017,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
 
   // ---------- 매출 상승 아이디어 ----------
-  function renderIdeas(S, S1, S2, menu, rg) {
+  function renderIdeas(S, Ss, menu, rg) {
     var el = $("ideas"), ideas = [];
     if (!S.a && !S.menu) { el.innerHTML = emptyHtml("선택한 기간에 데이터가 없습니다."); return; }
     var days = S.days || 1, monthly = 30 / days;
@@ -1045,21 +1053,31 @@ footer { font-size: 12px; color: var(--ink-3); }
       });
     }
 
-    // 2) 키오스크 편차 / 자료 누락
-    if (!S1.a || !S2.a) {
-      ideas.push({ tag: "check", t: (S1.a ? kName("K2") : kName("K1")) + " 자료가 없습니다", ev: "이 기간에는 한쪽 매출만 들어와 있습니다.", act: "두 POS의 같은 날짜 자료를 모두 올려야 비교가 정확해집니다." });
-    } else {
-      var gap = Math.abs(S1.days - S2.days) / Math.max(S1.days, S2.days);
-      if (gap > 0.2 && view.kiosk === "all") ideas.push({
-        tag: "check", t: "두 매출처의 자료 기간이 다릅니다",
-        ev: kName("K1") + " " + S1.days + "일, " + kName("K2") + " " + S2.days + "일 자료가 들어 있습니다.",
-        act: "합계·비중 비교는 같은 날짜 자료가 있어야 맞습니다. 빠진 쪽의 같은 기간 자료를 올려 주세요. 그 전까지는 <b>하루 평균</b>으로 비교하세요."
+    // 2) 매출처 자료 · 키오스크 두 대 비교
+    if (view.kiosk === "all") {
+      var have = STORES.filter(function (k) { return Ss[k].a || Ss[k].menu; }), miss = STORES.filter(function (k) { return have.indexOf(k) < 0; });
+      if (miss.length && have.length) ideas.push({ tag: "check", t: miss.map(kName).join(", ") + " 자료가 없습니다", ev: "이 기간에는 " + have.map(kName).join(", ") + " 매출만 들어와 있습니다.", act: "CUBE는 <b>상품상세</b>(카운터·키오스크가 자동으로 나뉩니다), O2POS는 일자별·시간대별·상품별 자료를 같은 기간으로 올려 주세요." });
+      var dd = have.map(function (k) { return Ss[k].days; });
+      if (have.length > 1 && (Math.max.apply(null, dd) - Math.min.apply(null, dd)) / Math.max.apply(null, dd) > 0.2) ideas.push({
+        tag: "check", t: "매출처마다 자료 기간이 다릅니다",
+        ev: have.map(function (k) { return kName(k) + " " + Ss[k].days + "일"; }).join(", ") + ".",
+        act: "합계·비중 비교는 같은 날짜 자료가 있어야 맞습니다. 그 전까지는 <b>하루 평균</b>으로 비교하세요."
       });
-      var sh = S1.perDayMenu / ((S1.perDayMenu + S2.perDayMenu) || 1), busy = sh >= 0.5 ? "K1" : "K2", other = busy === "K1" ? "K2" : "K1", bs = Math.max(sh, 1 - sh);
-      if (gap <= 0.2 && bs >= 0.6) ideas.push({
-        tag: "check", t: "판매가 " + kName(busy) + "에 " + pct(bs, 0) + " 몰립니다",
-        ev: "메뉴 판매액 하루 평균 " + kName(busy) + " " + won((busy === "K1" ? S1 : S2).perDayMenu) + ", " + kName(other) + " " + won((busy === "K1" ? S2 : S1).perDayMenu) + ".",
-        act: "CUBE 쪽은 키오스크와 카운터 포스가 합쳐진 숫자라 기기별 쏠림은 따로 봐야 합니다. 피크 때 줄이 한쪽에 생긴다면 <b>O2POS 키오스크 안내</b>를 입구에 두고, 두 키오스크의 메뉴 화면·추천 설정을 같게 맞추세요."
+    }
+    if (Ss.K3.menu && Ss.K2.menu) {
+      var k3 = Ss.K3.perDayMenu, k2 = Ss.K2.perDayMenu, big = k2 >= k3 ? "K2" : "K3", small = big === "K2" ? "K3" : "K2", bsh = Math.max(k2, k3) / (k2 + k3);
+      if (bsh >= 0.6) ideas.push({
+        tag: "check", t: "키오스크 주문이 " + kName(big) + "에 " + pct(bsh, 0) + " 몰립니다",
+        ev: "키오스크 하루 평균 메뉴 판매액: " + kName(big) + " " + won(Ss[big].perDayMenu) + ", " + kName(small) + " " + won(Ss[small].perDayMenu) + ".",
+        act: "피크 때 한쪽 키오스크에만 줄이 생깁니다. <b>" + esc(kName(small)) + "</b> 쪽에 “여기서도 주문 가능” 안내를 두고, 두 키오스크의 첫 화면·추천 메뉴를 같게 맞추세요."
+      });
+    }
+    if (Ss.K1.o && (Ss.K3.o || Ss.K2.o)) {
+      var ko = (Ss.K3.o || 0) + (Ss.K2.o || 0), share = ko / (ko + Ss.K1.o);
+      ideas.push({
+        tag: "chance", t: "키오스크 주문 비율 " + pct(share, 0),
+        ev: "주문 " + num(Ss.K1.o + ko) + "건 중 카운터 " + num(Ss.K1.o) + "건, 키오스크 " + num(ko) + "건입니다. 카운터 객단가 " + (Ss.K1.aov != null ? won(Ss.K1.aov) : "—") + ".",
+        act: "선불카드 결제·충전은 카운터에서만 되니 카운터 주문이 많을 수밖에 없습니다. 선불이 아닌 일반 주문은 키오스크로 안내하면 피크 때 직원이 음료 제조에 집중할 수 있습니다."
       });
     }
 
@@ -1175,7 +1193,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
   function renderDataStats() {
     if (state.sample) { $("dataStats").innerHTML = ""; return; }
-    $("dataStats").innerHTML = ["K1", "K2"].map(function (k) {
+    $("dataStats").innerHTML = STORES.map(function (k) {
       return '<div><i class="sw" style="background:' + kColor(k) + '"></i> <b>' + esc(kName(k)) + "</b>" + coverage(k).map(function (c) { return '<br><span class="muted">' + c[0] + '</span> <span class="num">' + c[1] + "</span>"; }).join("") + "</div>";
     }).join("");
   }
@@ -1243,7 +1261,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     gross: { label: "총매출 (할인 전)", words: ["총금액", "총매출", "총매출액", "총판매금액"] },
     dc: { label: "할인 금액", words: ["할인금액", "할인액", "총할인", "할인"] },
     sd: { label: "단품 할인 (행사)", words: ["단품할인", "상품할인", "품목할인"] },
-    od: { label: "주문 할인 (선불 사용)", words: ["주문할인", "영수증할인", "전체할인"] },
+    od: { label: "주문 할인 (선불 사용)", words: ["주문할인", "전체할인", "영수증할인"] },
     cq: { label: "취소 건수", words: ["취소건수", "취소수량"] },
     ca: { label: "취소 금액", words: ["취소금액"] },
     dq: { label: "매장 수량", words: ["매장수량"] },
@@ -1255,15 +1273,18 @@ footer { font-size: 12px; color: var(--ink-3); }
     date: { label: "날짜", words: ["일자", "일자별", "날짜", "영업일자", "매출일자", "거래일자", "판매일자", "영업일", "date"] },
     dt: { label: "결제 일시", words: ["결제일시", "주문일시", "거래일시", "판매일시", "일시", "datetime"] },
     time: { label: "결제 시간", words: ["결제시간", "주문시간", "거래시간", "시간", "시각", "time"] },
-    order: { label: "주문번호", words: ["주문번호", "영수증번호", "영수번호", "거래번호", "order"] },
-    price: { label: "단가", words: ["단가", "판매단가", "가격", "price"] }
+    order: { label: "주문번호", words: ["주문번호", "영수증번호", "영수번호", "거래번호", "판매번호", "order"] },
+    price: { label: "단가", words: ["단가", "판매단가", "가격", "price"] },
+    status: { label: "상태 (취소·반품 줄 빼기)", words: ["상태", "거래상태", "status"] },
+    pos: { label: "주문 POS (카운터/키오스크)", words: ["주문pos", "pos", "단말기", "포스"] },
+    dine: { label: "매장/포장", words: ["형태", "매장포장", "포장구분"] }
   };
   var TYPES = {
     prod: { label: "상품별 매출 (상품 분석 · 상품별 매출현황)", fields: ["product", "code", "cat", "qty", "amount", "gross", "dc", "sd", "od", "cq", "ca", "dq", "da", "tq", "ta"], period: true },
     hour: { label: "시간대별 매출", fields: ["hour", "amount", "gross", "dc", "orders", "qty"], period: true },
     day: { label: "일별 매출 (일 매출 현황)", fields: ["date", "amount", "gross", "dc", "orders"], period: false },
     hourwide: { label: "일자별 시간대 매출 (날짜 × 시간 표)", fields: ["date"], period: false },
-    tx: { label: "주문 내역 (한 줄 = 주문 속 메뉴 1개)", fields: ["dt", "date", "time", "product", "order", "cat", "qty", "amount", "gross", "dc", "price"], period: false }
+    tx: { label: "주문 내역 · 상품상세 (한 줄 = 주문 속 메뉴 1개)", fields: ["dt", "date", "time", "product", "order", "cat", "qty", "amount", "gross", "dc", "sd", "od", "price", "status", "pos", "dine"], period: false }
   };
   var ALL_WORDS = {}; Object.keys(FIELDS).forEach(function (k) { FIELDS[k].words.forEach(function (w) { ALL_WORDS[w] = 1; }); });
   ["%", "공급가액", "부가세", "부가세액", "순매출", "시재매출", "바코드", "중분류", "소분류", "실단가", "상품원단가", "점유율", "순위", "객수", "객단가"].forEach(function (w) { ALL_WORDS[w] = 1; });
@@ -1369,7 +1390,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
 
   function convert(body, type, map, meta) {
-    var out = { prod: [], hour: [], day: [] }, bad = 0, subs = 0;
+    var out = { prod: [], hour: [], day: [] }, bad = 0, subs = 0, cancel = 0;
     function g(r, k) { return map[k] != null ? r[map[k]] : undefined; }
     function amountOf(r) {
       var a = parseNum(g(r, "amount"));
@@ -1454,12 +1475,18 @@ footer { font-size: 12px; color: var(--ink-3); }
         var tm = parseTime(g(r, "time") != null ? g(r, "time") : (dp.frac != null ? dp.frac : dp.rest));
         var a = amountOf(r);
         if (!tm || isNaN(a)) { bad++; return; }
+        var st = str(g(r, "status"));
+        if (/(취소|반품)/.test(st)) { cancel++; return; } // 취소·반품 줄은 판매금액이 0원이라 수량만 부풀림
         var cat = str(g(r, "cat")), oid = str(g(r, "order"));
-        tx.push({ s: meta.s, d: dp.d, h: tm.h, o: oid || dp.d + " " + pad(tm.h) + ":" + pad(tm.m), p: product, c: cat, g: classify(product, cat), q: (function () { var q = parseNum(g(r, "qty")); return isNaN(q) ? 1 : q; })(), a: a, dc: Math.abs(n0(g(r, "dc"))) });
+        var s = meta.s === "split" ? (/(키오스크|kiosk)/i.test(str(g(r, "pos"))) ? "K3" : "K1") : meta.s;
+        var sd = Math.abs(n0(g(r, "sd"))), od = Math.abs(n0(g(r, "od"))), hasSplit = map.sd != null || map.od != null;
+        var dineV = str(g(r, "dine"));
+        tx.push({ s: s, d: dp.d, h: tm.h, o: oid || dp.d + " " + pad(tm.h) + ":" + pad(tm.m), p: product, c: cat, g: classify(product, cat), q: (function () { var q = parseNum(g(r, "qty")); return isNaN(q) ? 1 : q; })(), a: a,
+          dc: hasSplit ? sd + od : Math.abs(n0(g(r, "dc"))), od: hasSplit ? od : null, sd: hasSplit ? sd : null, dine: dineV ? !/포장/.test(dineV) : null });
       });
       out = aggregateTx(tx);
     }
-    return { data: out, bad: bad, subs: subs, shareSum: shareSum };
+    return { data: out, bad: bad, subs: subs, shareSum: shareSum, cancel: cancel };
   }
 
   // 불러오기 흐름
@@ -1486,7 +1513,10 @@ footer { font-size: 12px; color: var(--ink-3); }
     var html = '<div class="panel" style="background:var(--bg)"><div class="panel-head"><h3>' + esc(file.name) + (queue.length > 1 ? ' <span class="muted">(남은 파일 ' + (queue.length - 1) + "개)</span>" : "") + '</h3><span class="sub">' + sysLabel + " 자동으로 맞춘 결과입니다. 틀린 칸만 고쳐 주세요.</span></div>";
     html += '<div class="map">';
     html += '<label for="imp_type">자료 종류<select id="imp_type">' + Object.keys(TYPES).map(function (k) { return '<option value="' + k + '"' + (k === type ? " selected" : "") + ">" + TYPES[k].label + "</option>"; }).join("") + "</select></label>";
-    html += '<label for="imp_s">어느 매출처 자료?<select id="imp_s"><option value="K1"' + (s === "K1" ? " selected" : "") + ">" + esc(kName("K1")) + '</option><option value="K2"' + (s === "K2" ? " selected" : "") + ">" + esc(kName("K2")) + "</option></select></label>";
+    var canSplit = map.pos != null || headers.map(norm).indexOf("주문pos") >= 0;
+    if (canSplit && det.system !== "o2pos") s = "split";
+    html += '<label for="imp_s">어느 매출처 자료?<select id="imp_s">' + (canSplit ? '<option value="split"' + (s === "split" ? " selected" : "") + ">주문POS로 나누기 (카운터 / 키오스크)</option>" : "") + STORES.map(function (k) { return '<option value="' + k + '"' + (s === k ? " selected" : "") + ">" + esc(kName(k)) + "</option>"; }).join("") + "</select></label>";
+    if (det.system === "cube" && !canSplit) html += '<p class="sub" style="grid-column:1/-1;margin:0">CUBE 합산 자료(카운터+키오스크)입니다. 카운터로 들어갑니다. 나눠 보려면 <b>상품상세</b> 파일을 쓰세요.</p>';
     if (TYPES[type].period) {
       html += '<label for="imp_f">조회 시작일' + (found.length ? "" : ' <span class="req">확인 필요</span>') + '<input type="date" id="imp_f" value="' + f + '"></label>';
       html += '<label for="imp_t">조회 종료일<input type="date" id="imp_t" value="' + t + '"></label>';
@@ -1536,7 +1566,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       html = '<table><thead><tr><th>메뉴</th><th>상품군</th><th class="r">수량</th><th class="r">실매출</th><th class="r">할인</th></tr></thead><tbody>' +
         list.slice(0, 6).map(function (r) { return "<tr><td>" + esc(r.p) + '</td><td class="muted">' + r.g + '</td><td class="r num">' + num(r.q) + '</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.dc ? won(r.dc) : "—") + "</td></tr>"; }).join("") + "</tbody></table>";
       if (res.shareSum != null && res.shareSum < 99.5) html += '<div class="msg err" style="margin-top:6px">이 파일은 판매 상위 순위만 들어 있습니다 (점유율 합계 ' + res.shareSum.toFixed(1) + "%). 빠진 메뉴 매출 약 " + won(sumBy(list, function (r) { return r.a; }) * (100 / res.shareSum - 1)) + ". POS에서 순위 제한 없이 받을 수 있으면 전체로 받아 주세요.</div>";
-      html += '<p class="sub" style="margin:4px 0 0">메뉴 ' + num(list.length) + "개 · 실매출 합계 <b>" + won(sumBy(list, function (r) { return r.a; })) + "</b> · 할인 " + won(sumBy(list, function (r) { return r.dc + (r.ndl || 0); })) + (res.subs ? " · 분류 소계 줄 " + res.subs + "개 제외" : "") + (res.bad ? " · 합계·빈 줄 " + res.bad + "개 제외" : "") + " — POS 화면의 합계와 같은지 확인하세요.</p>";
+      html += '<p class="sub" style="margin:4px 0 0">메뉴 ' + num(Object.keys(list.reduce(function (m, r) { m[r.p] = 1; return m; }, {})).length) + "종류 · 실매출 합계 <b>" + won(sumBy(list, function (r) { return r.a; })) + "</b> · 할인 " + won(sumBy(list, function (r) { return r.dc + (r.ndl || 0); })) + (fm.meta.s === "split" ? " · " + ["K1", "K3"].map(function (k) { return kName(k) + " " + won(sumBy(list.filter(function (r) { return r.s === k; }), function (r) { return r.a; })); }).join(", ") : "") + (res.cancel ? " · 취소·반품 줄 " + res.cancel + "개 제외" : "") + (res.subs ? " · 분류 소계 줄 " + res.subs + "개 제외" : "") + (res.bad ? " · 합계·빈 줄 " + res.bad + "개 제외" : "") + " — POS 화면의 합계와 같은지 확인하세요.</p>";
     } else if (fm.type === "hour" || fm.type === "hourwide") {
       if (fm.type === "hourwide") { var ds = {}; d.hour.forEach(function (r) { ds[r.f] = 1; }); html = '<p class="sub" style="margin:0 0 4px">' + Object.keys(ds).length + "일 × 시간대 · 아래는 첫 줄들</p>"; } else html = "";
       html += '<table><thead><tr><th>시간</th><th class="r">매출</th><th class="r">주문</th></tr></thead><tbody>' + d.hour.slice(0, 6).map(function (r) { return '<tr><td class="num">' + (fm.type === "hourwide" ? r.f.slice(5) + " " : "") + r.h + '시</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.o == null ? "—" : num(r.o)) + "</td></tr>"; }).join("") + "</tbody></table>" +
@@ -1555,7 +1585,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (!d.prod.length && !d.hour.length && !d.day.length) { showMsg("불러온 줄이 없습니다. 열 연결을 확인해 주세요.", true); return; }
     if (state.sample) { state.prod = []; state.hour = []; state.day = []; state.sample = false; }
     // 같은 키오스크·겹치는 날짜의 기존 자료는 새 자료로 교체 (중복 방지)
-    function overlap(r, f, t) { return r.s === s && r.f <= t && r.t >= f; }
+    var sset = s === "split" ? ["K1", "K3"] : [s];
+    function overlap(r, f, t) { return sset.indexOf(r.s) >= 0 && r.f <= t && r.t >= f; }
     var f, t;
     if (fm.type === "tx") { var ds = d.day.map(function (x) { return x.d; }).sort(); f = ds[0]; t = ds[ds.length - 1]; }
     else if (fm.type === "day") { var dd = d.day.map(function (x) { return x.d; }).sort(); f = dd[0]; t = dd[dd.length - 1]; }
@@ -1563,10 +1594,10 @@ footer { font-size: 12px; color: var(--ink-3); }
     else { f = fm.meta.f; t = fm.meta.t; state.lastF = f; state.lastT = t; }
     if (d.prod.length) state.prod = state.prod.filter(function (r) { return !overlap(r, f, t); }).concat(d.prod);
     if (d.hour.length) state.hour = state.hour.filter(function (r) { return !overlap(r, f, t); }).concat(d.hour);
-    if (d.day.length) { var set = {}; d.day.forEach(function (x) { set[x.d] = 1; }); state.day = state.day.filter(function (r) { return !(r.s === s && set[r.d]); }).concat(d.day); }
+    if (d.day.length) { var set = {}; d.day.forEach(function (x) { set[x.d] = 1; }); state.day = state.day.filter(function (r) { return !(sset.indexOf(r.s) >= 0 && set[r.d]); }).concat(d.day); }
     save();
     var total = sumBy(d.prod.length ? d.prod : d.day.length ? d.day : d.hour, function (r) { return r.a; });
-    showMsg(esc(file.name) + " → " + esc(kName(s)) + " " + (f === t ? f : f + " ~ " + t) + " " + TYPES[fm.type].label.split(" (")[0] + " 자료를 불러왔습니다. 실매출 " + won(total) + ".");
+    showMsg(esc(file.name) + " → " + esc(s === "split" ? kName("K1") + " / " + kName("K3") : kName(s)) + " " + (f === t ? f : f + " ~ " + t) + " " + TYPES[fm.type].label.split(" (")[0] + " 자료를 불러왔습니다. 실매출 " + won(total) + ".");
     view.period = f === t ? "custom" : "all"; if (f === t) { view.from = f; view.to = t; }
     nextFile();
     syncSeg(); render();
@@ -1607,8 +1638,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     loadSample(); save(); view.period = "30"; syncSeg();
     showMsg("저장된 데이터를 지웠습니다. 지금은 예시 데이터가 보입니다."); render();
   });
-  ["name1", "name2"].forEach(function (id, i) {
-    $(id).addEventListener("change", function () { var k = i ? "K2" : "K1"; state.names[k] = this.value.trim() || (i + 1) + "호기"; save(); render(); });
+  STORES.forEach(function (k) {
+    $("name_" + k).addEventListener("change", function () { state.names[k] = this.value.trim() || k; save(); render(); });
   });
   var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(render, 150); });
   if (window.matchMedia) { var mq = matchMedia("(prefers-color-scheme: dark)"); if (mq.addEventListener) mq.addEventListener("change", render); }
@@ -1618,15 +1649,14 @@ footer { font-size: 12px; color: var(--ink-3); }
   function syncCfg() {
     var c = state.cfg;
     $("cfgT1").value = c.t1; $("cfgB1").value = Math.round(c.b1 * 100); $("cfgT2").value = c.t2; $("cfgB2").value = Math.round(c.b2 * 100);
-    $("cfgPP1").value = c.pp.K1; $("cfgPP2").value = c.pp.K2;
-    $("ppK1").textContent = kName("K1"); $("ppK2").textContent = kName("K2");
+    STORES.forEach(function (k) { $("cfgPP_" + k).value = c.pp[k] || "none"; $("ppName_" + k).textContent = kName(k); });
   }
-  ["cfgT1", "cfgB1", "cfgT2", "cfgB2", "cfgPP1", "cfgPP2"].forEach(function (id) {
+  ["cfgT1", "cfgB1", "cfgT2", "cfgB2", "cfgPP_K1", "cfgPP_K2", "cfgPP_K3"].forEach(function (id) {
     $(id).addEventListener("change", function () {
       var c = state.cfg;
       c.t1 = Math.max(0, +$("cfgT1").value || 0); c.b1 = Math.max(0, +$("cfgB1").value || 0) / 100;
       c.t2 = Math.max(0, +$("cfgT2").value || 0); c.b2 = Math.max(0, +$("cfgB2").value || 0) / 100;
-      c.pp.K1 = $("cfgPP1").value; c.pp.K2 = $("cfgPP2").value; c.v = 3;
+      STORES.forEach(function (k) { c.pp[k] = $("cfgPP_" + k).value; }); c.v = 3;
       save(); render();
     });
   });
