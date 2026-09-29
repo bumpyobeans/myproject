@@ -410,7 +410,7 @@ footer { font-size: 12px; color: var(--ink-3); }
 
   // ---------- 상태 ----------
   var state = { names: { K1: "1호기 · CUBE", K2: "2호기 · O2POS" }, prod: [], hour: [], day: [], sample: true, lastF: null, lastT: null,
-    cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "all" } } };
+    cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none" } } };
   var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu" };
   var queue = []; // 불러오기 대기 중인 파일
 
@@ -462,7 +462,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       var o = JSON.parse(localStorage.getItem(STORE) || "null");
       if (!o) return false;
       if (o.names) state.names = { K1: o.names.K1 || state.names.K1, K2: o.names.K2 || state.names.K2 };
-      if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: (c.pp && c.pp.K2) || "all" } }; }
+      if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none" } }; } // 2호기(키오스크)는 선불 결제 불가
       if ((o.prod && o.prod.length) || (o.hour && o.hour.length) || (o.day && o.day.length)) {
         state.prod = o.prod || []; state.hour = o.hour || []; state.day = o.day || [];
         state.lastF = o.lastF || null; state.lastT = o.lastT || null;
@@ -1568,7 +1568,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       var c = state.cfg;
       c.t1 = Math.max(0, +$("cfgT1").value || 0); c.b1 = Math.max(0, +$("cfgB1").value || 0) / 100;
       c.t2 = Math.max(0, +$("cfgT2").value || 0); c.b2 = Math.max(0, +$("cfgB2").value || 0) / 100;
-      c.pp.K1 = $("cfgPP1").value; c.pp.K2 = $("cfgPP2").value;
+      c.pp.K1 = $("cfgPP1").value; c.pp.K2 = $("cfgPP2").value; c.v = 3;
       save(); render();
     });
   });
