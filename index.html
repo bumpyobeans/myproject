@@ -266,7 +266,11 @@ footer { font-size: 12px; color: var(--ink-3); }
   <div class="grid2">
     <section class="panel" aria-labelledby="dailyH">
       <div class="panel-head">
-        <h2 id="dailyH">일별 매출</h2>
+        <h2 id="dailyH">매출 추이</h2>
+        <div class="seg" id="dailyGroup">
+          <button type="button" data-g="day" aria-pressed="true">일별</button>
+          <button type="button" data-g="month">월별</button>
+        </div>
         <div class="seg" id="dailyMetric">
           <button type="button" data-m="menu" aria-pressed="true">메뉴 판매액</button>
           <button type="button" data-m="cash">POS 실매출</button>
@@ -416,7 +420,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   var STORES = ["K1", "K3", "K2"]; // CUBE 카운터, CUBE 키오스크, O2POS 키오스크
   var state = { names: { K1: "CUBE · 카운터", K3: "CUBE · 키오스크", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], sample: true, lastF: null, lastT: null,
     cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none", K3: "none" } } };
-  var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu" };
+  var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu", dailyGroup: "day" };
   var queue = []; // 불러오기 대기 중인 파일
 
   // ---------- 유틸 ----------
@@ -599,8 +603,11 @@ footer { font-size: 12px; color: var(--ink-3); }
     ks.forEach(function (s) {
       var dr = {}, pr = {}, hr = {}, spread = {}, out = {};
       state.day.forEach(function (r) { if (r.s === s && r.d >= from && r.d <= to) dr[r.d] = r; });
+      var drKeys = Object.keys(dr), covered = {};
       function spreadAdd(map, r, v, withO) {
         var n = daysBetween(r.f, r.t) + 1;
+        // 이 묶음 자료 기간 안에 일별 자료가 있으면, 휴무일에는 나누지 않음
+        if (n > 1 && drKeys.some(function (d) { return d >= r.f && d <= r.t; })) for (var c = r.f; c <= r.t; c = addDays(c, 1)) covered[c] = 1;
         for (var d = r.f; d <= r.t; d = addDays(d, 1)) {
           var x = map[d] || (map[d] = { a: 0, o: null });
           x.a += v / n;
@@ -611,9 +618,9 @@ footer { font-size: 12px; color: var(--ink-3); }
       var prc = {};
       state.prod.forEach(function (r) { if (inR(r, from, to, [s])) { spreadAdd(pr, r, mode === "menu" ? sales(r) : r.a); spreadAdd(prc, r, r.a); } });
       state.hour.forEach(function (r) { if (inR(r, from, to, [s])) spreadAdd(hr, r, r.a, true); });
-      var keys = {}, hasDay = Object.keys(dr).length > 0; [dr, pr, hr].forEach(function (m) { for (var k in m) keys[k] = 1; });
+      var keys = {}; [dr, pr, hr].forEach(function (m) { for (var k in m) keys[k] = 1; });
       Object.keys(keys).forEach(function (d) {
-        if (hasDay && spread[d] && !dr[d] && !hr[d]) return; // 일별 자료가 있으면 휴무일에는 묶음 자료를 나누지 않음
+        if (covered[d] && spread[d] && !dr[d] && !hr[d]) return; // 일별 자료가 있으면 휴무일에는 묶음 자료를 나누지 않음
         // 여러 날 묶음 상품 자료 + 일별 자료가 함께 있으면: 그날 실매출 × (기간 메뉴 판매액 ÷ 기간 실매출)
         var a = mode === "menu"
           ? (pr[d] && dr[d] && spread[d] ? dr[d].a * (prc[d].a ? pr[d].a / prc[d].a : 1) : pr[d] ? pr[d].a : dr[d] ? dr[d].a : hr[d].a)
@@ -793,6 +800,20 @@ footer { font-size: 12px; color: var(--ink-3); }
     for (var d = rg.from; d <= rg.to; d = addDays(d, 1)) days.push(d);
     var series = ks.map(function (k) { return { name: kName(k), color: kColor(k), values: days.map(function (d) { return src[k][d] ? src[k][d].a : 0; }) }; });
     var spreadDays = days.map(function (d) { return ks.some(function (k) { return src[k][d] && src[k][d].spread; }); });
+    var metricName = view.dailyMetric === "cash" ? "POS 실매출" : "메뉴 판매액";
+    if (view.dailyGroup === "month") {
+      // 월별로 묶기
+      var months = [], mi = {};
+      days.forEach(function (d) { var m = d.slice(0, 7); if (mi[m] == null) { mi[m] = months.length; months.push(m); } });
+      var ms = series.map(function (se) { var v = months.map(function () { return 0; }); days.forEach(function (d, i) { v[mi[d.slice(0, 7)]] += se.values[i]; }); return { name: se.name, color: se.color, values: v }; });
+      stackedBars($("dailyChart"), S.days ? months : [], ms, {
+        label: "월별 매출", height: 240, fmtAxis: shortWon, fmtVal: won,
+        fmtCat: function (m) { return +m.slice(5) + "월"; },
+        fmtTitle: function (m) { return m.slice(0, 4) + "년 " + +m.slice(5) + "월 · " + metricName; }
+      });
+      $("dailyNote").textContent = (view.dailyMetric === "cash" ? "POS 실매출 = 실제로 들어온 돈(선불카드 충전 포함, 선불 사용은 0원)." : "메뉴 판매액 = 실제로 나간 메뉴 값(선불카드로 먹은 음료 포함, 충전은 제외).") + " 월 단위 합계입니다.";
+      return;
+    }
     stackedBars($("dailyChart"), S.days ? days : [], series, {
       label: "일별 매출", height: 240, fmtAxis: shortWon, fmtVal: won,
       fmtCat: function (d) { var p = d.split("-"); return +p[1] + "/" + +p[2]; },
@@ -1612,6 +1633,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     $("periodSeg").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-p") === view.period)); });
     $("kioskSeg").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-k") === view.kiosk)); });
     $("hourMetric").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-m") === view.hourMetric)); });
+    $("dailyGroup").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-g") === view.dailyGroup)); });
     $("dailyMetric").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-m") === view.dailyMetric)); });
     $("customRange").hidden = view.period !== "custom";
     if (view.period === "custom") { var rg = currentRange(); if (rg) { $("fromDate").value = rg.from; $("toDate").value = rg.to; } }
@@ -1660,6 +1682,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       save(); render();
     });
   });
+  $("dailyGroup").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view.dailyGroup = b.getAttribute("data-g"); syncSeg(); render(); });
   $("dailyMetric").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view.dailyMetric = b.getAttribute("data-m"); syncSeg(); render(); });
   function loadSample() { var d = sampleData(); state.prod = d.prod; state.hour = d.hour; state.day = d.day; state.sample = true; }
 
