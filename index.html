@@ -225,7 +225,7 @@ footer { font-size: 12px; color: var(--ink-3); }
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <span class="eyebrow">Kiosk × 2 · Sales Note</span>
+      <span class="eyebrow">CUBE · O2POS · Sales Note</span>
       <h1>카페 키오스크 매출노트</h1>
     </div>
     <span id="dataPill" class="pill sample">예시 데이터</span>
@@ -275,7 +275,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       <span class="sub" id="dailyNote"></span>
     </section>
     <section class="panel" aria-labelledby="kioskH">
-      <div class="panel-head"><h2 id="kioskH">키오스크 비교</h2></div>
+      <div class="panel-head"><h2 id="kioskH">매출처 비교</h2></div>
       <div class="kcmp" id="kioskCmp"></div>
     </section>
   </div>
@@ -347,7 +347,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       <h3>어떤 자료를 받으면 되나요?</h3>
       <div class="guide-grid">
         <div>
-          <b>CUBE_CENTER (1호기)</b>
+          <b>CUBE_CENTER (키오스크 + 카운터 포스 합산)</b>
           <ul>
             <li><b>상품 분석</b> 화면 → 날짜를 하루로 두고 조회 → 엑셀로 저장</li>
             <li><b>시간대별 분석</b> → 같은 날짜로 엑셀 저장 (피크·한산 시간 분석용)</li>
@@ -355,7 +355,7 @@ footer { font-size: 12px; color: var(--ink-3); }
           </ul>
         </div>
         <div>
-          <b>O2POS Web (2호기)</b>
+          <b>O2POS Web (키오스크)</b>
           <ul>
             <li><b>점포별 상품별 매출현황</b> → 날짜를 하루로 두고 조회 → <b>EXCEL</b></li>
             <li>시간대별 매출 화면이 있으면 같은 날짜로 EXCEL 저장</li>
@@ -380,8 +380,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     </div>
 
     <div class="names">
-      <label for="name1"><span class="sw" style="background:var(--k1)"></span>1번 이름 <input id="name1" maxlength="14"></label>
-      <label for="name2"><span class="sw" style="background:var(--k2)"></span>2번 이름 <input id="name2" maxlength="14"></label>
+      <label for="name1"><span class="sw" style="background:var(--k1)"></span>CUBE 이름 <input id="name1" maxlength="14"></label>
+      <label for="name2"><span class="sw" style="background:var(--k2)"></span>O2POS 이름 <input id="name2" maxlength="14"></label>
     </div>
     <div class="stats" id="dataStats"></div>
     <div class="row">
@@ -409,7 +409,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   var DESSERT_RE = /(빵|케이크|케익|쿠키|크루아상|크로와상|마카롱|스콘|베이글|샌드위치|와플|크로플|크룽지|머핀|브라우니|타르트|휘낭시에|마들렌|토스트|디저트|파이|도넛|카스테라|떡|아슈크림|아이스크림)/;
 
   // ---------- 상태 ----------
-  var state = { names: { K1: "1호기 · CUBE", K2: "2호기 · O2POS" }, prod: [], hour: [], day: [], sample: true, lastF: null, lastT: null,
+  var state = { names: { K1: "CUBE · 키오스크+카운터", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], sample: true, lastF: null, lastT: null,
     cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none" } } };
   var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu" };
   var queue = []; // 불러오기 대기 중인 파일
@@ -461,7 +461,11 @@ footer { font-size: 12px; color: var(--ink-3); }
     try {
       var o = JSON.parse(localStorage.getItem(STORE) || "null");
       if (!o) return false;
-      if (o.names) state.names = { K1: o.names.K1 || state.names.K1, K2: o.names.K2 || state.names.K2 };
+      if (o.names) {
+        // 예전 기본 이름은 새 기본 이름으로 바꿈 (직접 바꾼 이름은 유지)
+        var oldK1 = { "1호기 · CUBE": 1, "1호기": 1 }, oldK2 = { "2호기 · O2POS": 1, "2호기": 1 };
+        state.names = { K1: o.names.K1 && !oldK1[o.names.K1] ? o.names.K1 : state.names.K1, K2: o.names.K2 && !oldK2[o.names.K2] ? o.names.K2 : state.names.K2 };
+      }
       if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none" } }; } // 2호기(키오스크)는 선불 결제 불가
       if ((o.prod && o.prod.length) || (o.hour && o.hour.length) || (o.day && o.day.length)) {
         state.prod = o.prod || []; state.hour = o.hour || []; state.day = o.day || [];
@@ -1044,7 +1048,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       if (bs >= 0.6) ideas.push({
         tag: "check", t: "판매가 " + kName(busy) + "에 " + pct(bs, 0) + " 몰립니다",
         ev: "메뉴 판매액 하루 평균 " + kName(busy) + " " + won((busy === "K1" ? S1 : S2).perDayMenu) + ", " + kName(other) + " " + won((busy === "K1" ? S2 : S1).perDayMenu) + ".",
-        act: "두 기기가 한 매장에 있다면 피크 때 한쪽에 줄이 생깁니다. <b>“" + esc(kName(other)) + "도 주문 가능”</b> 안내를 두고, 두 기기의 메뉴 화면·추천 설정을 같게 맞추세요."
+        act: "CUBE 쪽은 키오스크와 카운터 포스가 합쳐진 숫자라 기기별 쏠림은 따로 봐야 합니다. 피크 때 줄이 한쪽에 생긴다면 <b>O2POS 키오스크 안내</b>를 입구에 두고, 두 키오스크의 메뉴 화면·추천 설정을 같게 맞추세요."
       });
     }
 
@@ -1434,7 +1438,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     var html = '<div class="panel" style="background:var(--bg)"><div class="panel-head"><h3>' + esc(file.name) + (queue.length > 1 ? ' <span class="muted">(남은 파일 ' + (queue.length - 1) + "개)</span>" : "") + '</h3><span class="sub">' + sysLabel + " 자동으로 맞춘 결과입니다. 틀린 칸만 고쳐 주세요.</span></div>";
     html += '<div class="map">';
     html += '<label for="imp_type">자료 종류<select id="imp_type">' + Object.keys(TYPES).map(function (k) { return '<option value="' + k + '"' + (k === type ? " selected" : "") + ">" + TYPES[k].label + "</option>"; }).join("") + "</select></label>";
-    html += '<label for="imp_s">어느 키오스크 자료?<select id="imp_s"><option value="K1"' + (s === "K1" ? " selected" : "") + ">" + esc(kName("K1")) + '</option><option value="K2"' + (s === "K2" ? " selected" : "") + ">" + esc(kName("K2")) + "</option></select></label>";
+    html += '<label for="imp_s">어느 매출처 자료?<select id="imp_s"><option value="K1"' + (s === "K1" ? " selected" : "") + ">" + esc(kName("K1")) + '</option><option value="K2"' + (s === "K2" ? " selected" : "") + ">" + esc(kName("K2")) + "</option></select></label>";
     if (TYPES[type].period) {
       html += '<label for="imp_f">조회 시작일' + (found.length ? "" : ' <span class="req">확인 필요</span>') + '<input type="date" id="imp_f" value="' + f + '"></label>';
       html += '<label for="imp_t">조회 종료일<input type="date" id="imp_t" value="' + t + '"></label>';
