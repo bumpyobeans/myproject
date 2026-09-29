@@ -1422,6 +1422,15 @@ footer { font-size: 12px; color: var(--ink-3); }
       // 연도 없는 “9월 28일” (파일 이름 등) → 올해로 봄
       var km = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(text), y = (state.lastF || ymd(new Date())).slice(0, 4);
       if (km) out.push(y + "-" + pad(+km[1]) + "-" + pad(+km[2]));
+      else if ((km = /(\d{1,2})\s*월\s*(\d)\s*주/.exec(text)) && +km[1] >= 1 && +km[1] <= 12) {
+        // “9월 2주” → 일~토 기준 주 (1주 = 1일부터 첫 토요일까지)
+        var mStart = y + "-" + pad(+km[1]) + "-01", mEnd = ymd(new Date(+y, +km[1], 0)), wEnd = mStart;
+        while (dowOf(wEnd) !== 6) wEnd = addDays(wEnd, 1);
+        var ws = +km[2] === 1 ? mStart : addDays(wEnd, 1 + 7 * (+km[2] - 2)), we = +km[2] === 1 ? wEnd : addDays(ws, 6);
+        var yest2 = addDays(ymd(new Date()), -1);
+        if (we > mEnd) we = mEnd; if (we > yest2) we = yest2;
+        if (ws <= we) out.push(ws, we);
+      }
       else if ((km = /(?:^|[^\d])(\d{1,2})\s*월/.exec(text)) && +km[1] >= 1 && +km[1] <= 12) {
         // “9월” → 그 달 1일 ~ 말일 (이번 달이면 어제까지)
         var first = y + "-" + pad(+km[1]) + "-01", last = ymd(new Date(+y, +km[1], 0)), yest = addDays(ymd(new Date()), -1);
