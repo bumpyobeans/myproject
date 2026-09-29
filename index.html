@@ -417,7 +417,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   function classify(name, cat) {
     var n = String(name).replace(/\s+/g, ""), c = String(cat || "");
     if (/(VIP카드|상품권|충전|기프트카드|선불|멤버십카드|정기권)/i.test(n)) return "선불카드";
-    if (/(ICE-?UP|샷추가|디카페인변경|사이즈업|시럽추가|휘핑추가|비닐|봉투|쇼핑백|캐리어|옵션|변경$|추가$)/i.test(n)) return "옵션·기타";
+    if (/(ICE-?UP|^ICE$|기본ICE|^HOT|얼음[OX]|사이즈|\d+ml|홀빈|분쇄|샷추가|디카페인변경|시럽추가|휘핑추가|크림치즈$|비닐|봉투|쇼핑백|캐리어|옵션|할인|변경$|추가$)/i.test(n)) return "옵션·기타";
     if (/\+/.test(n)) return "음료"; // 아메리카노+케이크 같은 세트
     if (/(원두|드립백|캡슐|\d+g$|\d+kg$)/i.test(n) || /(원두|드립백)/.test(c)) return "원두·드립백";
     if (DESSERT_RE.test(n) || /(베이커리|빵|디저트|케이크|푸드|bakery|dessert)/i.test(c)) return "베이커리";
@@ -910,8 +910,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (!list.length) { el.innerHTML = '<tr><td class="empty">선택한 기간에 할인 기록이 없습니다.</td></tr>'; return; }
     el.innerHTML = '<thead><tr><th>메뉴</th><th class="r">수량</th><th class="r">할인액</th><th class="r">할인율</th><th class="r">실제 1개 값</th></tr></thead><tbody>' +
       list.map(function (x) {
-        var r = x.dc / (x.a + x.dc);
-        return "<tr><td>" + esc(x.p) + ' <span class="muted" style="font-size:11px">' + Object.keys(x.s).map(kName).map(esc).join(", ") + '</span></td><td class="r num">' + num(x.q) + '</td><td class="r num">' + won(x.dc) + '</td><td class="r num"' + (r >= 0.3 ? ' style="color:var(--crit);font-weight:600"' : "") + ">" + (r >= 0.3 ? "▲ " : "") + pct(r, 0) + '</td><td class="r num">' + (x.q ? won(x.a / x.q) : "—") + "</td></tr>";
+        var r = x.a + x.dc > 0 ? x.dc / (x.a + x.dc) : null;
+        return "<tr><td>" + esc(x.p) + ' <span class="muted" style="font-size:11px">' + Object.keys(x.s).map(kName).map(esc).join(", ") + '</span></td><td class="r num">' + num(x.q) + '</td><td class="r num">' + won(x.dc) + '</td><td class="r num"' + (r >= 0.3 ? ' style="color:var(--crit);font-weight:600"' : "") + ">" + (r == null ? "할인 줄" : (r >= 0.3 ? "▲ " : "") + pct(r, 0)) + '</td><td class="r num">' + (x.q && x.a > 0 ? won(x.a / x.q) : "—") + "</td></tr>";
       }).join("") + "</tbody>";
   }
 
@@ -970,11 +970,12 @@ footer { font-size: 12px; color: var(--ink-3); }
     }
 
     // 5) 옵션 업셀
-    var op = grp["옵션·기타"];
+    var paid = S.prods.filter(function (r) { return r.g === "옵션·기타" && r.a > 0 && !/(비닐|봉투|쇼핑백|캐리어)/.test(r.p); });
+    var op = paid.length ? { q: sumBy(paid, function (r) { return r.q; }), a: sumBy(paid, function (r) { return r.a; }) } : null;
     if (op && grp["음료"]) {
       ideas.push({
         tag: "chance", t: "옵션 추가 음료 100잔당 " + Math.round(op.q / grp["음료"].q * 100) + "건",
-        ev: "ICE-UP·디카페인 변경 같은 옵션·기타가 " + num(op.q) + "건, " + won(op.a) + ".",
+        ev: "ICE-UP·디카페인 변경 같은 유료 옵션이 " + num(op.q) + "건, " + won(op.a) + " (0원 기본 선택은 제외).",
         act: "키오스크 음료 선택 화면에서 <b>샷 추가 · 사이즈 업 · ICE-UP</b>을 첫 줄에 보이게 두세요. 고르기 쉬우면 추가 결제가 늘어납니다."
       });
     }
@@ -1049,6 +1050,7 @@ footer { font-size: 12px; color: var(--ink-3); }
 
     var order = { focus: 0, chance: 1, check: 2 };
     ideas.sort(function (a, b) { return order[a.tag] - order[b.tag]; });
+    if (days < 7) ideas.forEach(function (x) { if (x.eff) x.eff += " · " + days + "일 자료로 계산해 오차가 큽니다"; });
     el.innerHTML = ideas.map(function (x) {
       return '<article class="idea"><span class="tag ' + x.tag + '">' + { focus: "집중", chance: "기회", check: "점검" }[x.tag] + "</span><h3>" + esc(x.t) + '</h3><div class="ev">' + x.ev + '</div><div class="act">' + x.act + "</div>" + (x.eff ? '<div class="eff">' + x.eff + "</div>" : "") + "</article>";
     }).join("");
@@ -1229,6 +1231,11 @@ footer { font-size: 12px; color: var(--ink-3); }
     var text = rows.slice(0, headerIdx).map(function (r) { return r.join(" "); }).join(" ") + " " + name, out = [];
     var re = /(20\d{2})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})|(20\d{2})(\d{2})(\d{2})/g, m;
     while ((m = re.exec(text))) out.push(m[1] ? m[1] + "-" + pad(+m[2]) + "-" + pad(+m[3]) : m[4] + "-" + m[5] + "-" + m[6]);
+    if (!out.length) {
+      // 연도 없는 “9월 28일” (파일 이름 등) → 올해로 봄
+      var km = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(text), y = (state.lastF || ymd(new Date())).slice(0, 4);
+      if (km) out.push(y + "-" + pad(+km[1]) + "-" + pad(+km[2]));
+    }
     return out;
   }
 
@@ -1267,6 +1274,7 @@ footer { font-size: 12px; color: var(--ink-3); }
           out.prod.push(rec);
         }
         rec.q += n0(g(r, "qty")); rec.a += a; rec.dc += Math.abs(n0(g(r, "dc")));
+        if (a < 0 && /할인/.test(name)) rec.dc += -a; // 예: ‘원두구매시 음료할인’ -2,000원
         [["cq", "cq"], ["ca", "ca"], ["dq", "dq"], ["da", "da"], ["tq", "tq"], ["ta", "ta"]].forEach(function (p) { if (map[p[0]] != null) rec[p[1]] = (rec[p[1]] || 0) + n0(g(r, p[0])); });
         pending.push(rec);
       });
