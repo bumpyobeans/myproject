@@ -185,6 +185,8 @@ td.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .drop.over { border-color: var(--accent); background: var(--accent-soft); }
 .map { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
 .map label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.krows.pp { grid-template-columns: auto auto minmax(0, 1fr); column-gap: 14px; }
+.krows.pp .c:last-child { text-align: left; }
 .map select, .map input, .names input { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--panel); }
 .req { color: var(--crit); }
 .msg { font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
@@ -263,8 +265,12 @@ footer { font-size: 12px; color: var(--ink-3); }
     <section class="panel" aria-labelledby="dailyH">
       <div class="panel-head">
         <h2 id="dailyH">일별 매출</h2>
-        <div class="legend" id="legDaily"></div>
+        <div class="seg" id="dailyMetric">
+          <button type="button" data-m="menu" aria-pressed="true">메뉴 판매액</button>
+          <button type="button" data-m="cash">POS 실매출</button>
+        </div>
       </div>
+      <div class="legend" id="legDaily"></div>
       <div class="chart" id="dailyChart"></div>
       <span class="sub" id="dailyNote"></span>
     </section>
@@ -299,7 +305,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   <section class="panel" aria-labelledby="menuH">
     <div class="panel-head">
       <h2 id="menuH">메뉴별 판매 순위</h2>
-      <span class="sub">등급 A = 매출 상위 70%를 만드는 메뉴, B = 다음 20%, C = 나머지 10% · 선불카드·옵션은 제외</span>
+      <span class="sub">판매액 = 선불카드로 결제한 메뉴까지 포함한 값 · 등급 A = 판매액 상위 70%, B = 다음 20%, C = 나머지 · 선불 충전·옵션은 제외</span>
     </div>
     <div class="tbl-scroll"><table id="menuTable"></table></div>
   </section>
@@ -310,11 +316,16 @@ footer { font-size: 12px; color: var(--ink-3); }
       <div id="grpChart" class="grp"></div>
       <span class="sub">두 POS의 분류 이름이 달라서 메뉴 이름으로 상품군을 맞춰 묶었습니다.</span>
     </section>
-    <section class="panel" aria-labelledby="discH">
-      <div class="panel-head"><h2 id="discH">할인이 많이 나간 메뉴</h2><span class="sub">할인율 = 할인 ÷ (실매출 + 할인)</span></div>
-      <div class="tbl-scroll"><table id="discTable"></table></div>
+    <section class="panel" aria-labelledby="ppH">
+      <div class="panel-head"><h2 id="ppH">선불카드 현황</h2><span class="sub">충전은 미리 받은 돈, 사용은 100% 할인 처리분</span></div>
+      <div id="ppBox"></div>
     </section>
   </div>
+
+  <section class="panel" aria-labelledby="discH">
+    <div class="panel-head"><h2 id="discH">행사 할인이 나간 메뉴</h2><span class="sub">선불카드 사용분은 빼고 계산 · 할인율 = 행사 할인 ÷ (판매액 + 행사 할인)</span></div>
+    <div class="tbl-scroll"><table id="discTable"></table></div>
+  </section>
 
   <section class="panel" id="dataPanel" aria-labelledby="dataH">
     <div class="panel-head">
@@ -355,6 +366,19 @@ footer { font-size: 12px; color: var(--ink-3); }
       <p class="sub" style="margin:0">상품 자료는 <b>하루 단위</b>로 받는 것이 가장 좋습니다. 여러 날을 한 파일로 받으면 그 기간 전체를 선택했을 때만 집계되고, 일별 차트에는 날짜별로 똑같이 나눠 표시됩니다.</p>
     </div>
 
+    <div class="guide">
+      <h3>선불카드 설정</h3>
+      <div class="map">
+        <label for="cfgT1">1단계 충전 금액 (원 이상)<input type="number" id="cfgT1" min="0" step="10000"></label>
+        <label for="cfgB1">1단계 추가 적립 (%)<input type="number" id="cfgB1" min="0" max="100"></label>
+        <label for="cfgT2">2단계 충전 금액 (원 이상)<input type="number" id="cfgT2" min="0" step="10000"></label>
+        <label for="cfgB2">2단계 추가 적립 (%)<input type="number" id="cfgB2" min="0" max="100"></label>
+        <label for="cfgPP1"><span><span id="ppK1">1호기</span> 선불 사용 기록</span><select id="cfgPP1"><option value="order">주문 할인 (할인금액 − 단품 할인)</option><option value="all">할인금액 전체</option><option value="none">사용 안 함</option></select></label>
+        <label for="cfgPP2"><span><span id="ppK2">2호기</span> 선불 사용 기록</span><select id="cfgPP2"><option value="order">주문 할인</option><option value="all">할인금액 전체</option><option value="none">사용 안 함</option></select></label>
+      </div>
+      <p class="sub" style="margin:0">선불카드로 결제하면 POS에서 메뉴를 찍고 100% 할인하므로, 그 할인 금액을 ‘선불 사용’으로 봅니다. CUBE는 행사 할인이 ‘단품 할인’으로 따로 나와서 나머지를 선불 사용으로 계산합니다.</p>
+    </div>
+
     <div class="names">
       <label for="name1"><span class="sw" style="background:var(--k1)"></span>1번 이름 <input id="name1" maxlength="14"></label>
       <label for="name2"><span class="sw" style="background:var(--k2)"></span>2번 이름 <input id="name2" maxlength="14"></label>
@@ -367,7 +391,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     </div>
   </section>
 
-  <footer>매출은 할인을 뺀 실매출(부가세 포함) 기준입니다. CUBE는 ‘매출 금액’, O2POS는 ‘총매출 − 할인금액’으로 맞춰 계산합니다.</footer>
+  <footer>POS 실매출 = 할인을 뺀 결제 금액(부가세 포함, 선불 충전 포함). 메뉴 판매액 = POS 실매출 − 선불 충전 + 선불 사용. CUBE는 ‘매출 금액’, O2POS는 ‘총매출 − 할인금액’으로 맞춰 계산합니다.</footer>
 </div>
 <div id="tip" hidden></div>
 
@@ -385,8 +409,9 @@ footer { font-size: 12px; color: var(--ink-3); }
   var DESSERT_RE = /(빵|케이크|케익|쿠키|크루아상|크로와상|마카롱|스콘|베이글|샌드위치|와플|크로플|크룽지|머핀|브라우니|타르트|휘낭시에|마들렌|토스트|디저트|파이|도넛|카스테라|떡|아슈크림|아이스크림)/;
 
   // ---------- 상태 ----------
-  var state = { names: { K1: "1호기 · CUBE", K2: "2호기 · O2POS" }, prod: [], hour: [], day: [], sample: true, lastF: null, lastT: null };
-  var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a" };
+  var state = { names: { K1: "1호기 · CUBE", K2: "2호기 · O2POS" }, prod: [], hour: [], day: [], sample: true, lastF: null, lastT: null,
+    cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "all" } } };
+  var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu" };
   var queue = []; // 불러오기 대기 중인 파일
 
   // ---------- 유틸 ----------
@@ -428,8 +453,8 @@ footer { font-size: 12px; color: var(--ink-3); }
   function save() {
     try {
       localStorage.setItem(STORE, JSON.stringify(state.sample
-        ? { v: 2, names: state.names }
-        : { v: 2, names: state.names, prod: state.prod, hour: state.hour, day: state.day, lastF: state.lastF, lastT: state.lastT }));
+        ? { v: 2, names: state.names, cfg: state.cfg }
+        : { v: 2, names: state.names, cfg: state.cfg, prod: state.prod, hour: state.hour, day: state.day, lastF: state.lastF, lastT: state.lastT }));
     } catch (e) { showMsg("브라우저 저장소에 저장하지 못했습니다. 저장이 막혀 있을 수 있어요.", true); }
   }
   function load() {
@@ -437,6 +462,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       var o = JSON.parse(localStorage.getItem(STORE) || "null");
       if (!o) return false;
       if (o.names) state.names = { K1: o.names.K1 || state.names.K1, K2: o.names.K2 || state.names.K2 };
+      if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: (c.pp && c.pp.K2) || "all" } }; }
       if ((o.prod && o.prod.length) || (o.hour && o.hour.length) || (o.day && o.day.length)) {
         state.prod = o.prod || []; state.hour = o.hour || []; state.day = o.day || [];
         state.lastF = o.lastF || null; state.lastT = o.lastT || null;
@@ -454,6 +480,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       var pk = r.s + "|" + r.d + "|" + r.p;
       var p = P[pk] || (P[pk] = out.prod[out.prod.push({ s: r.s, f: r.d, t: r.d, p: r.p, c: r.c || "", g: r.g, q: 0, a: 0, dc: 0 }) - 1]);
       p.q += r.q; p.a += r.a; p.dc += r.dc || 0;
+      if (r.od != null) { p.od = (p.od || 0) + r.od; p.sd = (p.sd || 0) + (r.sd || 0); }
       if (r.dine != null) {
         if (p.dq == null) { p.dq = 0; p.da = 0; p.tq = 0; p.ta = 0; }
         if (r.dine) { p.dq += r.q; p.da += r.a; } else { p.tq += r.q; p.ta += r.a; }
@@ -501,15 +528,18 @@ footer { font-size: 12px; color: var(--ink-3); }
         var n = Math.round(dayOrders * prof[h] / sum * (0.8 + R() * 0.4));
         for (var j = 0; j < n; j++) {
           var s = R() < 0.6 ? "K1" : "K2", si = slotIdx(h), oid = s + d + (++seq), dine = s === "K1" ? R() < 0.45 : null;
+          var prepaid = s === "K1" && R() < 0.14; // 선불카드로 결제 → POS에서 100% 주문 할인
           var items = [], nd = R() < 0.72 ? 1 : 2, x;
           for (x = 0; x < nd; x++) items.push([pick(drinks, si), "음료"]);
           if (R() < [0.22, 0.16, 0.24, 0.12][si]) items.push([pick(bakery, si), "베이커리"]);
           if (R() < 0.025) { var b = beans[Math.floor(R() * beans.length)]; items.push([[b[0], b[1]], "원두"]); }
           if (R() < 0.06) items.push([["ICE-UP(얼음O)", 1000], "옵션"]);
-          if (R() < 0.003) items.push([["VIP카드5만원", 50000], "카드"]);
+          if (!prepaid && s === "K1" && R() < 0.006) items.push([R() < 0.6 ? ["VIP카드5만원", 50000] : R() < 0.93 ? ["VIP카드10만원", 100000] : ["VIP카드50만원", 500000], "카드"]);
           items.forEach(function (it) {
-            var price = it[0][1], disc = (s === "K1" && it[1] === "음료" && R() < 0.12) ? Math.round(price * 0.5 / 100) * 100 : 0;
-            tx.push({ s: s, d: d, h: h, o: oid, p: it[0][0], c: it[1], g: classify(it[0][0], it[1]), q: 1, a: price - disc, dc: disc, dine: dine });
+            var price = it[0][1], card = it[1] === "카드";
+            var sd = (!prepaid && !card && s === "K1" && it[1] === "음료" && R() < 0.05) ? 1000 : 0; // 스탬프 등 행사 할인
+            var od = prepaid && !card ? price - sd : 0;
+            tx.push({ s: s, d: d, h: h, o: oid, p: it[0][0], c: it[1], g: classify(it[0][0], it[1]), q: 1, a: price - sd - od, dc: sd + od, od: s === "K1" ? od : null, sd: sd, dine: dine });
           });
         }
       }
@@ -542,25 +572,38 @@ footer { font-size: 12px; color: var(--ink-3); }
   function inR(r, from, to, ks) { return ks.indexOf(r.s) >= 0 && r.f >= from && r.t <= to; }
 
   // 하루 매출: 일별 자료 > 상품 자료 > 시간대 자료 순으로 사용 (중복 합산 방지)
-  function dayTotals(from, to, ks) {
+  // 선불카드 사용분: POS에서 100% 할인으로 처리된 금액
+  function pu(r) {
+    var m = state.cfg.pp[r.s] || "order";
+    if (m === "none" || !r.dc || r.g === "선불카드") return 0;
+    return m === "order" && r.od != null ? Math.min(r.dc, r.od) : r.dc;
+  }
+  function promo(r) { return Math.max(0, (r.dc || 0) - pu(r)) + (r.ndl || 0); }
+  function sales(r) { return r.g === "선불카드" ? 0 : r.a + pu(r); } // 메뉴 판매액 = 실매출 + 선불 사용 (행사 할인은 제외)
+  function bonusOf(unit) { var c = state.cfg; return unit >= c.t2 ? c.b2 : unit >= c.t1 ? c.b1 : 0; }
+
+  // 하루 매출. cash = POS 실매출(충전 포함, 선불 사용 제외), menu = 메뉴 판매액(선불 사용 포함, 충전 제외)
+  function dayTotals(from, to, ks, mode) {
     var res = {};
     ks.forEach(function (s) {
       var dr = {}, pr = {}, hr = {}, spread = {}, out = {};
       state.day.forEach(function (r) { if (r.s === s && r.d >= from && r.d <= to) dr[r.d] = r; });
-      function spreadAdd(map, r, fields) {
+      function spreadAdd(map, r, v, withO) {
         var n = daysBetween(r.f, r.t) + 1;
         for (var d = r.f; d <= r.t; d = addDays(d, 1)) {
           var x = map[d] || (map[d] = { a: 0, o: null });
-          x.a += r.a / n;
-          if (fields && r.o != null) x.o = (x.o || 0) + r.o / n;
+          x.a += v / n;
+          if (withO && r.o != null) x.o = (x.o || 0) + r.o / n;
           if (n > 1) spread[d] = 1;
         }
       }
-      state.prod.forEach(function (r) { if (inR(r, from, to, [s])) spreadAdd(pr, r); });
-      state.hour.forEach(function (r) { if (inR(r, from, to, [s])) spreadAdd(hr, r, true); });
+      state.prod.forEach(function (r) { if (inR(r, from, to, [s])) spreadAdd(pr, r, mode === "menu" ? sales(r) : r.a); });
+      state.hour.forEach(function (r) { if (inR(r, from, to, [s])) spreadAdd(hr, r, r.a, true); });
       var keys = {}; [dr, pr, hr].forEach(function (m) { for (var k in m) keys[k] = 1; });
       Object.keys(keys).forEach(function (d) {
-        var a = dr[d] ? dr[d].a : pr[d] ? pr[d].a : hr[d].a;
+        var a = mode === "menu"
+          ? (pr[d] ? pr[d].a : dr[d] ? dr[d].a : hr[d].a)
+          : (dr[d] ? dr[d].a : pr[d] ? pr[d].a : hr[d].a);
         var o = dr[d] && dr[d].o != null ? dr[d].o : hr[d] && hr[d].o != null ? hr[d].o : null;
         out[d] = { a: a, o: o, spread: !dr[d] && !!spread[d] };
       });
@@ -569,15 +612,30 @@ footer { font-size: 12px; color: var(--ink-3); }
     return res;
   }
   function summary(from, to, ks) {
-    var dt = dayTotals(from, to, ks), a = 0, aO = 0, o = 0, days = {}, spread = false;
+    var dt = dayTotals(from, to, ks, "cash"), dtm = dayTotals(from, to, ks, "menu");
+    var a = 0, menu = 0, aO = 0, o = 0, days = {}, spread = false;
     ks.forEach(function (s) {
-      Object.keys(dt[s]).forEach(function (d) { var x = dt[s][d]; a += x.a; days[d] = 1; if (x.o != null) { o += x.o; aO += x.a; } if (x.spread) spread = true; });
+      Object.keys(dt[s]).forEach(function (d) { var x = dt[s][d]; a += x.a; days[d] = 1; if (x.spread) spread = true; });
+      Object.keys(dtm[s]).forEach(function (d) { var x = dtm[s][d]; menu += x.a; if (x.o != null) { o += x.o; aO += x.a; } });
     });
     var prods = state.prod.filter(function (r) { return inR(r, from, to, ks); });
     var hours = state.hour.filter(function (r) { return inR(r, from, to, ks); });
-    var dc = sumBy(prods, function (r) { return r.dc || 0; }), pa = sumBy(prods, function (r) { return r.a; });
+    var cards = prods.filter(function (r) { return r.g === "선불카드"; }), tiers = {};
+    var points = sumBy(cards, function (r) {
+      var unit = r.q ? r.a / r.q : r.a, b = bonusOf(unit), k = b ? "+" + Math.round(b * 100) + "%" : "적립 없음";
+      tiers[k] = (tiers[k] || 0) + (r.q || 1);
+      return r.a * (1 + b);
+    });
+    var charge = sumBy(cards, function (r) { return r.a; });
+    var used = sumBy(prods, pu), pro = sumBy(prods, promo);
+    var pm = sumBy(prods, sales);
     var nd = Object.keys(days).length;
-    return { a: a, days: nd, perDay: nd ? a / nd : 0, o: o, aov: o ? aO / o : null, dc: dc, dcRate: pa + dc > 0 ? dc / (pa + dc) : 0, prods: prods, hours: hours, dt: dt, spread: spread };
+    return {
+      a: a, menu: menu, days: nd, perDay: nd ? a / nd : 0, perDayMenu: nd ? menu / nd : 0, o: o, aov: o ? aO / o : null,
+      charge: charge, chargeQ: sumBy(cards, function (r) { return r.q || 1; }), points: points, tiers: tiers, used: used,
+      promo: pro, promoRate: pm + pro > 0 ? pro / (pm + pro) : 0, usedShare: pm > 0 ? used / pm : 0,
+      prods: prods, hours: hours, dt: dt, dtm: dtm, spread: spread
+    };
   }
 
   // ---------- 툴팁 ----------
@@ -663,13 +721,14 @@ footer { font-size: 12px; color: var(--ink-3); }
   function render() {
     $("kb1").textContent = kName("K1"); $("kb2").textContent = kName("K2");
     $("name1").value = state.names.K1; $("name2").value = state.names.K2;
+    syncCfg();
     var pill = $("dataPill");
     pill.className = "pill " + (state.sample ? "sample" : "real");
     pill.textContent = state.sample ? "예시 데이터 · 실제 매출 아님" : "내 데이터";
     renderDataStats();
     var rg = currentRange();
     if (!rg) {
-      ["ideas", "dailyChart", "kioskCmp", "hourChart", "heat", "menuTable", "grpChart", "discTable"].forEach(function (id) { $(id).innerHTML = ""; });
+      ["ideas", "dailyChart", "kioskCmp", "hourChart", "heat", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
       $("kpis").innerHTML = '<div class="kpi" style="grid-column:1/-1">' + emptyHtml("아직 데이터가 없습니다. 아래 “데이터 관리”에서 POS 엑셀 파일을 불러오세요.") + "</div>";
       $("rangeLabel").textContent = "";
       return;
@@ -685,6 +744,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     renderHeat(S, ks);
     var menu = renderMenu(S);
     renderGroups(S, ks);
+    renderPrepaid(S);
     renderDisc(S);
     renderIdeas(S, S1, S2, menu, rg);
   }
@@ -693,20 +753,20 @@ footer { font-size: 12px; color: var(--ink-3); }
     var len = daysBetween(rg.from, rg.to) + 1;
     var P = summary(addDays(rg.from, -len), addDays(rg.from, -1), ks);
     var hasPrev = P.days > 0;
-    function delta(c, p, invert) {
+    function delta(c, p) {
       if (!hasPrev || c == null || !p) return '<span class="delta flat">비교할 이전 기간 자료 없음</span>';
       var r = (c - p) / p;
       if (Math.abs(r) < 0.005) return '<span class="delta flat">— 이전 ' + len + "일과 같음</span>";
-      var good = invert ? r < 0 : r > 0;
-      return '<span class="delta ' + (good ? "up" : "down") + '">' + (r > 0 ? "▲ " : "▼ ") + pct(Math.abs(r)) + ' <span class="muted" style="font-weight:400">이전 ' + len + "일 대비</span></span>";
+      return '<span class="delta ' + (r > 0 ? "up" : "down") + '">' + (r > 0 ? "▲ " : "▼ ") + pct(Math.abs(r)) + ' <span class="muted" style="font-weight:400">이전 ' + len + "일 대비</span></span>";
     }
+    var net = S.points - S.used;
     var items = [
-      { l: "총매출 (실매출)", v: num(S.a), u: "원", d: delta(S.a, P.a) },
-      { l: "하루 평균 매출", v: num(S.perDay), u: "원", d: delta(S.perDay, P.perDay) },
+      { l: "메뉴 판매액 · 선불 사용 포함", v: num(S.menu), u: "원", d: delta(S.menu, P.menu) },
+      { l: "POS 실매출 · 선불 충전 포함", v: num(S.a), u: "원", d: delta(S.a, P.a) },
       S.aov != null
         ? { l: "객단가 · 주문 " + num(S.o) + "건", v: num(S.aov), u: "원", d: delta(S.aov, P.aov) }
         : { l: "객단가", v: "—", u: "", d: '<span class="delta flat">시간대별·일별 자료를 올리면 계산됩니다</span>' },
-      { l: "할인 금액 · 할인율 " + pct(S.dcRate), v: num(S.dc), u: "원", d: delta(S.dc, P.dc, true) }
+      { l: "선불카드 충전 · " + num(S.chargeQ) + "건", v: num(S.charge), u: "원", d: '<span class="delta flat">사용 ' + num(S.used) + "P · 잔액 " + (net >= 0 ? "+" : "−") + num(Math.abs(net)) + "P</span>" }
     ];
     $("kpis").innerHTML = items.map(function (it) {
       return '<div class="kpi"><span class="eyebrow">' + it.l + '</span><span class="v">' + it.v + "<small>" + it.u + "</small></span>" + it.d + "</div>";
@@ -715,18 +775,18 @@ footer { font-size: 12px; color: var(--ink-3); }
 
   function renderDaily(S, rg, ks) {
     legend($("legDaily"));
-    var days = [];
+    var days = [], src = view.dailyMetric === "cash" ? S.dt : S.dtm;
     for (var d = rg.from; d <= rg.to; d = addDays(d, 1)) days.push(d);
-    var series = ks.map(function (k) { return { name: kName(k), color: kColor(k), values: days.map(function (d) { return S.dt[k][d] ? S.dt[k][d].a : 0; }) }; });
-    var spreadDays = days.map(function (d) { return ks.some(function (k) { return S.dt[k][d] && S.dt[k][d].spread; }); });
+    var series = ks.map(function (k) { return { name: kName(k), color: kColor(k), values: days.map(function (d) { return src[k][d] ? src[k][d].a : 0; }) }; });
+    var spreadDays = days.map(function (d) { return ks.some(function (k) { return src[k][d] && src[k][d].spread; }); });
     stackedBars($("dailyChart"), S.days ? days : [], series, {
       label: "일별 매출", height: 240, fmtAxis: shortWon, fmtVal: won,
       fmtCat: function (d) { var p = d.split("-"); return +p[1] + "/" + +p[2]; },
-      fmtTitle: function (d) { return d.replace(/-/g, ".") + " (" + DOW[dowOf(d)] + ")"; },
+      fmtTitle: function (d) { return d.replace(/-/g, ".") + " (" + DOW[dowOf(d)] + ") · " + (view.dailyMetric === "cash" ? "POS 실매출" : "메뉴 판매액"); },
       catStyle: function (d) { var w = dowOf(d); return w === 0 || w === 6 ? "fill:var(--ink-2);font-weight:600" : ""; },
       note: function (i) { return spreadDays[i] ? "여러 날 묶음 자료를 날짜별로 나눈 값 포함" : ""; }
     });
-    $("dailyNote").textContent = S.spread ? "일부 날짜는 여러 날을 한 번에 받은 자료라 날짜별로 똑같이 나눠 표시했습니다." : "";
+    $("dailyNote").textContent = (view.dailyMetric === "cash" ? "POS 실매출 = 실제로 들어온 돈(선불카드 충전 포함, 선불 사용은 0원)." : "메뉴 판매액 = 실제로 나간 메뉴 값(선불카드로 먹은 음료 포함, 충전은 제외).") + (S.spread ? " 일부 날짜는 여러 날 묶음 자료를 나눠 표시했습니다." : "");
   }
 
   function topMenu(prods) {
@@ -747,17 +807,20 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
 
   function renderKiosk(S1, S2) {
-    var el = $("kioskCmp"), tot = S1.a + S2.a;
-    if (!tot) { el.innerHTML = emptyHtml("선택한 기간에 데이터가 없습니다."); return; }
-    var sh1 = S1.a / tot, sh2 = S2.a / tot;
+    var el = $("kioskCmp"), tot = S1.menu + S2.menu;
+    if (!tot && !(S1.a + S2.a)) { el.innerHTML = emptyHtml("선택한 기간에 데이터가 없습니다."); return; }
+    tot = tot || 1;
+    var sh1 = S1.menu / tot, sh2 = S2.menu / tot;
     function q(S) { return sumBy(S.prods, function (r) { return MENU_GRP[r.g] ? r.q : 0; }); }
     var t1 = takeout(S1.prods), t2 = takeout(S2.prods);
-    var html = '<div class="legend"><span><i class="sw" style="background:var(--k1)"></i>' + esc(kName("K1")) + " " + pct(sh1, 0) + '</span><span><i class="sw" style="background:var(--k2)"></i>' + esc(kName("K2")) + " " + pct(sh2, 0) + "</span></div>";
-    html += '<div class="sharebar" role="img" aria-label="매출 비중">' + (sh1 > 0 ? '<div style="width:' + sh1 * 100 + '%;background:var(--k1)"></div>' : "") + (sh2 > 0 ? '<div style="width:' + sh2 * 100 + '%;background:var(--k2)"></div>' : "") + "</div>";
+    var html = '<div class="legend"><span><i class="sw" style="background:var(--k1)"></i>' + esc(kName("K1")) + " " + pct(sh1, 0) + '</span><span><i class="sw" style="background:var(--k2)"></i>' + esc(kName("K2")) + " " + pct(sh2, 0) + '</span><span class="muted">메뉴 판매액 비중</span></div>';
+    html += '<div class="sharebar" role="img" aria-label="메뉴 판매액 비중">' + (sh1 > 0 ? '<div style="width:' + sh1 * 100 + '%;background:var(--k1)"></div>' : "") + (sh2 > 0 ? '<div style="width:' + sh2 * 100 + '%;background:var(--k2)"></div>' : "") + "</div>";
     html += '<div class="krows"><div></div><div class="h c" style="justify-content:flex-end"><i class="sw" style="background:var(--k1)"></i>' + esc(kName("K1")) + '</div><div class="h c" style="justify-content:flex-end"><i class="sw" style="background:var(--k2)"></i>' + esc(kName("K2")) + "</div>";
     function aov(S) { return S.aov != null ? won(S.aov) : "—"; }
-    [["매출", won(S1.a), won(S2.a)], ["하루 평균", won(S1.perDay), won(S2.perDay)], ["주문 건수", S1.aov != null ? num(S1.o) + "건" : "—", S2.aov != null ? num(S2.o) + "건" : "—"],
-     ["객단가", aov(S1), aov(S2)], ["판매 수량 (메뉴)", num(q(S1)) + "개", num(q(S2)) + "개"], ["할인율", pct(S1.dcRate), pct(S2.dcRate)],
+    [["메뉴 판매액", won(S1.menu), won(S2.menu)], ["POS 실매출", won(S1.a), won(S2.a)],
+     ["선불 충전", won(S1.charge), won(S2.charge)], ["선불 사용", won(S1.used), won(S2.used)],
+     ["주문 건수", S1.aov != null ? num(S1.o) + "건" : "—", S2.aov != null ? num(S2.o) + "건" : "—"], ["객단가", aov(S1), aov(S2)],
+     ["판매 수량 (메뉴)", num(q(S1)) + "개", num(q(S2)) + "개"], ["행사 할인율", pct(S1.promoRate), pct(S2.promoRate)],
      ["포장 비율", t1 == null ? "—" : pct(t1, 0), t2 == null ? "—" : pct(t2, 0)],
      ["가장 바쁜 시간", peakHour(S1.hours), peakHour(S2.hours)], ["최다 판매 메뉴", topMenu(S1.prods), topMenu(S2.prods)]].forEach(function (r) {
       html += '<div class="lab">' + r[0] + '</div><div class="c">' + esc(r[1]) + '</div><div class="c">' + esc(r[2]) + "</div>";
@@ -845,8 +908,9 @@ footer { font-size: 12px; color: var(--ink-3); }
     var m = {};
     prods.forEach(function (r) {
       if (!MENU_GRP[r.g]) return;
-      var x = m[r.p] || (m[r.p] = { p: r.p, g: r.g, q: 0, a: 0, dc: 0, k1: 0, k2: 0 });
-      x.q += r.q; x.a += r.a; x.dc += r.dc || 0; if (r.s === "K1") x.k1 += r.a; else x.k2 += r.a;
+      var x = m[r.p] || (m[r.p] = { p: r.p, g: r.g, q: 0, a: 0, pu: 0, pr: 0, k1: 0, k2: 0 });
+      var v = sales(r);
+      x.q += r.q; x.a += v; x.pu += pu(r); x.pr += promo(r); if (r.s === "K1") x.k1 += v; else x.k2 += v;
     });
     var list = Object.keys(m).map(function (k) { return m[k]; });
     var total = sumBy(list, function (x) { return x.a; });
@@ -856,7 +920,8 @@ footer { font-size: 12px; color: var(--ink-3); }
       x.share = total ? x.a / total : 0;
       x.grade = cum < 0.7 ? "A" : cum < 0.9 ? "B" : "C";
       cum += x.share;
-      x.dcRate = x.a + x.dc > 0 ? x.dc / (x.a + x.dc) : 0;
+      x.puRate = x.a > 0 ? x.pu / x.a : 0;
+      x.prRate = x.a + x.pr > 0 ? x.pr / (x.a + x.pr) : 0;
     });
     return { list: list, total: total };
   }
@@ -866,10 +931,10 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (!list.length) { el.innerHTML = '<tr><td class="empty">선택한 기간에 상품별 자료가 없습니다.</td></tr>'; return ms; }
     if (view.menuSort === "q") list.sort(function (a, b) { return b.q - a.q; });
     var maxA = Math.max.apply(null, list.map(function (x) { return x.a; })) || 1;
-    var html = '<thead><tr><th class="r">#</th><th>메뉴</th><th>상품군</th><th class="r"><button type="button" class="sortbtn" data-s="q" aria-pressed="' + (view.menuSort === "q") + '">판매 수량</button></th><th><button type="button" class="sortbtn" data-s="a" aria-pressed="' + (view.menuSort === "a") + '">실매출</button></th><th class="r">비중</th><th>' + esc(kName("K1")) + " : " + esc(kName("K2")) + '</th><th class="r">할인율</th><th>등급</th></tr></thead><tbody>';
+    var html = '<thead><tr><th class="r">#</th><th>메뉴</th><th>상품군</th><th class="r"><button type="button" class="sortbtn" data-s="q" aria-pressed="' + (view.menuSort === "q") + '">판매 수량</button></th><th><button type="button" class="sortbtn" data-s="a" aria-pressed="' + (view.menuSort === "a") + '">판매액</button></th><th class="r">비중</th><th>' + esc(kName("K1")) + " : " + esc(kName("K2")) + '</th><th class="r">선불 결제</th><th class="r">행사 할인</th><th>등급</th></tr></thead><tbody>';
     list.forEach(function (x, i) {
       var t = x.k1 + x.k2 || 1;
-      html += '<tr><td class="r num muted">' + (i + 1) + "</td><td>" + esc(x.p) + '</td><td class="muted">' + x.g + '</td><td class="r num">' + num(x.q) + '</td><td class="num inbar"><i style="width:' + Math.max(0, x.a / maxA * 100) + '%"></i><b>' + won(x.a) + '</b></td><td class="r num">' + pct(x.share) + '</td><td><div class="split" title="' + pct(x.k1 / t, 0) + " : " + pct(x.k2 / t, 0) + '">' + (x.k1 > 0 ? '<div style="flex:' + x.k1 + ';background:var(--k1)"></div>' : "") + (x.k2 > 0 ? '<div style="flex:' + x.k2 + ';background:var(--k2)"></div>' : "") + '</div></td><td class="r num' + (x.dcRate >= 0.3 ? '" style="color:var(--crit);font-weight:600' : "") + '">' + (x.dc ? pct(x.dcRate, 0) : "—") + '</td><td><span class="grade ' + x.grade + '">' + x.grade + "</span></td></tr>";
+      html += '<tr><td class="r num muted">' + (i + 1) + "</td><td>" + esc(x.p) + '</td><td class="muted">' + x.g + '</td><td class="r num">' + num(x.q) + '</td><td class="num inbar"><i style="width:' + Math.max(0, x.a / maxA * 100) + '%"></i><b>' + won(x.a) + '</b></td><td class="r num">' + pct(x.share) + '</td><td><div class="split" title="' + pct(x.k1 / t, 0) + " : " + pct(x.k2 / t, 0) + '">' + (x.k1 > 0 ? '<div style="flex:' + x.k1 + ';background:var(--k1)"></div>' : "") + (x.k2 > 0 ? '<div style="flex:' + x.k2 + ';background:var(--k2)"></div>' : "") + '</div></td><td class="r num">' + (x.pu ? pct(x.puRate, 0) : "—") + '</td><td class="r num' + (x.prRate >= 0.3 ? '" style="color:var(--crit);font-weight:600' : "") + '">' + (x.pr ? pct(x.prRate, 0) : "—") + '</td><td><span class="grade ' + x.grade + '">' + x.grade + "</span></td></tr>";
     });
     el.innerHTML = html + "</tbody>";
     el.querySelectorAll(".sortbtn").forEach(function (b) { b.addEventListener("click", function () { view.menuSort = b.getAttribute("data-s"); renderMenu(S); }); });
@@ -879,59 +944,95 @@ footer { font-size: 12px; color: var(--ink-3); }
   function renderGroups(S, ks) {
     legend($("legGrp"));
     var el = $("grpChart"), g = {};
-    S.prods.forEach(function (r) { var x = g[r.g] || (g[r.g] = { K1: 0, K2: 0, q: 0 }); x[r.s] += r.a; x.q += r.q; });
+    S.prods.forEach(function (r) { var x = g[r.g] || (g[r.g] = { K1: 0, K2: 0, q: 0 }); x[r.s] += r.g === "선불카드" ? r.a : sales(r); x.q += r.q; });
     var names = GRP.filter(function (n) { return g[n]; });
     if (!names.length) { el.innerHTML = emptyHtml("선택한 기간에 상품별 자료가 없습니다."); return; }
-    var tot = sumBy(names, function (n) { return g[n].K1 + g[n].K2; }) || 1;
+    var menuNames = names.filter(function (n) { return n !== "선불카드"; });
+    var tot = sumBy(menuNames, function (n) { return g[n].K1 + g[n].K2; }) || 1;
     var max = Math.max.apply(null, names.map(function (n) { return g[n].K1 + g[n].K2; })) || 1;
     el.innerHTML = names.map(function (n) {
-      var t = g[n].K1 + g[n].K2;
-      var segs = ks.filter(function (k) { return g[n][k] > 0; }).map(function (k) { return '<div style="flex:' + g[n][k] + ";background:" + kColor(k) + '"></div>'; }).join("");
-      return '<div class="grow" data-g="' + esc(n) + '"><span class="gl">' + n + '</span><div class="gtrack"><div class="gbar" style="width:' + Math.max(1, t / max * 100) + '%">' + segs + '</div></div><span class="gv num">' + shortWon(t) + ' <span class="muted">' + pct(t / tot, 0) + "</span></span></div>";
+      var t = g[n].K1 + g[n].K2, card = n === "선불카드";
+      var segs = ks.filter(function (k) { return g[n][k] > 0; }).map(function (k) { return '<div style="flex:' + g[n][k] + ";background:" + kColor(k) + (card ? ";opacity:.55" : "") + '"></div>'; }).join("");
+      return '<div class="grow" data-g="' + esc(n) + '"><span class="gl">' + (card ? "선불 충전" : n) + '</span><div class="gtrack"><div class="gbar" style="width:' + Math.max(1, t / max * 100) + '%">' + segs + '</div></div><span class="gv num">' + shortWon(t) + ' <span class="muted">' + (card ? "별도" : pct(t / tot, 0)) + "</span></span></div>";
     }).join("");
     el.querySelectorAll(".grow").forEach(function (row) {
       bindTip(row, function () {
         var n = row.getAttribute("data-g"), x = g[n];
         var rows = ks.map(function (k) { return { l: kName(k), v: won(x[k]), c: kColor(k) }; });
-        rows.push({ l: "판매 수량", v: num(x.q) + "개" });
-        return tipRows(n, rows);
+        rows.push({ l: n === "선불카드" ? "충전 건수" : "판매 수량", v: num(x.q) + (n === "선불카드" ? "건" : "개") });
+        return tipRows(n === "선불카드" ? "선불카드 충전 (메뉴 판매액에는 포함 안 됨)" : n, rows);
       });
     });
   }
 
+  function renderPrepaid(S) {
+    var el = $("ppBox"), c = state.cfg;
+    if (!S.charge && !S.used) { el.innerHTML = emptyHtml("선택한 기간에 선불카드 충전·사용 기록이 없습니다."); return; }
+    var net = S.points - S.used;
+    var cashRate = S.points > 0 ? S.charge / S.points : 1 / (1 + c.b1);
+    var tiers = Object.keys(S.tiers).map(function (k) { return k + " " + S.tiers[k] + "건"; }).join(" · ") || "—";
+    var rows = [
+      ["충전", won(S.charge) + " · " + num(S.chargeQ) + "건", tiers],
+      ["적립 포인트", num(S.points) + "P", "보너스 +" + num(S.points - S.charge) + "P"],
+      ["사용 포인트", num(S.used) + "P", "POS에서 100% 할인 처리된 금액"],
+      ["잔액 변화", (net >= 0 ? "+" : "−") + num(Math.abs(net)) + "P", net >= 0 ? "앞으로 메뉴로 나갈 금액이 늘었습니다" : "쌓인 잔액이 줄었습니다"],
+      ["사용분 현금 환산", "약 " + won(S.used * cashRate), "포인트 1P ≈ " + (cashRate * 100).toFixed(1) + "원 기준"],
+      ["메뉴 중 선불 결제", pct(S.usedShare, 0), "메뉴 판매액 가운데 선불카드로 결제된 비율"]
+    ];
+    el.innerHTML = '<div class="krows pp">' + rows.map(function (r) { return '<div class="lab">' + r[0] + '</div><div class="c">' + esc(r[1]) + '</div><div class="c muted" style="font-family:var(--font-body);font-size:12px">' + esc(r[2]) + "</div>"; }).join("") + "</div>" +
+      '<span class="sub">적립 규칙: ' + num(c.t1) + "원 이상 +" + Math.round(c.b1 * 100) + "% · " + num(c.t2) + "원 이상 +" + Math.round(c.b2 * 100) + "% (데이터 관리에서 바꿀 수 있어요). 고객별 잔액은 선결제 시스템에서 확인하세요.</span>";
+  }
   function renderDisc(S) {
     var el = $("discTable"), m = {};
     S.prods.forEach(function (r) {
-      if (!r.dc) return;
-      var x = m[r.p] || (m[r.p] = { p: r.p, q: 0, a: 0, dc: 0, s: {} });
-      x.q += r.q; x.a += r.a; x.dc += r.dc; x.s[r.s] = 1;
+      var p = promo(r);
+      if (!p) return;
+      var x = m[r.p] || (m[r.p] = { p: r.p, q: 0, a: 0, pr: 0, s: {} });
+      x.q += r.q; x.a += sales(r); x.pr += p; x.s[r.s] = 1;
     });
-    var list = Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.dc - a.dc; }).slice(0, 8);
-    if (!list.length) { el.innerHTML = '<tr><td class="empty">선택한 기간에 할인 기록이 없습니다.</td></tr>'; return; }
-    el.innerHTML = '<thead><tr><th>메뉴</th><th class="r">수량</th><th class="r">할인액</th><th class="r">할인율</th><th class="r">실제 1개 값</th></tr></thead><tbody>' +
+    var list = Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.pr - a.pr; }).slice(0, 8);
+    if (!list.length) { el.innerHTML = '<tr><td class="empty">선택한 기간에 행사 할인 기록이 없습니다.</td></tr>'; return; }
+    el.innerHTML = '<thead><tr><th>메뉴</th><th class="r">수량</th><th class="r">행사 할인</th><th class="r">할인율</th></tr></thead><tbody>' +
       list.map(function (x) {
-        var r = x.a + x.dc > 0 ? x.dc / (x.a + x.dc) : null;
-        return "<tr><td>" + esc(x.p) + ' <span class="muted" style="font-size:11px">' + Object.keys(x.s).map(kName).map(esc).join(", ") + '</span></td><td class="r num">' + num(x.q) + '</td><td class="r num">' + won(x.dc) + '</td><td class="r num"' + (r >= 0.3 ? ' style="color:var(--crit);font-weight:600"' : "") + ">" + (r == null ? "할인 줄" : (r >= 0.3 ? "▲ " : "") + pct(r, 0)) + '</td><td class="r num">' + (x.q && x.a > 0 ? won(x.a / x.q) : "—") + "</td></tr>";
+        var r = x.a + x.pr > 0 ? x.pr / (x.a + x.pr) : null;
+        return "<tr><td>" + esc(x.p) + ' <span class="muted" style="font-size:11px">' + Object.keys(x.s).map(kName).map(esc).join(", ") + '</span></td><td class="r num">' + num(x.q) + '</td><td class="r num">' + won(x.pr) + '</td><td class="r num"' + (r >= 0.3 ? ' style="color:var(--crit);font-weight:600"' : "") + ">" + (r == null ? "할인 줄" : (r >= 0.3 ? "▲ " : "") + pct(r, 0)) + "</td></tr>";
       }).join("") + "</tbody>";
   }
 
   // ---------- 매출 상승 아이디어 ----------
   function renderIdeas(S, S1, S2, menu, rg) {
     var el = $("ideas"), ideas = [];
-    if (!S.a) { el.innerHTML = emptyHtml("선택한 기간에 데이터가 없습니다."); return; }
+    if (!S.a && !S.menu) { el.innerHTML = emptyHtml("선택한 기간에 데이터가 없습니다."); return; }
     var days = S.days || 1, monthly = 30 / days;
-    var grp = {}; S.prods.forEach(function (r) { var x = grp[r.g] || (grp[r.g] = { a: 0, q: 0, dc: 0 }); x.a += r.a; x.q += r.q; x.dc += r.dc || 0; });
-    var pa = sumBy(S.prods, function (r) { return r.a; });
+    var grp = {}; S.prods.forEach(function (r) { var x = grp[r.g] || (grp[r.g] = { a: 0, q: 0 }); x.a += r.g === "선불카드" ? r.a : sales(r); x.q += r.q; });
+    var pa = sumBy(S.prods, sales);
 
-    // 1) 할인 누수
-    if (S.dcRate >= 0.05) {
-      var md = menu.list.filter(function (x) { return x.dc > 0; }).sort(function (a, b) { return b.dc - a.dc; });
-      var heavy = menu.list.filter(function (x) { return x.dcRate >= 0.5 && x.dc > 0; });
+    // 1) 선불카드: 충전 · 사용 · 잔액
+    if (S.charge || S.used) {
+      var net = S.points - S.used;
       ideas.push({
-        tag: "focus", t: "할인으로 " + pct(S.dcRate, 0) + "가 빠지고 있어요",
-        ev: "할인 전 금액의 " + pct(S.dcRate) + ", " + won(S.dc) + "이 할인됐습니다." + (md.length ? " 가장 큰 메뉴: " + md.slice(0, 2).map(function (x) { return esc(x.p) + "(" + pct(x.dcRate, 0) + ")"; }).join(", ") + "." : ""),
-        act: (heavy.length ? "<b>할인율 50%가 넘는 메뉴 " + heavy.length + "개</b>(" + heavy.slice(0, 3).map(function (x) { return esc(x.p); }).join(", ") + ")는 쿠폰·스탬프·직원 할인인지, 설정 실수인지 먼저 확인하세요. " : "") + "어떤 할인이 재방문으로 이어지는지 보고, 효과 없는 할인은 줄이세요.",
-        eff: "할인을 20% 줄이면 월 약 +" + shortWon(S.dc * 0.2 * monthly) + "원 (추정)"
+        tag: "focus", t: "선불 잔액 " + (net >= 0 ? "+" : "−") + num(Math.abs(net)) + "P",
+        ev: "충전 " + won(S.charge) + " → 적립 " + num(S.points) + "P, 사용 " + num(S.used) + "P. 메뉴 판매액의 " + pct(S.usedShare, 0) + "가 선불카드로 결제됐습니다.",
+        act: "충전금은 미리 받은 돈이라 이 기간 매출과 다릅니다. <b>매출 목표·원가는 ‘메뉴 판매액’ 기준</b>으로 보세요. 선결제 시스템의 전화번호로 잔액이 많은데 3주 이상 안 온 손님에게 신메뉴·새 원두 소식을 보내면 방문이 늘어납니다."
+      });
+    }
+    if (S.charge) {
+      var c = state.cfg, r1 = c.b1 / (1 + c.b1), r2 = c.b2 / (1 + c.b2);
+      ideas.push({
+        tag: "chance", t: "적립 " + Math.round(c.b1 * 100) + "%는 실제 " + pct(r1) + " 할인",
+        ev: num(c.t1) + "원 이상 +" + Math.round(c.b1 * 100) + "%는 메뉴값의 " + pct(r1) + ", " + num(c.t2) + "원 이상 +" + Math.round(c.b2 * 100) + "%는 " + pct(r2) + "를 깎아 주는 것과 같습니다. 이 기간 충전: " + Object.keys(S.tiers).map(function (k) { return k + " " + S.tiers[k] + "건"; }).join(", ") + ".",
+        act: "두 구간 사이(" + shortWon(c.t1) + "~" + shortWon(c.t2) + ")가 넓어 대부분 " + Math.round(c.b1 * 100) + "% 구간에 머뭅니다. <b>20만원 +15%</b> 같은 중간 단계를 두면 1회 충전액을 올릴 수 있어요. 다만 혜택이 클수록 한 잔당 남는 돈이 줄어드니 원가율과 함께 정하세요."
+      });
+    }
+
+    // 1-2) 행사 할인 (선불 사용분 제외)
+    if (S.promoRate >= 0.05) {
+      var md = menu.list.filter(function (x) { return x.pr > 0; }).sort(function (a, b) { return b.pr - a.pr; });
+      ideas.push({
+        tag: "check", t: "행사 할인 " + pct(S.promoRate, 0),
+        ev: "선불카드 사용을 뺀 행사 할인이 " + won(S.promo) + "입니다." + (md.length ? " 큰 메뉴: " + md.slice(0, 2).map(function (x) { return esc(x.p) + "(" + pct(x.prRate, 0) + ")"; }).join(", ") + "." : ""),
+        act: "스탬프·쿠폰·세트 할인 중 어떤 것이 재방문으로 이어지는지 보고, 효과 없는 할인은 줄이세요.",
+        eff: "행사 할인을 20% 줄이면 월 약 +" + shortWon(S.promo * 0.2 * monthly) + "원 (추정)"
       });
     }
 
@@ -939,10 +1040,10 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (!S1.a || !S2.a) {
       ideas.push({ tag: "check", t: (S1.a ? kName("K2") : kName("K1")) + " 자료가 없습니다", ev: "이 기간에는 한쪽 매출만 들어와 있습니다.", act: "두 POS의 같은 날짜 자료를 모두 올려야 비교가 정확해집니다." });
     } else {
-      var sh = S1.a / (S1.a + S2.a), busy = sh >= 0.5 ? "K1" : "K2", other = busy === "K1" ? "K2" : "K1", bs = Math.max(sh, 1 - sh);
+      var sh = S1.menu / ((S1.menu + S2.menu) || 1), busy = sh >= 0.5 ? "K1" : "K2", other = busy === "K1" ? "K2" : "K1", bs = Math.max(sh, 1 - sh);
       if (bs >= 0.6) ideas.push({
-        tag: "check", t: "매출이 " + kName(busy) + "에 " + pct(bs, 0) + " 몰립니다",
-        ev: kName(busy) + " 하루 평균 " + won((busy === "K1" ? S1 : S2).perDay) + ", " + kName(other) + " " + won((busy === "K1" ? S2 : S1).perDay) + ".",
+        tag: "check", t: "판매가 " + kName(busy) + "에 " + pct(bs, 0) + " 몰립니다",
+        ev: "메뉴 판매액 하루 평균 " + kName(busy) + " " + won((busy === "K1" ? S1 : S2).perDayMenu) + ", " + kName(other) + " " + won((busy === "K1" ? S2 : S1).perDayMenu) + ".",
         act: "두 기기가 한 매장에 있다면 피크 때 한쪽에 줄이 생깁니다. <b>“" + esc(kName(other)) + "도 주문 가능”</b> 안내를 두고, 두 기기의 메뉴 화면·추천 설정을 같게 맞추세요."
       });
     }
@@ -979,14 +1080,6 @@ footer { font-size: 12px; color: var(--ink-3); }
         act: "키오스크 음료 선택 화면에서 <b>샷 추가 · 사이즈 업 · ICE-UP</b>을 첫 줄에 보이게 두세요. 고르기 쉬우면 추가 결제가 늘어납니다."
       });
     }
-
-    // 6) 선불카드
-    var pc = grp["선불카드"];
-    if (pc && pc.a) ideas.push({
-      tag: "check", t: "선불카드 판매 " + won(pc.a),
-      ev: "매출의 " + pct(pc.a / (pa || 1), 0) + "가 VIP카드 같은 선불카드 판매입니다. 메뉴 분석에서는 뺐습니다.",
-      act: "선불 충전 손님은 단골입니다. <b>충전 금액별 보너스</b>(예: 10만원 충전 시 5% 추가)로 선결제를 늘리고, 충전 손님이 뜸해지면 알림을 보내세요."
-    });
 
     // 7) 포장 비율
     var to1 = takeout(S.prods);
@@ -1134,6 +1227,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     amount: { label: "실매출 (할인 뺀 금액)", words: ["매출금액", "실매출", "실매출액", "실판매금액", "판매금액", "결제금액", "매출액", "매출"] },
     gross: { label: "총매출 (할인 전)", words: ["총금액", "총매출", "총매출액", "총판매금액"] },
     dc: { label: "할인 금액", words: ["할인금액", "할인액", "총할인", "할인"] },
+    sd: { label: "단품 할인 (행사)", words: ["단품할인", "상품할인", "품목할인"] },
+    od: { label: "주문 할인 (선불 사용)", words: ["주문할인", "영수증할인", "전체할인"] },
     cq: { label: "취소 건수", words: ["취소건수", "취소수량"] },
     ca: { label: "취소 금액", words: ["취소금액"] },
     dq: { label: "매장 수량", words: ["매장수량"] },
@@ -1149,7 +1244,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     price: { label: "단가", words: ["단가", "판매단가", "가격", "price"] }
   };
   var TYPES = {
-    prod: { label: "상품별 매출 (상품 분석 · 상품별 매출현황)", fields: ["product", "code", "cat", "qty", "amount", "gross", "dc", "cq", "ca", "dq", "da", "tq", "ta"], period: true },
+    prod: { label: "상품별 매출 (상품 분석 · 상품별 매출현황)", fields: ["product", "code", "cat", "qty", "amount", "gross", "dc", "sd", "od", "cq", "ca", "dq", "da", "tq", "ta"], period: true },
     hour: { label: "시간대별 매출", fields: ["hour", "amount", "gross", "dc", "orders", "qty"], period: true },
     day: { label: "일별 매출 (일 매출 현황)", fields: ["date", "amount", "gross", "dc", "orders"], period: false },
     tx: { label: "주문 내역 (한 줄 = 주문 속 메뉴 1개)", fields: ["dt", "date", "time", "product", "order", "cat", "qty", "amount", "gross", "dc", "price"], period: false }
@@ -1274,10 +1369,13 @@ footer { font-size: 12px; color: var(--ink-3); }
           out.prod.push(rec);
         }
         rec.q += n0(g(r, "qty")); rec.a += a; rec.dc += Math.abs(n0(g(r, "dc")));
-        if (a < 0 && /할인/.test(name)) rec.dc += -a; // 예: ‘원두구매시 음료할인’ -2,000원
+        if (a < 0 && /할인/.test(name)) rec.ndl = (rec.ndl || 0) - a; // 예: ‘원두구매시 음료할인’ -2,000원 (행사 할인)
+        if (map.sd != null) rec.sd = (rec.sd || 0) + Math.abs(n0(g(r, "sd")));
+        if (map.od != null) rec.od = (rec.od || 0) + Math.abs(n0(g(r, "od")));
         [["cq", "cq"], ["ca", "ca"], ["dq", "dq"], ["da", "da"], ["tq", "tq"], ["ta", "ta"]].forEach(function (p) { if (map[p[0]] != null) rec[p[1]] = (rec[p[1]] || 0) + n0(g(r, p[0])); });
         pending.push(rec);
       });
+      if (map.od == null && map.sd != null) out.prod.forEach(function (r) { r.od = Math.max(0, r.dc - (r.sd || 0)); });
     } else if (type === "hour") {
       var H = {};
       body.forEach(function (r) {
@@ -1383,7 +1481,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       var list = d.prod.slice().sort(function (a, b) { return b.a - a.a; });
       html = '<table><thead><tr><th>메뉴</th><th>상품군</th><th class="r">수량</th><th class="r">실매출</th><th class="r">할인</th></tr></thead><tbody>' +
         list.slice(0, 6).map(function (r) { return "<tr><td>" + esc(r.p) + '</td><td class="muted">' + r.g + '</td><td class="r num">' + num(r.q) + '</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.dc ? won(r.dc) : "—") + "</td></tr>"; }).join("") + "</tbody></table>";
-      html += '<p class="sub" style="margin:4px 0 0">메뉴 ' + num(list.length) + "개 · 실매출 합계 <b>" + won(sumBy(list, function (r) { return r.a; })) + "</b> · 할인 " + won(sumBy(list, function (r) { return r.dc; })) + (res.subs ? " · 분류 소계 줄 " + res.subs + "개 제외" : "") + (res.bad ? " · 합계·빈 줄 " + res.bad + "개 제외" : "") + " — POS 화면의 합계와 같은지 확인하세요.</p>";
+      html += '<p class="sub" style="margin:4px 0 0">메뉴 ' + num(list.length) + "개 · 실매출 합계 <b>" + won(sumBy(list, function (r) { return r.a; })) + "</b> · 할인 " + won(sumBy(list, function (r) { return r.dc + (r.ndl || 0); })) + (res.subs ? " · 분류 소계 줄 " + res.subs + "개 제외" : "") + (res.bad ? " · 합계·빈 줄 " + res.bad + "개 제외" : "") + " — POS 화면의 합계와 같은지 확인하세요.</p>";
     } else if (fm.type === "hour") {
       html = '<table><thead><tr><th>시간</th><th class="r">매출</th><th class="r">주문</th></tr></thead><tbody>' + d.hour.slice(0, 6).map(function (r) { return '<tr><td class="num">' + r.h + '시</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.o == null ? "—" : num(r.o)) + "</td></tr>"; }).join("") + "</tbody></table>" +
         '<p class="sub" style="margin:4px 0 0">' + d.hour.length + "개 시간대 · 합계 <b>" + won(sumBy(d.hour, function (r) { return r.a; })) + "</b></p>";
@@ -1425,6 +1523,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     $("periodSeg").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-p") === view.period)); });
     $("kioskSeg").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-k") === view.kiosk)); });
     $("hourMetric").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-m") === view.hourMetric)); });
+    $("dailyMetric").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-m") === view.dailyMetric)); });
     $("customRange").hidden = view.period !== "custom";
     if (view.period === "custom") { var rg = currentRange(); if (rg) { $("fromDate").value = rg.from; $("toDate").value = rg.to; } }
     try { localStorage.setItem(STORE + ":view", JSON.stringify({ period: view.period === "custom" ? "30" : view.period, kiosk: view.kiosk })); } catch (e) { /* 무시 */ }
@@ -1458,6 +1557,22 @@ footer { font-size: 12px; color: var(--ink-3); }
   new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   document.addEventListener("scroll", hideTip, { passive: true });
 
+  function syncCfg() {
+    var c = state.cfg;
+    $("cfgT1").value = c.t1; $("cfgB1").value = Math.round(c.b1 * 100); $("cfgT2").value = c.t2; $("cfgB2").value = Math.round(c.b2 * 100);
+    $("cfgPP1").value = c.pp.K1; $("cfgPP2").value = c.pp.K2;
+    $("ppK1").textContent = kName("K1"); $("ppK2").textContent = kName("K2");
+  }
+  ["cfgT1", "cfgB1", "cfgT2", "cfgB2", "cfgPP1", "cfgPP2"].forEach(function (id) {
+    $(id).addEventListener("change", function () {
+      var c = state.cfg;
+      c.t1 = Math.max(0, +$("cfgT1").value || 0); c.b1 = Math.max(0, +$("cfgB1").value || 0) / 100;
+      c.t2 = Math.max(0, +$("cfgT2").value || 0); c.b2 = Math.max(0, +$("cfgB2").value || 0) / 100;
+      c.pp.K1 = $("cfgPP1").value; c.pp.K2 = $("cfgPP2").value;
+      save(); render();
+    });
+  });
+  $("dailyMetric").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view.dailyMetric = b.getAttribute("data-m"); syncSeg(); render(); });
   function loadSample() { var d = sampleData(); state.prod = d.prod; state.hour = d.hour; state.day = d.day; state.sample = true; }
 
   // ---------- 시작 ----------
