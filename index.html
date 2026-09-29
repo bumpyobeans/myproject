@@ -404,8 +404,8 @@ footer { font-size: 12px; color: var(--ink-3); }
   var STORE = "cafe-kiosk-note-v2";
   var DOW = ["일", "월", "화", "수", "목", "금", "토"];
   var DOW_ORDER = [1, 2, 3, 4, 5, 6, 0];
-  var GRP = ["음료", "베이커리", "원두·드립백", "옵션·기타", "선불카드"];
-  var MENU_GRP = { "음료": 1, "베이커리": 1, "원두·드립백": 1 };
+  var GRP = ["음료", "베이커리", "원두·홈카페", "옵션·기타", "선불카드"];
+  var MENU_GRP = { "음료": 1, "베이커리": 1, "원두·홈카페": 1 };
   var DESSERT_RE = /(빵|케이크|케익|쿠키|크루아상|크로와상|마카롱|스콘|베이글|샌드위치|와플|크로플|크룽지|머핀|브라우니|타르트|휘낭시에|마들렌|토스트|디저트|파이|도넛|카스테라|떡|아슈크림|아이스크림)/;
 
   // ---------- 상태 ----------
@@ -442,9 +442,11 @@ footer { font-size: 12px; color: var(--ink-3); }
   function classify(name, cat) {
     var n = String(name).replace(/\s+/g, ""), c = String(cat || "");
     if (/(VIP카드|상품권|충전|기프트카드|선불|멤버십카드|정기권)/i.test(n)) return "선불카드";
-    if (/(ICE-?UP|^ICE$|기본ICE|^HOT|얼음[OX]|사이즈|\d+ml|홀빈|분쇄|샷추가|디카페인변경|시럽추가|휘핑추가|크림치즈$|비닐|봉투|쇼핑백|캐리어|옵션|할인|변경$|추가$)/i.test(n)) return "옵션·기타";
+    if (/(ICE-?UP|^ICE$|기본ICE|^HOT|얼음[OX]|사이즈|\d+ml얼음|홀빈|분쇄|샷추가|디카페인변경|시럽추가|휘핑추가|크림치즈$|비닐|봉투|쇼핑백|캐리어|옵션|할인|변경$|추가$)/i.test(n)) return "옵션·기타";
     if (/\+/.test(n)) return "음료"; // 아메리카노+케이크 같은 세트
-    if (/(원두|드립백|캡슐|\d+g$|\d+kg$)/i.test(n) || /(원두|드립백)/.test(c)) return "원두·드립백";
+    if (/(보냉백|텀블러|머그|굿즈|에코백)/.test(n)) return "옵션·기타";
+    if (/(원두|드립백|캡슐|티백|블랜딩|\d+g$|\d+kg$|\d+ml$|\d+L$)/i.test(n) || /(원두|드립백)/.test(c)) return "원두·홈카페";
+    if (/(라떼|아메리카노|에이드|프라페|스무디|밀크티|커피|주스|티$|아포카토)/.test(n)) return "음료";
     if (DESSERT_RE.test(n) || /(베이커리|빵|디저트|케이크|푸드|bakery|dessert)/i.test(c)) return "베이커리";
     return "음료";
   }
@@ -601,12 +603,15 @@ footer { font-size: 12px; color: var(--ink-3); }
           if (n > 1) spread[d] = 1;
         }
       }
-      state.prod.forEach(function (r) { if (inR(r, from, to, [s])) spreadAdd(pr, r, mode === "menu" ? sales(r) : r.a); });
+      var prc = {};
+      state.prod.forEach(function (r) { if (inR(r, from, to, [s])) { spreadAdd(pr, r, mode === "menu" ? sales(r) : r.a); spreadAdd(prc, r, r.a); } });
       state.hour.forEach(function (r) { if (inR(r, from, to, [s])) spreadAdd(hr, r, r.a, true); });
-      var keys = {}; [dr, pr, hr].forEach(function (m) { for (var k in m) keys[k] = 1; });
+      var keys = {}, hasDay = Object.keys(dr).length > 0; [dr, pr, hr].forEach(function (m) { for (var k in m) keys[k] = 1; });
       Object.keys(keys).forEach(function (d) {
+        if (hasDay && spread[d] && !dr[d] && !hr[d]) return; // 일별 자료가 있으면 휴무일에는 묶음 자료를 나누지 않음
+        // 여러 날 묶음 상품 자료 + 일별 자료가 함께 있으면: 그날 실매출 × (기간 메뉴 판매액 ÷ 기간 실매출)
         var a = mode === "menu"
-          ? (pr[d] ? pr[d].a : dr[d] ? dr[d].a : hr[d].a)
+          ? (pr[d] && dr[d] && spread[d] ? dr[d].a * (prc[d].a ? pr[d].a / prc[d].a : 1) : pr[d] ? pr[d].a : dr[d] ? dr[d].a : hr[d].a)
           : (dr[d] ? dr[d].a : pr[d] ? pr[d].a : hr[d].a);
         var o = dr[d] && dr[d].o != null ? dr[d].o : hr[d] && hr[d].o != null ? hr[d].o : null;
         out[d] = { a: a, o: o, spread: !dr[d] && !!spread[d] };
@@ -1044,8 +1049,14 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (!S1.a || !S2.a) {
       ideas.push({ tag: "check", t: (S1.a ? kName("K2") : kName("K1")) + " 자료가 없습니다", ev: "이 기간에는 한쪽 매출만 들어와 있습니다.", act: "두 POS의 같은 날짜 자료를 모두 올려야 비교가 정확해집니다." });
     } else {
-      var sh = S1.menu / ((S1.menu + S2.menu) || 1), busy = sh >= 0.5 ? "K1" : "K2", other = busy === "K1" ? "K2" : "K1", bs = Math.max(sh, 1 - sh);
-      if (bs >= 0.6) ideas.push({
+      var gap = Math.abs(S1.days - S2.days) / Math.max(S1.days, S2.days);
+      if (gap > 0.2 && view.kiosk === "all") ideas.push({
+        tag: "check", t: "두 매출처의 자료 기간이 다릅니다",
+        ev: kName("K1") + " " + S1.days + "일, " + kName("K2") + " " + S2.days + "일 자료가 들어 있습니다.",
+        act: "합계·비중 비교는 같은 날짜 자료가 있어야 맞습니다. 빠진 쪽의 같은 기간 자료를 올려 주세요. 그 전까지는 <b>하루 평균</b>으로 비교하세요."
+      });
+      var sh = S1.perDayMenu / ((S1.perDayMenu + S2.perDayMenu) || 1), busy = sh >= 0.5 ? "K1" : "K2", other = busy === "K1" ? "K2" : "K1", bs = Math.max(sh, 1 - sh);
+      if (gap <= 0.2 && bs >= 0.6) ideas.push({
         tag: "check", t: "판매가 " + kName(busy) + "에 " + pct(bs, 0) + " 몰립니다",
         ev: "메뉴 판매액 하루 평균 " + kName(busy) + " " + won((busy === "K1" ? S1 : S2).perDayMenu) + ", " + kName(other) + " " + won((busy === "K1" ? S2 : S1).perDayMenu) + ".",
         act: "CUBE 쪽은 키오스크와 카운터 포스가 합쳐진 숫자라 기기별 쏠림은 따로 봐야 합니다. 피크 때 줄이 한쪽에 생긴다면 <b>O2POS 키오스크 안내</b>를 입구에 두고, 두 키오스크의 메뉴 화면·추천 설정을 같게 맞추세요."
@@ -1064,12 +1075,12 @@ footer { font-size: 12px; color: var(--ink-3); }
       });
     }
 
-    // 4) 원두·드립백
+    // 4) 원두·홈카페
     if (grp["음료"]) {
-      var bn = grp["원두·드립백"] || { a: 0, q: 0 }, bshare = pa ? bn.a / pa : 0;
+      var bn = grp["원두·홈카페"] || { a: 0, q: 0 }, bshare = pa ? bn.a / pa : 0;
       ideas.push({
-        tag: "chance", t: "원두·드립백 매출 " + pct(bshare, 0),
-        ev: "원두·드립백 " + num(bn.q) + "개, " + won(bn.a) + " 팔렸습니다.",
+        tag: "chance", t: "원두·홈카페 매출 " + pct(bshare, 0),
+        ev: "원두·홈카페 " + num(bn.q) + "개, " + won(bn.a) + " 팔렸습니다.",
         act: bshare >= 0.1 ? "원두가 강점입니다. 음료 손님에게 <b>드립백 1개 샘플</b>이나 “오늘 마신 원두” 안내를 붙이면 집에서 마실 원두 구매로 이어집니다." : "음료 손님에게 원두를 알릴 기회가 남아 있습니다. 키오스크 결제 끝 화면에 <b>“오늘의 원두 · 드립백”</b>을 띄우고, 원두 구매 시 음료 1잔 쿠폰을 주세요."
       });
     }
@@ -1090,7 +1101,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (to1 != null) ideas.push({
       tag: "chance", t: "포장 주문 " + pct(to1, 0),
       ev: "포장/매장 구분이 있는 자료 기준으로 판매 수량의 " + pct(to1, 0) + "가 포장입니다.",
-      act: to1 >= 0.5 ? "포장 손님이 많습니다. <b>2잔 포장 세트</b>, 텀블러 지참 할인, 원두·드립백 함께 담기를 결제 화면에 넣어 보세요." : "매장 손님이 많습니다. 머무는 시간이 길수록 <b>디저트 추가 주문</b>이 늘어납니다. 두 번째 주문 할인 쿠폰을 영수증에 넣어 보세요."
+      act: to1 >= 0.5 ? "포장 손님이 많습니다. <b>2잔 포장 세트</b>, 텀블러 지참 할인, 원두·홈카페 함께 담기를 결제 화면에 넣어 보세요." : "매장 손님이 많습니다. 머무는 시간이 길수록 <b>디저트 추가 주문</b>이 늘어납니다. 두 번째 주문 할인 쿠폰을 영수증에 넣어 보세요."
     });
 
     // 8) 피크 / 한산 시간
@@ -1227,7 +1238,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     product: { label: "메뉴명", words: ["상품명", "메뉴명", "메뉴", "품목명", "품명", "상품", "품목", "item", "product"] },
     code: { label: "상품코드 (CUBE 소계 줄 구분용)", words: ["id", "상품코드", "메뉴코드", "품목코드", "코드"] },
     cat: { label: "분류", words: ["대분류", "분류", "분류명", "상품분류", "카테고리", "category"] },
-    qty: { label: "판매 수량", words: ["판매수량", "수량", "판매량", "qty"] },
+    qty: { label: "판매 수량", words: ["판매수량", "수량", "판매량", "갯수", "개수", "qty"] },
     amount: { label: "실매출 (할인 뺀 금액)", words: ["매출금액", "실매출", "실매출액", "실판매금액", "판매금액", "결제금액", "매출액", "매출"] },
     gross: { label: "총매출 (할인 전)", words: ["총금액", "총매출", "총매출액", "총판매금액"] },
     dc: { label: "할인 금액", words: ["할인금액", "할인액", "총할인", "할인"] },
@@ -1241,7 +1252,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     ta: { label: "포장 매출", words: ["포장매출"] },
     hour: { label: "시간대", words: ["시간대", "시간", "시각", "hour", "time"] },
     orders: { label: "주문(영수) 건수", words: ["영수건수", "영수증건수", "영수증수", "거래건수", "결제건수", "주문건수", "주문수", "객수", "고객수", "건수"] },
-    date: { label: "날짜", words: ["일자", "날짜", "영업일자", "매출일자", "거래일자", "판매일자", "영업일", "date"] },
+    date: { label: "날짜", words: ["일자", "일자별", "날짜", "영업일자", "매출일자", "거래일자", "판매일자", "영업일", "date"] },
     dt: { label: "결제 일시", words: ["결제일시", "주문일시", "거래일시", "판매일시", "일시", "datetime"] },
     time: { label: "결제 시간", words: ["결제시간", "주문시간", "거래시간", "시간", "시각", "time"] },
     order: { label: "주문번호", words: ["주문번호", "영수증번호", "영수번호", "거래번호", "order"] },
@@ -1251,16 +1262,29 @@ footer { font-size: 12px; color: var(--ink-3); }
     prod: { label: "상품별 매출 (상품 분석 · 상품별 매출현황)", fields: ["product", "code", "cat", "qty", "amount", "gross", "dc", "sd", "od", "cq", "ca", "dq", "da", "tq", "ta"], period: true },
     hour: { label: "시간대별 매출", fields: ["hour", "amount", "gross", "dc", "orders", "qty"], period: true },
     day: { label: "일별 매출 (일 매출 현황)", fields: ["date", "amount", "gross", "dc", "orders"], period: false },
+    hourwide: { label: "일자별 시간대 매출 (날짜 × 시간 표)", fields: ["date"], period: false },
     tx: { label: "주문 내역 (한 줄 = 주문 속 메뉴 1개)", fields: ["dt", "date", "time", "product", "order", "cat", "qty", "amount", "gross", "dc", "price"], period: false }
   };
   var ALL_WORDS = {}; Object.keys(FIELDS).forEach(function (k) { FIELDS[k].words.forEach(function (w) { ALL_WORDS[w] = 1; }); });
-  ["%", "공급가액", "부가세", "부가세액", "순매출", "시재매출", "바코드", "중분류", "소분류", "실단가", "상품원단가"].forEach(function (w) { ALL_WORDS[w] = 1; });
+  ["%", "공급가액", "부가세", "부가세액", "순매출", "시재매출", "바코드", "중분류", "소분류", "실단가", "상품원단가", "점유율", "순위", "객수", "객단가"].forEach(function (w) { ALL_WORDS[w] = 1; });
 
+  var HOUR_COL = /^(\d{1,2})\s*시\s*\((건수|금액|매출)\)/;
+  function isHeaderRow(r) {
+    var cells = r.filter(function (c) { return c !== "" && c != null; });
+    return cells.length >= 3 && cells.every(function (c) { return typeof c === "string" && !/^[-+(]?[\d,.\s]+\)?$/.test(c); });
+  }
+  // 머리글이 두 줄로 나뉜 표(위: 묶음 제목, 아래: 열 이름)는 한 줄로 합침
+  function headerAt(rows, i) {
+    var h = rows[i].map(str), next = rows[i + 1];
+    if (next && isHeaderRow(next)) { h = h.map(function (c, j) { return str(next[j]) || c; }); for (var j = h.length; j < next.length; j++) h.push(str(next[j])); return { headers: h, body: i + 2 }; }
+    return { headers: h, body: i + 1 };
+  }
+  function scoreHeader(h) { return h.filter(function (c) { return ALL_WORDS[norm(c)] || HOUR_COL.test(c); }).length; }
   function findHeader(rows) {
     var best = 0, score = 0;
     for (var i = 0; i < Math.min(30, rows.length); i++) {
-      var s = rows[i].filter(function (c) { return ALL_WORDS[norm(c)]; }).length;
-      if (s > score) { score = s; best = i; }
+      var sc = scoreHeader(headerAt(rows, i).headers);
+      if (sc > score) { score = sc; best = i; }
     }
     return best;
   }
@@ -1278,9 +1302,10 @@ footer { font-size: 12px; color: var(--ink-3); }
   function detect(headers) {
     var hn = headers.map(norm);
     function has(list) { return list.some(function (w) { return hn.indexOf(w) >= 0; }); }
-    var system = has(["실단가", "매장매출", "상품원단가", "포장매출"]) ? "cube" : has(["시재매출", "순매출"]) ? "o2pos" : null;
+    var system = has(["실단가", "매장매출", "상품원단가", "포장매출"]) ? "cube" : has(["시재매출", "순매출", "점포코드", "회원사"]) ? "o2pos" : null;
     var type;
-    if (has(FIELDS.product.words)) type = has(FIELDS.dt.words) || has(["결제시간", "주문시간", "거래시간", "시간", "시각"]) ? "tx" : "prod";
+    if (headers.filter(function (h) { return HOUR_COL.test(h); }).length >= 6) type = "hourwide";
+    else if (has(FIELDS.product.words)) type = has(FIELDS.dt.words) || has(["결제시간", "주문시간", "거래시간", "시간", "시각"]) ? "tx" : "prod";
     else if (has(["시간대", "시간", "시각", "hour"])) type = "hour";
     else if (has(FIELDS.date.words)) type = "day";
     else type = "prod";
@@ -1334,6 +1359,11 @@ footer { font-size: 12px; color: var(--ink-3); }
       // 연도 없는 “9월 28일” (파일 이름 등) → 올해로 봄
       var km = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(text), y = (state.lastF || ymd(new Date())).slice(0, 4);
       if (km) out.push(y + "-" + pad(+km[1]) + "-" + pad(+km[2]));
+      else if ((km = /(?:^|[^\d])(\d{1,2})\s*월/.exec(text)) && +km[1] >= 1 && +km[1] <= 12) {
+        // “9월” → 그 달 1일 ~ 말일 (이번 달이면 어제까지)
+        var first = y + "-" + pad(+km[1]) + "-01", last = ymd(new Date(+y, +km[1], 0)), yest = addDays(ymd(new Date()), -1);
+        out.push(first, last < yest ? last : yest);
+      }
     }
     return out;
   }
@@ -1350,8 +1380,10 @@ footer { font-size: 12px; color: var(--ink-3); }
       if (!isNaN(p)) { var q = parseNum(g(r, "qty")); return p * (isNaN(q) ? 1 : q); }
       return NaN;
     }
+    var shareIdx = meta.headers ? meta.headers.map(norm).indexOf("점유율") : -1, shareSum = null;
     if (type === "prod") {
       var pending = [], byName = {};
+      if (shareIdx >= 0) shareSum = 0;
       body.forEach(function (r) {
         var name = str(g(r, "product")), code = str(g(r, "code"));
         if (!name || /^\d+\s*lines?$/i.test(name) || /^(합계|소계|총계|계|total)$/i.test(name.replace(/\s/g, ""))) { bad++; return; }
@@ -1366,6 +1398,7 @@ footer { font-size: 12px; color: var(--ink-3); }
           }
           subs++; return;
         }
+        if (shareIdx >= 0) shareSum += n0(r[shareIdx]);
         var rec = byName[name];
         if (!rec) {
           rec = byName[name] = { s: meta.s, f: meta.f, t: meta.t, p: name, c: str(g(r, "cat")), q: 0, a: 0, dc: 0 };
@@ -1393,8 +1426,23 @@ footer { font-size: 12px; color: var(--ink-3); }
       body.forEach(function (r) {
         var dp = parseDate(g(r, "date")), a = amountOf(r);
         if (!dp || isNaN(a)) { bad++; return; }
+        if (a === 0 && !n0(g(r, "orders"))) { bad++; return; } // (미)영업일 · 휴무
         var x = D[dp.d] || (D[dp.d] = out.day[out.day.push({ s: meta.s, d: dp.d, a: 0, o: map.orders != null ? 0 : null }) - 1]);
         x.a += a; if (x.o != null) x.o += n0(g(r, "orders"));
+      });
+    } else if (type === "hourwide") {
+      var cols = {};
+      (meta.headers || []).forEach(function (h, i) {
+        var m = HOUR_COL.exec(h); if (!m) return;
+        var c = cols[+m[1]] || (cols[+m[1]] = {}); if (m[2] === "건수") c.o = i; else c.a = i;
+      });
+      body.forEach(function (r) {
+        var dp = parseDate(g(r, "date"));
+        if (!dp) { bad++; return; }
+        Object.keys(cols).forEach(function (h) {
+          var c = cols[h], a = c.a != null ? n0(r[c.a]) : 0, o = c.o != null ? n0(r[c.o]) : 0;
+          if (a || o) out.hour.push({ s: meta.s, f: dp.d, t: dp.d, h: (+h) % 24, a: a, o: c.o != null ? o : null, q: 0 });
+        });
       });
     } else {
       var tx = [];
@@ -1411,7 +1459,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       });
       out = aggregateTx(tx);
     }
-    return { data: out, bad: bad, subs: subs };
+    return { data: out, bad: bad, subs: subs, shareSum: shareSum };
   }
 
   // 불러오기 흐름
@@ -1428,12 +1476,12 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
   function openMap(forceType) {
     var box = $("mapBox"), file = queue[0];
-    var hi = findHeader(file.rows), headers = file.rows[hi].map(function (h, i) { return str(h) || "열 " + (i + 1); });
+    var hi = findHeader(file.rows), ha = headerAt(file.rows, hi), headers = ha.headers.map(function (h, i) { return str(h) || "열 " + (i + 1); });
     var det = detect(headers), type = forceType || det.type, map = guessMap(headers, type);
     var found = datesIn(file.rows, hi, file.name).sort();
     var f = found[0] || state.lastF || ymd(new Date()), t = found.length ? found[found.length - 1] : (state.lastT || f);
     var s = det.system === "o2pos" ? "K2" : det.system === "cube" ? "K1" : /(2호|o2pos|_2|-2|\(2\))/i.test(file.name) ? "K2" : "K1";
-    file.hi = hi; file.headers = headers;
+    file.hi = hi; file.body = ha.body; file.headers = headers;
     var sysLabel = det.system === "cube" ? "CUBE_CENTER 상품 분석 형식으로 보입니다." : det.system === "o2pos" ? "O2POS 상품별 매출현황 형식으로 보입니다." : "";
     var html = '<div class="panel" style="background:var(--bg)"><div class="panel-head"><h3>' + esc(file.name) + (queue.length > 1 ? ' <span class="muted">(남은 파일 ' + (queue.length - 1) + "개)</span>" : "") + '</h3><span class="sub">' + sysLabel + " 자동으로 맞춘 결과입니다. 틀린 칸만 고쳐 주세요.</span></div>";
     html += '<div class="map">';
@@ -1472,6 +1520,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (fm.type === "prod" && (m.product == null || !money)) return "메뉴명과 금액(실매출 또는 총매출) 열을 연결해 주세요.";
     if (fm.type === "hour" && (m.hour == null || !money)) return "시간대와 금액 열을 연결해 주세요.";
     if (fm.type === "day" && (m.date == null || !money)) return "날짜와 금액 열을 연결해 주세요.";
+    if (fm.type === "hourwide" && m.date == null) return "날짜 열을 연결해 주세요.";
     if (fm.type === "tx" && (m.product == null || (m.dt == null && m.date == null) || !money)) return "메뉴명, 날짜(또는 일시), 금액 열을 연결해 주세요.";
     if (TYPES[fm.type].period && (!fm.meta.f || !fm.meta.t)) return "조회 날짜를 넣어 주세요.";
     return null;
@@ -1480,14 +1529,17 @@ footer { font-size: 12px; color: var(--ink-3); }
     var fm = readForm(), el = $("mapPreview"), err = checkForm(fm), file = queue[0];
     $("mapGo").disabled = !!err;
     if (err) { el.innerHTML = '<div class="msg err">' + err + "</div>"; return; }
-    var res = convert(file.rows.slice(file.hi + 1), fm.type, fm.map, fm.meta), d = res.data, html;
+    fm.meta.headers = file.headers;
+    var res = convert(file.rows.slice(file.body), fm.type, fm.map, fm.meta), d = res.data, html;
     if (fm.type === "prod" || fm.type === "tx") {
       var list = d.prod.slice().sort(function (a, b) { return b.a - a.a; });
       html = '<table><thead><tr><th>메뉴</th><th>상품군</th><th class="r">수량</th><th class="r">실매출</th><th class="r">할인</th></tr></thead><tbody>' +
         list.slice(0, 6).map(function (r) { return "<tr><td>" + esc(r.p) + '</td><td class="muted">' + r.g + '</td><td class="r num">' + num(r.q) + '</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.dc ? won(r.dc) : "—") + "</td></tr>"; }).join("") + "</tbody></table>";
+      if (res.shareSum != null && res.shareSum < 99.5) html += '<div class="msg err" style="margin-top:6px">이 파일은 판매 상위 순위만 들어 있습니다 (점유율 합계 ' + res.shareSum.toFixed(1) + "%). 빠진 메뉴 매출 약 " + won(sumBy(list, function (r) { return r.a; }) * (100 / res.shareSum - 1)) + ". POS에서 순위 제한 없이 받을 수 있으면 전체로 받아 주세요.</div>";
       html += '<p class="sub" style="margin:4px 0 0">메뉴 ' + num(list.length) + "개 · 실매출 합계 <b>" + won(sumBy(list, function (r) { return r.a; })) + "</b> · 할인 " + won(sumBy(list, function (r) { return r.dc + (r.ndl || 0); })) + (res.subs ? " · 분류 소계 줄 " + res.subs + "개 제외" : "") + (res.bad ? " · 합계·빈 줄 " + res.bad + "개 제외" : "") + " — POS 화면의 합계와 같은지 확인하세요.</p>";
-    } else if (fm.type === "hour") {
-      html = '<table><thead><tr><th>시간</th><th class="r">매출</th><th class="r">주문</th></tr></thead><tbody>' + d.hour.slice(0, 6).map(function (r) { return '<tr><td class="num">' + r.h + '시</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.o == null ? "—" : num(r.o)) + "</td></tr>"; }).join("") + "</tbody></table>" +
+    } else if (fm.type === "hour" || fm.type === "hourwide") {
+      if (fm.type === "hourwide") { var ds = {}; d.hour.forEach(function (r) { ds[r.f] = 1; }); html = '<p class="sub" style="margin:0 0 4px">' + Object.keys(ds).length + "일 × 시간대 · 아래는 첫 줄들</p>"; } else html = "";
+      html += '<table><thead><tr><th>시간</th><th class="r">매출</th><th class="r">주문</th></tr></thead><tbody>' + d.hour.slice(0, 6).map(function (r) { return '<tr><td class="num">' + (fm.type === "hourwide" ? r.f.slice(5) + " " : "") + r.h + '시</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.o == null ? "—" : num(r.o)) + "</td></tr>"; }).join("") + "</tbody></table>" +
         '<p class="sub" style="margin:4px 0 0">' + d.hour.length + "개 시간대 · 합계 <b>" + won(sumBy(d.hour, function (r) { return r.a; })) + "</b></p>";
     } else {
       html = '<table><thead><tr><th>날짜</th><th class="r">매출</th><th class="r">주문</th></tr></thead><tbody>' + d.day.slice(0, 6).map(function (r) { return '<tr><td class="num">' + r.d + '</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.o == null ? "—" : num(r.o)) + "</td></tr>"; }).join("") + "</tbody></table>" +
@@ -1498,7 +1550,8 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
   function doImport() {
     var fm = readForm(), file = queue[0];
-    var res = convert(file.rows.slice(file.hi + 1), fm.type, fm.map, fm.meta), d = res.data, s = fm.meta.s;
+    fm.meta.headers = file.headers;
+    var res = convert(file.rows.slice(file.body), fm.type, fm.map, fm.meta), d = res.data, s = fm.meta.s;
     if (!d.prod.length && !d.hour.length && !d.day.length) { showMsg("불러온 줄이 없습니다. 열 연결을 확인해 주세요.", true); return; }
     if (state.sample) { state.prod = []; state.hour = []; state.day = []; state.sample = false; }
     // 같은 키오스크·겹치는 날짜의 기존 자료는 새 자료로 교체 (중복 방지)
@@ -1506,6 +1559,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     var f, t;
     if (fm.type === "tx") { var ds = d.day.map(function (x) { return x.d; }).sort(); f = ds[0]; t = ds[ds.length - 1]; }
     else if (fm.type === "day") { var dd = d.day.map(function (x) { return x.d; }).sort(); f = dd[0]; t = dd[dd.length - 1]; }
+    else if (fm.type === "hourwide") { var dh = d.hour.map(function (x) { return x.f; }).sort(); f = dh[0]; t = dh[dh.length - 1]; }
     else { f = fm.meta.f; t = fm.meta.t; state.lastF = f; state.lastT = t; }
     if (d.prod.length) state.prod = state.prod.filter(function (r) { return !overlap(r, f, t); }).concat(d.prod);
     if (d.hour.length) state.hour = state.hour.filter(function (r) { return !overlap(r, f, t); }).concat(d.hour);
