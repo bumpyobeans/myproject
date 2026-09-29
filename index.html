@@ -188,6 +188,9 @@ td.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .map label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
 .krows.pp { grid-template-columns: auto auto minmax(0, 1fr); column-gap: 14px; }
 .krows.pp .c:last-child { text-align: left; }
+.folder-in { flex: 1 1 260px; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--panel); }
+.is-shared #sampleBtn { display: none; }
+.is-readonly #drop, .is-readonly #syncBtn, .is-readonly #clearBtn, .is-readonly .names, .is-readonly #folderId { display: none; }
 .map select, .map input, .names input { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--panel); }
 .req { color: var(--crit); }
 .msg { font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
@@ -336,7 +339,18 @@ footer { font-size: 12px; color: var(--ink-3); }
   <section class="panel" id="dataPanel" aria-labelledby="dataH">
     <div class="panel-head">
       <h2 id="dataH">데이터 관리</h2>
-      <span class="sub">데이터는 이 브라우저에만 저장됩니다. 원본 엑셀 파일은 따로 보관하세요.</span>
+      <span class="sub" id="storeNote">데이터는 이 브라우저에만 저장됩니다. 원본 엑셀 파일은 따로 보관하세요.</span>
+    </div>
+    <div class="guide" id="drivePanel" hidden>
+      <h3>구글 드라이브 폴더에서 불러오기</h3>
+      <p class="sub" style="margin:0">직원이 매일 POS 파일을 이 폴더에 넣으면, 드라이브를 연결한 사람이 대시보드를 열 때 새 파일을 가져와 <b>모두가 보는 공유 자료</b>에 반영합니다. 같은 파일은 두 번 들어가지 않습니다.</p>
+      <div class="row">
+        <label for="folderId" class="sub">폴더 주소</label>
+        <input id="folderId" class="folder-in" placeholder="https://drive.google.com/drive/folders/…" autocomplete="off">
+        <button type="button" class="btn primary" id="syncBtn">지금 불러오기</button>
+      </div>
+      <p class="sub" id="syncStatus" style="margin:0"></p>
+      <details><summary class="sub">최근 불러온 파일</summary><div id="syncLog" style="margin-top:8px"></div></details>
     </div>
     <div class="drop" id="drop">
       <strong>POS에서 내려받은 엑셀·CSV 파일을 끌어다 놓거나</strong>
@@ -462,6 +476,7 @@ footer { font-size: 12px; color: var(--ink-3); }
 
   // ---------- 저장 ----------
   function save() {
+    if (shared.on) { persistConfig(); return; }
     try {
       localStorage.setItem(STORE, JSON.stringify(state.sample
         ? { v: 2, names: state.names, cfg: state.cfg }
@@ -745,12 +760,12 @@ footer { font-size: 12px; color: var(--ink-3); }
     syncCfg();
     var pill = $("dataPill");
     pill.className = "pill " + (state.sample ? "sample" : "real");
-    pill.textContent = state.sample ? "예시 데이터 · 실제 매출 아님" : "내 데이터";
+    pill.textContent = shared.on ? "공유 자료 · 모두 같은 화면" + (shared.canWrite === false ? " (보기 전용)" : "") : state.sample ? "예시 데이터 · 실제 매출 아님" : "내 데이터";
     renderDataStats();
     var rg = currentRange();
     if (!rg) {
       ["ideas", "dailyChart", "kioskCmp", "hourChart", "heat", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
-      $("kpis").innerHTML = '<div class="kpi" style="grid-column:1/-1">' + emptyHtml("아직 데이터가 없습니다. 아래 “데이터 관리”에서 POS 엑셀 파일을 불러오세요.") + "</div>";
+      $("kpis").innerHTML = '<div class="kpi" style="grid-column:1/-1">' + emptyHtml(shared.on ? "아직 공유 자료가 없습니다. POS 파일을 구글 드라이브 폴더에 넣고 아래 ‘지금 불러오기’를 누르거나, 파일을 직접 올려 주세요." : "아직 데이터가 없습니다. 아래 “데이터 관리”에서 POS 엑셀 파일을 불러오세요.") + "</div>";
       $("rangeLabel").textContent = "";
       return;
     }
@@ -1254,8 +1269,9 @@ footer { font-size: 12px; color: var(--ink-3); }
     try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
     catch (e) { try { return new TextDecoder("euc-kr").decode(buf); } catch (e2) { return new TextDecoder().decode(buf); } }
   }
-  function readFile(file) {
-    return file.arrayBuffer().then(function (buf) {
+  function readFile(file) { return file.arrayBuffer().then(function (buf) { return readBuffer(file.name, buf); }); }
+  function readBuffer(name, buf) {
+    return Promise.resolve(buf).then(function (buf) {
       var u8 = new Uint8Array(buf);
       var binary = (u8[0] === 0x50 && u8[1] === 0x4B) || (u8[0] === 0xD0 && u8[1] === 0xCF);
       if (binary) {
@@ -1273,7 +1289,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     }).then(function (rows) {
       rows = rows.map(function (r) { return r.map(function (c) { return typeof c === "string" ? c.trim() : c; }); })
         .filter(function (r) { return r.some(function (c) { return c !== "" && c != null; }); });
-      return { name: file.name, rows: rows };
+      return { name: name, rows: rows };
     });
   }
 
@@ -1609,20 +1625,12 @@ footer { font-size: 12px; color: var(--ink-3); }
     fm.meta.headers = file.headers;
     var res = convert(file.rows.slice(file.body), fm.type, fm.map, fm.meta), d = res.data, s = fm.meta.s;
     if (!d.prod.length && !d.hour.length && !d.day.length) { showMsg("불러온 줄이 없습니다. 열 연결을 확인해 주세요.", true); return; }
-    if (state.sample) { state.prod = []; state.hour = []; state.day = []; state.sample = false; }
-    // 같은 키오스크·겹치는 날짜의 기존 자료는 새 자료로 교체 (중복 방지)
-    var sset = s === "split" ? ["K1", "K3"] : [s];
-    function overlap(r, f, t) { return sset.indexOf(r.s) >= 0 && r.f <= t && r.t >= f; }
-    var f, t;
-    if (fm.type === "tx") { var ds = d.day.map(function (x) { return x.d; }).sort(); f = ds[0]; t = ds[ds.length - 1]; }
-    else if (fm.type === "day") { var dd = d.day.map(function (x) { return x.d; }).sort(); f = dd[0]; t = dd[dd.length - 1]; }
-    else if (fm.type === "hourwide") { var dh = d.hour.map(function (x) { return x.f; }).sort(); f = dh[0]; t = dh[dh.length - 1]; }
-    else { f = fm.meta.f; t = fm.meta.t; state.lastF = f; state.lastT = t; }
-    if (d.prod.length) state.prod = state.prod.filter(function (r) { return !overlap(r, f, t); }).concat(d.prod);
-    if (d.hour.length) state.hour = state.hour.filter(function (r) { return !overlap(r, f, t); }).concat(d.hour);
-    if (d.day.length) { var set = {}; d.day.forEach(function (x) { set[x.d] = 1; }); state.day = state.day.filter(function (r) { return !(sset.indexOf(r.s) >= 0 && set[r.d]); }).concat(d.day); }
+    var ap;
+    try { ap = applyImport(d, fm.type, s, fm.meta); } catch (e) { showMsg(esc(file.name) + ": " + esc(e.message || e), true); return; }
+    var f = ap.f, t = ap.t;
     save();
-    var total = sumBy(d.prod.length ? d.prod : d.day.length ? d.day : d.hour, function (r) { return r.a; });
+    var total = ap.total;
+    if (shared.on) persistMonths(ap.stores, ap.months).catch(function (e) { showMsg("공유 저장소에 저장하지 못했습니다: " + esc((e && (e.message || e.code)) || e) + ". 보기 전용 권한이면 저장할 수 없습니다.", true); });
     showMsg(esc(file.name) + " → " + esc(s === "split" ? kName("K1") + " / " + kName("K3") : kName(s)) + " " + (f === t ? f : f + " ~ " + t) + " " + TYPES[fm.type].label.split(" (")[0] + " 자료를 불러왔습니다. 실매출 " + won(total) + ".");
     view.period = f === t ? "custom" : "all"; if (f === t) { view.from = f; view.to = t; }
     nextFile();
@@ -1631,6 +1639,266 @@ footer { font-size: 12px; color: var(--ink-3); }
   function nextFile() {
     queue.shift();
     if (queue.length) openMap(); else { $("mapBox").hidden = true; $("mapBox").innerHTML = ""; }
+  }
+
+  // ---------- 가져온 자료 반영 (직접 올리기 · 드라이브 공통) ----------
+  function monthsBetween(f, t) {
+    var out = [], m = f.slice(0, 7), end = t.slice(0, 7);
+    while (m <= end) { out.push(m); var y = +m.slice(0, 4), mo = +m.slice(5, 7) + 1; if (mo > 12) { y++; mo = 1; } m = y + "-" + pad(mo); }
+    return out;
+  }
+  function applyImport(d, type, s, meta) {
+    var sset = s === "split" ? ["K1", "K3"] : [s];
+    // 새 자료 기간 안에 들어가는 같은 매출처 자료만 교체 (중복 방지). 더 긴 기간 자료와 걸치면 지우지 않고 알림
+    function overlap(r, f, t) { return sset.indexOf(r.s) >= 0 && r.f >= f && r.t <= t; }
+    function straddle(list, f, t) { return state.sample ? [] : list.filter(function (r) { return sset.indexOf(r.s) >= 0 && r.f <= t && r.t >= f && !(r.f >= f && r.t <= t); }); }
+    var f, t;
+    if (type === "tx" || type === "day") { var ds = d.day.map(function (x) { return x.d; }).sort(); f = ds[0]; t = ds[ds.length - 1]; }
+    else if (type === "hourwide") { var dh = d.hour.map(function (x) { return x.f; }).sort(); f = dh[0]; t = dh[dh.length - 1]; }
+    else { f = meta.f; t = meta.t; state.lastF = f; state.lastT = t; }
+    var clash = (d.prod.length ? straddle(state.prod, f, t) : []).concat(d.hour.length ? straddle(state.hour, f, t) : []);
+    if (clash.length) throw new Error("이미 " + clash[0].f + " ~ " + clash[0].t + " 기간으로 묶인 자료가 있어 " + (f === t ? f : f + " ~ " + t) + " 자료와 겹칩니다. 같은 기간 단위로 올려 주세요.");
+    if (state.sample) { state.prod = []; state.hour = []; state.day = []; state.sample = false; }
+    if (d.prod.length) state.prod = state.prod.filter(function (r) { return !overlap(r, f, t); }).concat(d.prod);
+    if (d.hour.length) state.hour = state.hour.filter(function (r) { return !overlap(r, f, t); }).concat(d.hour);
+    if (d.day.length) { var set = {}; d.day.forEach(function (x) { set[x.d] = 1; }); state.day = state.day.filter(function (r) { return !(sset.indexOf(r.s) >= 0 && set[r.d]); }).concat(d.day); }
+    var total = sumBy(d.prod.length ? d.prod : d.day.length ? d.day : d.hour, function (r) { return r.a; });
+    return { stores: sset, months: monthsBetween(f, t), f: f, t: t, total: total };
+  }
+  // 드라이브에서 받은 파일처럼 사람 손 없이 불러오기: 형식·매출처·날짜를 스스로 판단
+  function autoImport(file, opts) {
+    var hi = findHeader(file.rows), ha = headerAt(file.rows, hi), headers = ha.headers.map(function (h, i) { return str(h) || "열 " + (i + 1); });
+    var det = detect(headers), type = det.type, map = guessMap(headers, type);
+    var s = det.system === "o2pos" ? "K2" : "K1";
+    if (type === "tx" && map.pos != null && det.system !== "o2pos") s = "split";
+    var meta = { s: s, headers: headers }, guessed = false;
+    if (TYPES[type].period) {
+      var found = datesIn(file.rows, hi, file.name + " " + (opts.folder || "")).sort();
+      if (found.length) { meta.f = found[0]; meta.t = found[found.length - 1]; }
+      else if (opts.hint) { meta.f = meta.t = opts.hint; guessed = true; }
+      else throw new Error("날짜를 알 수 없습니다. 파일 이름에 날짜를 넣어 주세요.");
+    }
+    var err = checkForm({ type: type, map: map, meta: meta });
+    if (err) throw new Error("어떤 보고서인지 알아보지 못했습니다 (" + err + ")");
+    var res = convert(file.rows.slice(ha.body), type, map, meta), d = res.data;
+    if (!d.prod.length && !d.hour.length && !d.day.length) throw new Error("읽을 수 있는 매출 줄이 없습니다.");
+    var r = applyImport(d, type, s, meta);
+    r.type = type; r.s = s; r.guessed = guessed;
+    return r;
+  }
+
+  // ---------- 공유 저장소 (claude.ai에서 열었을 때) ----------
+  var shared = { on: false, db: null, mcp: null, perms: null, canWrite: null, canEdit: false, months: {}, imports: {}, config: null, tab: "t" + Math.random().toString(36).slice(2), synced: false, busy: false };
+  var P_KEYS = ["f", "t", "p", "c", "g", "q", "a", "dc", "od", "sd", "ndl", "dq", "da", "tq", "ta", "cq", "ca"];
+  var H_KEYS = ["f", "t", "h", "a", "o", "q"];
+  var D_KEYS = ["d", "a", "o"];
+  function pack(r, keys) { var a = keys.map(function (k) { return r[k] === undefined ? null : r[k]; }); while (a.length && a[a.length - 1] === null) a.pop(); return a; }
+  function unpack(a, keys, s) { var r = { s: s }; keys.forEach(function (k, i) { if (a[i] !== null && a[i] !== undefined) r[k] = a[i]; }); return r; }
+
+  function rebuildFromShared() {
+    var prod = [], hour = [], day = [];
+    Object.keys(shared.months).forEach(function (id) {
+      var m = shared.months[id], s = m.s;
+      (m.prod || []).forEach(function (a) { var r = unpack(a, P_KEYS, s); if (r.g == null) r.g = classify(r.p, r.c); prod.push(r); });
+      (m.hour || []).forEach(function (a) { hour.push(unpack(a, H_KEYS, s)); });
+      (m.day || []).forEach(function (a) { day.push(unpack(a, D_KEYS, s)); });
+    });
+    state.prod = prod; state.hour = hour; state.day = day; state.sample = false;
+  }
+  var rt; function renderSoon() { clearTimeout(rt); rt = setTimeout(function () { syncSeg(); render(); }, 120); }
+
+  // 매출처·달마다 문서 하나 (256 KiB 한도를 넘으면 여러 조각으로 나눔)
+  function monthParts(s, m) {
+    var body = {
+      prod: state.prod.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, P_KEYS); }),
+      hour: state.hour.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, H_KEYS); }),
+      day: state.day.filter(function (r) { return r.s === s && r.d.slice(0, 7) === m; }).map(function (r) { return pack(r, D_KEYS); })
+    };
+    if (!body.prod.length && !body.hour.length && !body.day.length) return [];
+    var n = Math.max(1, Math.ceil(JSON.stringify(body).length / 190000)), parts = [];
+    for (var i = 0; i < n; i++) {
+      parts.push({
+        prod: body.prod.slice(Math.floor(body.prod.length * i / n), Math.floor(body.prod.length * (i + 1) / n)),
+        hour: body.hour.slice(Math.floor(body.hour.length * i / n), Math.floor(body.hour.length * (i + 1) / n)),
+        day: body.day.slice(Math.floor(body.day.length * i / n), Math.floor(body.day.length * (i + 1) / n))
+      });
+    }
+    return parts;
+  }
+  // 지금 화면의 자료를 공유 저장소 문서 모양으로 (처음 자료 옮길 때 씀)
+  window.__cafeMonthDocs = function () {
+    var out = [], ms = {};
+    state.prod.forEach(function (r) { ms[r.s + "|" + r.f.slice(0, 7)] = 1; });
+    state.hour.forEach(function (r) { ms[r.s + "|" + r.f.slice(0, 7)] = 1; });
+    state.day.forEach(function (r) { ms[r.s + "|" + r.d.slice(0, 7)] = 1; });
+    Object.keys(ms).forEach(function (k) { var sm = k.split("|"), parts = monthParts(sm[0], sm[1]); parts.forEach(function (pt, i) { out.push({ id: sm[0] + "_" + sm[1] + "_" + i, body: { s: sm[0], m: sm[1], part: i, parts: parts.length, prod: pt.prod, hour: pt.hour, day: pt.day, at: new Date().toISOString() } }); }); });
+    return out;
+  };
+  async function persistMonths(stores, months) {
+    if (!shared.on) return;
+    for (var si = 0; si < stores.length; si++) {
+      for (var mi = 0; mi < months.length; mi++) {
+        var s = stores[si], m = months[mi], parts = monthParts(s, m), n = parts.length;
+        var empty = !parts.length;
+        for (var p = 0; p < parts.length; p++) {
+          await shared.db.doc("months/" + s + "_" + m + "_" + p).set({ s: s, m: m, part: p, parts: n, prod: parts[p].prod, hour: parts[p].hour, day: parts[p].day, at: new Date().toISOString() });
+        }
+        // 남는 옛 조각 지우기
+        var keep = empty ? 0 : n;
+        var stale = Object.keys(shared.months).filter(function (id) { var d = shared.months[id]; return d.s === s && d.m === m && d.part >= keep; });
+        for (var q = 0; q < stale.length; q++) await shared.db.doc("months/" + stale[q]).delete();
+      }
+    }
+  }
+  function persistConfig() {
+    if (!shared.on || shared.canWrite === false) return;
+    shared.db.doc("config/main").set({ names: state.names, cfg: state.cfg, folder: shared.folder || "", at: new Date().toISOString() }).catch(function () { /* 읽기 전용 */ });
+  }
+  async function logImports(entries) {
+    var ids = Object.keys(entries); if (!ids.length) return;
+    var key = ymd(new Date()).slice(0, 7), cur = shared.imports[key] ? JSON.parse(JSON.stringify(shared.imports[key])) : { files: {} };
+    ids.forEach(function (id) { cur.files[id] = entries[id]; });
+    await shared.db.doc("imports/" + key).set(cur);
+  }
+  function importedMap() { var all = {}; Object.keys(shared.imports).forEach(function (k) { var f = shared.imports[k].files || {}; for (var id in f) all[id] = f[id]; }); return all; }
+
+  // ---------- 구글 드라이브 ----------
+  var DRIVE = "Google Drive";
+  function folderIdOf(v) { v = str(v); var m = /folders\/([\w-]+)/.exec(v) || /[?&]id=([\w-]+)/.exec(v); return m ? m[1] : v; }
+  function syncStatus(t, err) { var el = $("syncStatus"); if (el) { el.textContent = t; el.style.color = err ? "var(--crit)" : ""; } }
+  function driveErr(e) {
+    var c = e && e.code;
+    if (c === "server_not_connected" || c === "selection_required") return "이 계정에는 구글 드라이브가 연결돼 있지 않습니다. claude.ai 설정 › 커넥터에서 Google Drive를 연결하면 불러올 수 있어요. (자료 보기는 그대로 됩니다)";
+    if (c === "needs_reauth") return "구글 드라이브 연결이 만료됐습니다. claude.ai 설정 › 커넥터에서 Google Drive를 다시 연결해 주세요.";
+    if (c === "not_in_manifest") return "이 페이지에서 구글 드라이브 사용을 허락하지 않았습니다. 다시 ‘지금 불러오기’를 누르면 허락 창이 뜹니다.";
+    if (c === "blocked_by_policy" || c === "approval_required") return "조직 정책으로 구글 드라이브를 쓸 수 없습니다.";
+    if (c === "tool_error") return "드라이브가 요청을 거절했습니다: " + (e.message || "");
+    if (c === "server_unavailable") return "구글 드라이브가 잠시 응답하지 않습니다. 잠시 후 다시 눌러 주세요.";
+    return "드라이브 오류: " + ((e && (e.message || e.code)) || e);
+  }
+  async function listFolder(id, folderName, depth) {
+    var out = [], token = null;
+    do {
+      var input = { query: "parentId = '" + id + "'", pageSize: 100, excludeContentSnippets: true };
+      if (token) input.pageToken = token;
+      var res = await shared.mcp.callTool(DRIVE, "search_files", input, { cache: false });
+      var p = res.payload || {}, files = p.files || [];
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        if (f.mimeType === "application/vnd.google-apps.folder") { if (depth < 2) out = out.concat(await listFolder(f.id, (folderName ? folderName + " " : "") + f.title, depth + 1)); }
+        else { f._folder = folderName; out.push(f); }
+      }
+      token = p.nextPageToken || p.next_page_token || null;
+    } while (token);
+    return out;
+  }
+  // 파일 안·이름에 날짜가 없으면 올린 시각으로 영업일 추정 (한국 시각 정오 전에 올렸으면 전날 자료)
+  function hintDate(f) {
+    if (!f.createdTime) return null;
+    var k = new Date(new Date(f.createdTime).getTime() + 9 * 3600000);
+    var d = k.toISOString().slice(0, 10);
+    return k.getUTCHours() < 12 ? addDays(d, -1) : d;
+  }
+  function b64ToBuf(b64) { var bin = atob(b64), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return u8.buffer; }
+
+  async function driveSync(manual) {
+    if (!shared.on || !shared.mcp || shared.busy) return;
+    if (!shared.folder) { if (manual) syncStatus("먼저 드라이브 폴더 주소를 넣어 주세요.", true); return; }
+    if (shared.canWrite === false) { syncStatus("보기 전용 권한이라 불러올 수 없습니다.", true); return; }
+    shared.busy = true; $("syncBtn").disabled = true;
+    try {
+      var lock = await shared.db.doc("sync/lock").acquire({ holder: shared.tab, ttlMs: 300000 });
+      if (!lock.acquired) { syncStatus("다른 사람이 지금 불러오는 중입니다. 잠시 후 자동으로 반영됩니다."); return; }
+      syncStatus("드라이브 폴더를 확인하는 중…");
+      var files = await listFolder(shared.folder, "", 0), done = importedMap();
+      var todo = files.filter(function (f) { return /\.(xlsx?|csv|html?|txt)$/i.test(f.title || "") && !(done[f.id] && done[f.id].mt === f.modifiedTime); })
+        .sort(function (a, b) { return (a.createdTime || "") < (b.createdTime || "") ? -1 : 1; });
+      if (!todo.length) { syncStatus("새 파일이 없습니다 · " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) + " 확인"); return; }
+      var touched = {}, logs = {}, ok = 0, bad = 0;
+      for (var i = 0; i < todo.length; i++) {
+        var f = todo[i];
+        syncStatus("불러오는 중 " + (i + 1) + "/" + todo.length + " · " + f.title);
+        var entry = { n: f.title, mt: f.modifiedTime || "", at: new Date().toISOString() };
+        try {
+          var res = await shared.mcp.callTool(DRIVE, "download_file_content", { fileId: f.id }, { cache: false });
+          var b64 = res.payload && (res.payload.content || res.payload.base64Content);
+          if (!b64) throw new Error("파일 내용을 받지 못했습니다.");
+          var parsed = await readBuffer(f.title, b64ToBuf(b64));
+          if (!parsed.rows || parsed.rows.length < 2) throw new Error("읽을 수 있는 표가 없습니다.");
+          var r = autoImport(parsed, { hint: hintDate(f), folder: f._folder });
+          r.stores.forEach(function (s) { r.months.forEach(function (m) { touched[s + "|" + m] = 1; }); });
+          entry.type = r.type; entry.s = r.s; entry.f = r.f; entry.t = r.t; entry.a = Math.round(r.total); if (r.guessed) entry.guess = 1;
+          ok++;
+        } catch (e) { entry.err = e && e.code ? driveErr(e) : String((e && e.message) || e); bad++; }
+        logs[f.id] = entry;
+      }
+      syncStatus("공유 저장소에 저장하는 중…");
+      var keys = Object.keys(touched);
+      for (var k = 0; k < keys.length; k++) { var sm = keys[k].split("|"); await persistMonths([sm[0]], [sm[1]]); }
+      await logImports(logs);
+      syncStatus("새 파일 " + ok + "개를 반영했습니다" + (bad ? " · 읽지 못한 파일 " + bad + "개 (아래 기록 확인)" : "") + " · " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }), bad > 0);
+      renderSoon();
+    } catch (e) {
+      syncStatus(e && e.code ? driveErr(e) : "불러오지 못했습니다: " + ((e && e.message) || e), true);
+    } finally { shared.busy = false; $("syncBtn").disabled = false; }
+  }
+
+  function renderSyncLog() {
+    var el = $("syncLog"); if (!el) return;
+    var all = importedMap(), ids = Object.keys(all).sort(function (a, b) { return (all[b].at || "") < (all[a].at || "") ? -1 : 1; }).slice(0, 12);
+    if (!ids.length) { el.innerHTML = '<span class="sub">아직 드라이브에서 불러온 파일이 없습니다.</span>'; return; }
+    var TL = { tx: "상품상세", prod: "상품별", day: "일자별", hour: "시간대별", hourwide: "시간대별" };
+    el.innerHTML = '<div class="tbl-scroll"><table><thead><tr><th>파일</th><th>종류</th><th>날짜</th><th class="r">매출</th><th>불러온 때</th></tr></thead><tbody>' + ids.map(function (id) {
+      var x = all[id];
+      return "<tr><td>" + esc(x.n || id) + "</td><td>" + (x.err ? '<span style="color:var(--crit)">⚠ ' + esc(x.err) + "</span>" : esc(TL[x.type] || x.type || "") + (x.s === "K2" ? " · O2POS" : " · CUBE")) + '</td><td class="num">' + (x.f ? esc(x.f === x.t ? x.f : x.f + " ~ " + x.t) + (x.guess ? ' <span class="muted" title="파일에 날짜가 없어 올린 시각으로 추정">(추정)</span>' : "") : "—") + '</td><td class="r num">' + (x.a != null ? won(x.a) : "—") + '</td><td class="num muted">' + esc((x.at || "").slice(5, 16).replace("T", " ")) + "</td></tr>";
+    }).join("") + "</tbody></table></div>";
+  }
+
+  async function initShared() {
+    if (!window.claude || !window.claude.use) return;
+    var db = await window.claude.use("db");
+    if (!db) return;
+    shared.db = db; shared.on = true;
+    var user = await window.claude.use("user");
+    shared.canWrite = user ? await user.can("data.write").catch(function () { return null; }) : null;
+    shared.canEdit = user ? await user.canEdit().catch(function () { return false; }) : false;
+    document.documentElement.classList.add("is-shared");
+    $("storeNote").textContent = "공유 자료입니다. 여기서 올린 파일과 드라이브에서 불러온 파일이 모두에게 같이 보입니다.";
+    if (shared.canWrite === false) document.documentElement.classList.add("is-readonly");
+    $("drivePanel").hidden = false;
+    state.prod = []; state.hour = []; state.day = []; state.sample = false;
+    renderSoon();
+    db.collection("months").onSnapshot(function (snap) {
+      var m = {}; snap.docs.forEach(function (d) { m[d.id] = d.data(); });
+      shared.months = m; rebuildFromShared(); renderSoon(); maybeAutoSync();
+    }, function () { syncStatus("공유 자료를 읽지 못했습니다. 페이지를 새로 고쳐 주세요.", true); });
+    db.doc("config/main").onSnapshot(function (d) {
+      var c = d.exists ? d.data() : null; shared.config = c || {};
+      if (c) {
+        if (c.names) STORES.forEach(function (k) { if (c.names[k]) state.names[k] = c.names[k]; });
+        if (c.cfg) state.cfg = c.cfg;
+        shared.folder = c.folder || "";
+      }
+      $("folderId").value = shared.folder || "";
+      renderSoon(); maybeAutoSync();
+    });
+    db.collection("imports").onSnapshot(function (snap) {
+      var m = {}; snap.docs.forEach(function (d) { m[d.id] = d.data(); }); shared.imports = m; renderSyncLog();
+    });
+    var mcp = await window.claude.use("mcp");
+    shared.mcp = mcp;
+    shared.perms = await window.claude.use("permissions");
+    if (!mcp) syncStatus("이 화면에서는 구글 드라이브를 쓸 수 없습니다. 자료 보기는 그대로 됩니다.");
+    maybeAutoSync();
+  }
+  // 드라이브를 이미 허락한 사람이 열면 자동으로 새 파일 확인 (허락 창을 먼저 띄우지는 않음)
+  async function maybeAutoSync() {
+    if (shared.synced || !shared.mcp || !shared.config || shared.canWrite === false || !shared.folder) return;
+    shared.synced = true;
+    var st = "prompt";
+    try { st = shared.perms ? await shared.perms.state("mcp:" + DRIVE) : "prompt"; } catch (e) { st = "prompt"; }
+    if (st === "granted") driveSync(false);
+    else syncStatus("‘지금 불러오기’를 누르면 드라이브 폴더의 새 파일을 가져옵니다.");
   }
 
   // ---------- 이벤트 ----------
@@ -1660,8 +1928,17 @@ footer { font-size: 12px; color: var(--ink-3); }
   });
   $("clearBtn").addEventListener("click", function () { $("clearConfirm").hidden = false; });
   $("clearNo").addEventListener("click", function () { $("clearConfirm").hidden = true; });
-  $("clearYes").addEventListener("click", function () {
+  $("clearYes").addEventListener("click", async function () {
     $("clearConfirm").hidden = true;
+    if (shared.on) {
+      if (!shared.canEdit) { showMsg("공유 자료 삭제는 편집 권한이 있는 사람만 할 수 있습니다.", true); return; }
+      var ids = Object.keys(shared.months);
+      for (var i = 0; i < ids.length; i++) await shared.db.doc("months/" + ids[i]).delete();
+      var iks = Object.keys(shared.imports);
+      for (var j = 0; j < iks.length; j++) await shared.db.doc("imports/" + iks[j]).delete();
+      showMsg("공유 자료를 모두 지웠습니다. 드라이브 파일은 그대로라 ‘지금 불러오기’로 다시 가져올 수 있습니다.");
+      return;
+    }
     loadSample(); save(); view.period = "30"; syncSeg();
     showMsg("저장된 데이터를 지웠습니다. 지금은 예시 데이터가 보입니다."); render();
   });
@@ -1691,11 +1968,15 @@ footer { font-size: 12px; color: var(--ink-3); }
   $("dailyMetric").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view.dailyMetric = b.getAttribute("data-m"); syncSeg(); render(); });
   function loadSample() { var d = sampleData(); state.prod = d.prod; state.hour = d.hour; state.day = d.day; state.sample = true; }
 
+  $("folderId").addEventListener("change", function () { shared.folder = folderIdOf(this.value); this.value = shared.folder; shared.synced = false; persistConfig(); });
+  $("syncBtn").addEventListener("click", function () { if ($("folderId").value && folderIdOf($("folderId").value) !== shared.folder) { shared.folder = folderIdOf($("folderId").value); persistConfig(); } driveSync(true); });
+
   // ---------- 시작 ----------
   try { var vs = JSON.parse(localStorage.getItem(STORE + ":view") || "null"); if (vs) { if (vs.period) view.period = vs.period; if (vs.kiosk) view.kiosk = vs.kiosk; } } catch (e) { /* 무시 */ }
   if (!load()) loadSample();
   syncSeg();
   render();
+  initShared().catch(function () { /* 공유 저장소 없이 이 브라우저 저장으로 동작 */ });
 })();
 </script>
 
