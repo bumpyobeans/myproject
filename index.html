@@ -246,6 +246,12 @@ td.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .ev-spark text { font-family: var(--font-num); font-size: 10px; fill: var(--ink-3); }
 .chart .evmark { stroke-width: 1.5; stroke-dasharray: 3 3; }
 .chart .evdot { stroke: var(--panel); stroke-width: 1.5; }
+.up-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .up-grid { grid-template-columns: minmax(0, 1fr); } }
+.up-h { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+.up-ok { color: var(--good); font-weight: 600; }
+.up-low { color: var(--warn-ink); background: var(--warn-bg); border-radius: 4px; padding: 0 4px; font-weight: 600; }
+.up-tgt { display: block; font-size: 11px; color: var(--ink-3); font-weight: 400; }
 .msg { font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
 .msg.err { background: var(--warn-bg); color: var(--warn-ink); }
 pre.tpl { font-family: var(--font-num); font-size: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 0; }
@@ -409,6 +415,16 @@ footer { font-size: 12px; color: var(--ink-3); }
       <div id="ppBox"></div>
     </section>
   </div>
+
+  <section class="panel" id="upPanel" aria-labelledby="upH">
+    <div class="panel-head"><h2 id="upH">옵션·업셀 지표</h2><span class="sub">선택한 기간·매출처 기준 · 목표: 아이스 사이즈업 55% · 샷추가 100잔당 5번 · 1잔당 옵션 매출 500원</span></div>
+    <div class="tbl-scroll" id="upTable"></div>
+    <div class="up-grid">
+      <div><h3 class="up-h">월별 흐름</h3><div class="tbl-scroll" id="upMonthly"></div></div>
+      <div><h3 class="up-h">많이 팔린 유료 옵션</h3><div class="tbl-scroll" id="upTop"></div></div>
+    </div>
+    <span class="sub" id="upNote"></span>
+  </section>
 
   <section class="panel" aria-labelledby="discH">
     <div class="panel-head"><h2 id="discH">행사 할인이 나간 메뉴</h2><span class="sub">선불카드 사용분은 빼고 계산 · 할인율 = 행사 할인 ÷ (판매액 + 행사 할인)</span></div>
@@ -853,7 +869,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     renderDataStats();
     var rg = currentRange();
     if (!rg) {
-      ["ideas", "dailyChart", "dailyEv", "kioskCmp", "hourChart", "heat", "heatNote", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
+      ["ideas", "dailyChart", "dailyEv", "kioskCmp", "hourChart", "heat", "heatNote", "upTable", "upMonthly", "upTop", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
       renderEvents(); renderGaps(null, []);
       $("kpis").innerHTML = '<div class="kpi" style="grid-column:1/-1">' + emptyHtml(shared.on ? "아직 공유 자료가 없습니다. POS 파일을 구글 드라이브 폴더에 넣고 아래 ‘지금 불러오기’를 누르거나, 파일을 직접 올려 주세요." : "아직 데이터가 없습니다. 아래 “데이터 관리”에서 POS 엑셀 파일을 불러오세요.") + "</div>";
       $("rangeLabel").textContent = "";
@@ -871,6 +887,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     var menu = renderMenu(S);
     renderGaps(rg, ks);
     renderGroups(S, ks);
+    renderUpsell(S, ks);
     renderPrepaid(S);
     renderDisc(S);
     renderIdeas(S, Ss, menu, rg);
@@ -1367,6 +1384,85 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
 
   // ---------- 데이터 관리 ----------
+
+  // ---------- 옵션·업셀 ----------
+  var UP_TARGET = { up: 0.55, shot: 5, per: 500 };
+  function isUpDrink(r) { return r.g === "음료" && /(^|\s)up$/i.test(r.p.trim()); }
+  function isIceDrink(r) { return r.g === "음료" && /(^|\s)ice$/i.test(r.p.trim()); }
+  function isUpOpt(r) { return r.g === "옵션·기타" && /^(ICE-?UP|사이즈업|핸드드립사이즈업|\d+ml\(사이즈업\))/i.test(r.p.replace(/\s/g, "")); }
+  function isIceOpt(r) { return r.g === "옵션·기타" && /^(기본ICE|ICE)(\(|$)/i.test(r.p.replace(/\s/g, "")); }
+  function isShot(r) { return r.g === "옵션·기타" && /샷추가/.test(r.p); }
+  function isDecaf(r) { return r.g === "옵션·기타" && /^(\d+캔)?디카페인(변경)?$/.test(r.p.replace(/\s/g, "")); }
+  function isPaidDrinkOpt(r) { return r.g === "옵션·기타" && /(샷|디카페인|사이즈|ICE-?UP|변경$|추가$|크림치즈)/i.test(r.p.replace(/\s/g, "")); }
+  // CUBE는 사이즈업이 ‘범표라떼 up’처럼 별도 메뉴라, 같은 메뉴 ice와의 가격 차이를 옵션 매출로 셈
+  function upPremium(prods) {
+    var pr = {};
+    prods.forEach(function (r) {
+      if (r.g !== "음료" || !r.q) return;
+      var m = /^(.*?)\s*(up|ice)$/i.exec(r.p.trim()); if (!m) return;
+      var x = pr[m[1]] || (pr[m[1]] = { up: [0, 0], ice: [0, 0] }), k = m[2].toLowerCase();
+      x[k][0] += r.q; x[k][1] += sales(r) + promo(r);
+    });
+    var tot = 0;
+    Object.keys(pr).forEach(function (b) {
+      var x = pr[b]; if (!x.up[0]) return;
+      var d = x.ice[0] ? x.up[1] / x.up[0] - x.ice[1] / x.ice[0] : 1000;
+      tot += x.up[0] * (d > 0 && d < 3000 ? d : 1000);
+    });
+    return tot;
+  }
+  function upStats(prods) {
+    var drinks = 0, up = 0, ice = 0, shot = 0, decaf = 0, optA = 0, paid = 0, su = {}, si = {};
+    prods.forEach(function (r) {
+      var q = r.q || 0, key = r.s + r.f.slice(0, 7);
+      if (r.g === "음료") drinks += q;
+      if (isUpDrink(r) || isUpOpt(r)) su[key] = (su[key] || 0) + q;
+      if (isIceDrink(r) || isIceOpt(r)) si[key] = (si[key] || 0) + q;
+      if (isUpDrink(r) || isUpOpt(r) || isShot(r) || isDecaf(r)) paid += q;
+      if (isShot(r)) shot += q;
+      if (isDecaf(r)) decaf += q;
+      if (isPaidDrinkOpt(r)) optA += sales(r) + promo(r);
+    });
+    // 사이즈업·기본 아이스가 둘 다 기록된 매출처·달만 비율에 넣음 (한쪽만 있으면 기록 방식이 달라 비교 불가)
+    Object.keys(su).forEach(function (k) { if (si[k]) { up += su[k]; ice += si[k]; } });
+    var opt = optA + upPremium(prods);
+    if (!paid) return { drinks: drinks, none: true, upRate: null, shot: null, decaf: null, opt: 0, per: null };
+    return { drinks: drinks, up: up, ice: ice, upRate: up + ice ? up / (up + ice) : null, shot: drinks ? shot / drinks * 100 : null, decaf: drinks ? decaf / drinks * 100 : null, opt: opt, per: drinks ? opt / drinks : null };
+  }
+  function upCell(v, tgt, fmt) {
+    if (v == null) return '<span class="muted">—</span>';
+    return tgt == null ? fmt(v) : '<span class="' + (v >= tgt ? "up-ok" : "up-low") + '">' + fmt(v) + "</span>";
+  }
+  function renderUpsell(S, ks) {
+    var el = $("upTable");
+    var list = S.prods.filter(function (r) { return r.g === "음료" || r.g === "옵션·기타"; });
+    if (!list.some(function (r) { return r.g === "음료"; })) { el.innerHTML = emptyHtml("선택한 기간에 상품별 자료가 없습니다."); $("upMonthly").innerHTML = ""; $("upTop").innerHTML = ""; $("upNote").textContent = ""; return; }
+    var fU = function (v) { return pct(v, 1); }, fN = function (v) { return v.toFixed(1) + "번"; }, fW = function (v) { return won(v); };
+    var head = '<table><thead><tr><th>매출처</th><th class="r">음료</th><th class="r">아이스 사이즈업<span class="up-tgt">목표 ' + pct(UP_TARGET.up, 0) + '</span></th><th class="r">샷추가 / 100잔<span class="up-tgt">목표 ' + UP_TARGET.shot + '번</span></th><th class="r">디카페인 / 100잔</th><th class="r">1잔당 옵션 매출<span class="up-tgt">목표 ' + won(UP_TARGET.per) + '</span></th><th class="r">옵션 매출</th></tr></thead><tbody>';
+    var rows = ks.map(function (k) { return [k, upStats(list.filter(function (r) { return r.s === k; }))]; }).filter(function (x) { return x[1].drinks > 0; });
+    function row(name, x, strong) {
+      return "<tr" + (strong ? ' style="font-weight:600"' : "") + "><td>" + name + '</td><td class="r num">' + num(x.drinks) + '잔</td><td class="r num">' + (x.none ? '<span class="muted" title="사이즈·옵션 값이 메뉴 가격에 합쳐져 기록되어 따로 볼 수 없습니다">따로 안 나옴</span>' : upCell(x.upRate, UP_TARGET.up, fU)) + '</td><td class="r num">' + upCell(x.shot, UP_TARGET.shot, fN) + '</td><td class="r num">' + upCell(x.decaf, null, fN) + '</td><td class="r num">' + upCell(x.per, UP_TARGET.per, fW) + '</td><td class="r num">' + won(x.opt) + "</td></tr>";
+    }
+    var html = head + rows.map(function (x) { return row('<i class="sw" style="background:' + kColor(x[0]) + '"></i> ' + esc(kName(x[0])), x[1]); }).join("");
+    if (rows.length > 1) html += row("합계", upStats(list), true);
+    el.innerHTML = html + "</tbody></table>";
+    // 월별
+    var months = {}; list.forEach(function (r) { (months[r.f.slice(0, 7)] || (months[r.f.slice(0, 7)] = [])).push(r); });
+    var mk = Object.keys(months).sort();
+    $("upMonthly").innerHTML = mk.length ? '<table><thead><tr><th>월</th><th class="r">사이즈업</th><th class="r">샷 / 100잔</th><th class="r">디카페인 / 100잔</th><th class="r">1잔당 옵션</th></tr></thead><tbody>' + mk.map(function (m) {
+      var x = upStats(months[m]);
+      return "<tr><td>" + m.slice(0, 4) + "." + m.slice(5) + '</td><td class="r num">' + upCell(x.upRate, UP_TARGET.up, fU) + '</td><td class="r num">' + upCell(x.shot, UP_TARGET.shot, fN) + '</td><td class="r num">' + upCell(x.decaf, null, fN) + '</td><td class="r num">' + upCell(x.per, UP_TARGET.per, fW) + "</td></tr>";
+    }).join("") + "</tbody></table>" : "";
+    // 유료 옵션 순위
+    var by = {};
+    list.forEach(function (r) { if (!isPaidDrinkOpt(r)) return; var v = sales(r) + promo(r); if (v <= 0) return; var x = by[r.p] || (by[r.p] = { p: r.p, q: 0, a: 0, s: {} }); x.q += r.q || 0; x.a += v; x.s[r.s] = 1; });
+    var top = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.a - a.a; }).slice(0, 8);
+    $("upTop").innerHTML = top.length ? '<table><thead><tr><th>옵션</th><th class="r">수량</th><th class="r">매출</th><th class="r">개당</th></tr></thead><tbody>' + top.map(function (x) {
+      return "<tr><td>" + esc(x.p) + ' <span class="muted" style="font-size:11px">' + Object.keys(x.s).map(kName).map(esc).join(", ") + '</span></td><td class="r num">' + num(x.q) + '</td><td class="r num">' + won(x.a) + '</td><td class="r num">' + won(x.q ? x.a / x.q : 0) + "</td></tr>";
+    }).join("") + "</tbody></table>" : emptyHtml("유료 옵션 판매가 없습니다.");
+    $("upNote").textContent = "아이스 사이즈업 = 큰 사이즈 ÷ (큰 사이즈 + 기본 아이스). CUBE 카운터는 ‘범표라떼 up’ 같은 메뉴, O2POS는 ICE-UP 옵션으로 셉니다. 1잔당 옵션 매출에는 사이즈업 추가금(같은 메뉴 ice와의 가격 차이)과 샷·디카페인·변경 옵션이 들어가고, 포장·굿즈는 뺐습니다. CUBE 키오스크는 사이즈 값이 메뉴 가격에 합쳐져 사이즈업을 따로 볼 수 없습니다. 주·월 단위 자료는 기간 안에 다 들어가는 것만 셉니다.";
+  }
+
   // ---------- 특이사항 · 전후 비교 ----------
   var EV_TYPES = {
     menu: { l: "신메뉴", c: "var(--ev-menu)", lasting: true },
