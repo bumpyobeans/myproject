@@ -252,6 +252,10 @@ td.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .up-ok { color: var(--good); font-weight: 600; }
 .up-low { color: var(--warn-ink); background: var(--warn-bg); border-radius: 4px; padding: 0 4px; font-weight: 600; }
 .up-tgt { display: block; font-size: 11px; color: var(--ink-3); font-weight: 400; }
+.reg-row td { color: var(--ink-3); }
+#pairShot td, #pairShot th, #pairDecaf td, #pairDecaf th { padding: 6px 6px; }
+.reg-tag { font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.reg-btn { border: 0; background: transparent; color: var(--ink-3); font-size: 11px; text-decoration: underline; padding: 0; white-space: nowrap; }
 .msg { font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
 .msg.err { background: var(--warn-bg); color: var(--warn-ink); }
 pre.tpl { font-family: var(--font-num); font-size: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 0; }
@@ -534,7 +538,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   // ---------- 상태 ----------
   var STORES = ["K1", "K3", "K2"]; // CUBE 카운터, CUBE 키오스크, O2POS 키오스크
   var state = { names: { K1: "CUBE · 카운터", K3: "CUBE · 키오스크", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], opt: [], events: [], sample: true, lastF: null, lastT: null,
-    cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none", K3: "none" } } };
+    cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none", K3: "none" }, regulars: [] } };
   var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu", dailyGroup: "day", evWin: 14 };
   var queue = []; // 불러오기 대기 중인 파일
 
@@ -593,7 +597,7 @@ footer { font-size: 12px; color: var(--ink-3); }
         var old = { K1: { "1호기 · CUBE": 1, "1호기": 1, "CUBE · 키오스크+카운터": 1 }, K2: { "2호기 · O2POS": 1, "2호기": 1 }, K3: {} };
         STORES.forEach(function (k) { if (o.names[k] && !old[k][o.names[k]]) state.names[k] = o.names[k]; });
       }
-      if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none", K3: (c.pp && c.pp.K3) || "none" }, v: c.v }; } // 2호기(키오스크)는 선불 결제 불가
+      if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none", K3: (c.pp && c.pp.K3) || "none" }, v: c.v, regulars: Array.isArray(c.regulars) ? c.regulars : [] }; } // 2호기(키오스크)는 선불 결제 불가
       if (Array.isArray(o.events)) state.events = o.events;
       if ((o.prod && o.prod.length) || (o.hour && o.hour.length) || (o.day && o.day.length)) {
         state.prod = (o.prod || []).map(function (r) { r.g = classify(r.p, r.c); return r; }); state.hour = o.hour || []; state.day = o.day || []; state.opt = o.opt || [];
@@ -1456,21 +1460,27 @@ footer { font-size: 12px; color: var(--ink-3); }
     var stores = {}; opt.forEach(function (r) { stores[r.s] = 1; });
     var sold = {};
     state.prod.forEach(function (r) { if (stores[r.s] && r.g === "음료" && r.f >= rg.from && r.t <= rg.to) { var b = drinkBase(r.p); sold[b] = (sold[b] || 0) + (r.q || 0); } });
+    var regs = (state.cfg.regulars || []);
+    function isReg(b, kind) { return regs.some(function (x) { return x.p === b && x.k === kind; }); }
     function table(kind) {
-      var list = opt.filter(function (r) { return r.k === kind; }), by = {}, tot = 0, orphan = 0;
+      var list = opt.filter(function (r) { return r.k === kind; }), by = {}, tot = 0, orphan = 0, regQ = 0;
       list.forEach(function (r) {
         if (r.p === "(앞 음료 없음)") { orphan += r.q; return; }
-        var b = drinkBase(r.p), x = by[b] || (by[b] = { b: b, q: 0, v: {} }), v = drinkVar(r.p) || "기본";
-        x.q += r.q; x.v[v] = (x.v[v] || 0) + r.q; tot += r.q;
+        var b = drinkBase(r.p), x = by[b] || (by[b] = { b: b, q: 0, v: {}, reg: isReg(b, kind) }), v = drinkVar(r.p) || "기본";
+        x.q += r.q; x.v[v] = (x.v[v] || 0) + r.q;
+        if (x.reg) regQ += r.q; else tot += r.q;
       });
-      var arr = Object.keys(by).map(function (k) { return by[k]; }).filter(function (x) { return x.q > 0; }).sort(function (a, b) { return b.q - a.q; });
+      var arr = Object.keys(by).map(function (k) { return by[k]; }).filter(function (x) { return x.q > 0; }).sort(function (a, b) { return (a.reg - b.reg) || b.q - a.q; });
       if (!arr.length) return emptyHtml(ks.indexOf("K1") < 0 && ks.indexOf("K3") < 0 ? "O2POS는 주문 단위 자료가 없어 어느 음료에 붙었는지 볼 수 없습니다." : "선택한 기간에 CUBE 상품상세 자료가 없습니다.");
-      var avg = sumBy(Object.keys(sold), function (k) { return sold[k]; }), avgRate = avg ? tot / avg * 100 : 0;
-      var VL = { ice: "ice", up: "up", hot: "hot", "기본": "기본" };
-      return '<table><thead><tr><th>음료</th><th class="r">수</th><th class="r">비중</th><th class="r">그 음료 100잔당</th><th>온도·사이즈</th></tr></thead><tbody>' + arr.slice(0, 10).map(function (x) {
-        var rate = sold[x.b] ? x.q / sold[x.b] * 100 : null, hi = rate != null && sold[x.b] >= 30 && rate >= avgRate * 2;
-        return "<tr><td>" + esc(x.b) + '</td><td class="r num">' + num(x.q) + '</td><td class="r num">' + pct(x.q / tot, 0) + '</td><td class="r num">' + (rate == null ? '<span class="muted">—</span>' : '<span class="' + (hi ? "up-low" : "") + '"' + (hi ? ' title="평균의 2배 이상"' : "") + ">" + rate.toFixed(1) + "번</span>") + '</td><td class="muted" style="font-size:12px">' + Object.keys(x.v).sort(function (a, b) { return x.v[b] - x.v[a]; }).map(function (k) { return VL[k] + " " + num(x.v[k]); }).join(" · ") + "</td></tr>";
-      }).join("") + '<tr style="font-weight:600"><td>합계</td><td class="r num">' + num(tot) + '</td><td></td><td class="r num">평균 ' + avgRate.toFixed(1) + "번</td><td></td></tr></tbody></table>" +
+      // 평균은 단골 고정 주문을 뺀 일반 손님 기준 (단골이 산 음료 수만큼 분모에서도 뺌)
+      var avg = sumBy(Object.keys(sold), function (k) { return sold[k]; }) - regQ, avgRate = avg > 0 ? tot / avg * 100 : 0;
+      var VL = { ice: "ice", up: "up", hot: "hot", "기본": "기본" }, canEdit = shared.canWrite !== false;
+      var shown = arr.filter(function (x) { return !x.reg; }).slice(0, 10).concat(arr.filter(function (x) { return x.reg; }));
+      return '<table><thead><tr><th>음료</th><th class="r">수</th><th class="r">비중</th><th class="r">그 음료 100잔당</th><th>온도·사이즈</th>' + (canEdit ? "<th></th>" : "") + "</tr></thead><tbody>" + shown.map(function (x) {
+        var rate = sold[x.b] ? x.q / sold[x.b] * 100 : null, hi = !x.reg && rate != null && sold[x.b] >= 30 && rate >= avgRate * 2;
+        var btn = canEdit ? '<td><button type="button" class="reg-btn" data-p="' + esc(x.b) + '" data-k="' + kind + '">' + (x.reg ? "표시 해제" : "단골 표시") + "</button></td>" : "";
+        return "<tr" + (x.reg ? ' class="reg-row"' : "") + "><td>" + esc(x.b) + (x.reg ? ' <span class="reg-tag" title="한 손님이 반복하는 주문이라 비중·평균에서 뺐습니다">단골 고정 주문</span>' : "") + '</td><td class="r num">' + num(x.q) + '</td><td class="r num">' + (x.reg ? '<span class="muted">제외</span>' : pct(tot ? x.q / tot : 0, 0)) + '</td><td class="r num">' + (rate == null ? '<span class="muted">—</span>' : '<span class="' + (hi ? "up-low" : "") + '"' + (hi ? ' title="평균의 2배 이상"' : "") + ">" + rate.toFixed(1) + "번</span>") + '</td><td class="muted" style="font-size:12px">' + Object.keys(x.v).sort(function (a, b) { return x.v[b] - x.v[a]; }).map(function (k) { return VL[k] + " " + num(x.v[k]); }).join(" · ") + "</td>" + btn + "</tr>";
+      }).join("") + '<tr style="font-weight:600"><td>합계' + (regQ ? ' <span class="muted" style="font-weight:400;font-size:11px">단골 고정 주문 제외</span>' : "") + '</td><td class="r num">' + num(tot) + '</td><td></td><td class="r num">평균 ' + avgRate.toFixed(1) + "번</td><td></td>" + (canEdit ? "<td></td>" : "") + "</tr></tbody></table>" +
         (orphan ? '<p class="sub" style="margin:4px 0 0">앞에 음료가 없는 옵션 줄 ' + num(orphan) + "개는 뺐습니다.</p>" : "");
     }
     $("pairShot").innerHTML = table("shot");
@@ -1786,6 +1796,13 @@ footer { font-size: 12px; color: var(--ink-3); }
     var b = ev.target.closest(".ev-del"); if (!b) return;
     if (b.getAttribute("data-sure") !== "1") { b.setAttribute("data-sure", "1"); b.textContent = "한 번 더 누르면 삭제"; setTimeout(function () { b.removeAttribute("data-sure"); b.textContent = "삭제"; }, 4000); return; }
     var e = state.events.filter(function (x) { return x.id === b.getAttribute("data-id"); })[0]; if (e) evSave(e, true);
+  });
+  $("upPanel").addEventListener("click", function (ev) {
+    var b = ev.target.closest(".reg-btn"); if (!b) return;
+    var p = b.getAttribute("data-p"), k = b.getAttribute("data-k"), list = (state.cfg.regulars || []).slice();
+    var i = -1; list.forEach(function (x, j) { if (x.p === p && x.k === k) i = j; });
+    if (i >= 0) list.splice(i, 1); else list.push({ p: p, k: k });
+    state.cfg.regulars = list; save(); render();
   });
   $("evWin").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (!b) return; view.evWin = +b.getAttribute("data-w"); syncSeg(); renderEvents(); });
 
