@@ -1682,7 +1682,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   function renderGaps(rg, ks) {
     var all = state.sample ? [] : prodGaps();
     $("dataGaps").innerHTML = all.length ? '<div class="msg err"><b>⚠ 자료 점검: 순위 제한 의심 ' + all.length + "건</b><br>상품별 자료 합계가 같은 기간 일별 매출보다 적습니다. 파일을 받을 때 순위(상위 N개) 제한이 걸려 있어 판매가 적은 메뉴·옵션이 빠진 것으로 보입니다. 매출 합계는 일별 자료 기준이라 정확하고, 메뉴 순위·상품군 비중에서만 빠집니다.<br>" +
-      gapsByStore(all, true) + "<br>순위 제한 없이 다시 받은 파일을 올리면 자동으로 교체됩니다.</div>" : "";
+      gapsByStore(all, true) + "<br>O2POS 상품별 매출현황을 순위 기준 ‘전체’로 다시 받아 올리면 자동으로 교체됩니다.</div>" : "";
     var cur = rg ? all.filter(function (g) { return ks.indexOf(g.s) >= 0 && g.t >= rg.from && g.f <= rg.to; }) : [];
     $("menuWarn").innerHTML = cur.length ? '<div class="msg err">⚠ 이 기간 상품별 자료에 순위 제한으로 빠진 매출이 약 <b>' + won(sumBy(cur, function (g) { return g.gap; })) + "</b> 있습니다 (" + gapsByStore(cur, false) + "). 판매가 적은 메뉴·옵션이 이 표에서 빠져 있을 수 있습니다. <a href=\"#dataPanel\">자세히</a></div>" : "";
   }
@@ -2117,7 +2117,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   function rankWarn(res) {
     if (res.shareSum == null || res.shareSum >= 99.9 || res.shareSum <= 0) return "";
     var tot = sumBy(res.data.prod, function (r) { return r.a; }), miss = tot * (100 / res.shareSum - 1);
-    return "순위 제한 의심: 이 상품별 파일은 " + (res.rankMax ? res.rankMax + "위까지만 " : "판매 상위만 ") + "들어 있습니다 (점유율 합계 " + res.shareSum.toFixed(2) + "%, 빠진 매출 약 " + won(Math.round(miss / 100) * 100) + "). O2POS에서 순위 제한 없이 다시 받아 올려 주세요.";
+    return "순위 제한 의심: 이 상품별 파일은 " + (res.rankMax ? res.rankMax + "위까지만 " : "판매 상위만 ") + "들어 있습니다 (점유율 합계 " + res.shareSum.toFixed(2) + "%, 빠진 매출 약 " + won(Math.round(miss / 100) * 100) + "). O2POS 조회 조건의 순위 기준을 ‘전체’로 바꿔 다시 받아 올려 주세요.";
   }
   function applyImport(d, type, s, meta) {
     var sset = s === "split" ? ["K1", "K3"] : [s];
