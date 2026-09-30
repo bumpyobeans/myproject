@@ -423,6 +423,11 @@ footer { font-size: 12px; color: var(--ink-3); }
       <div><h3 class="up-h">월별 흐름</h3><div class="tbl-scroll" id="upMonthly"></div></div>
       <div><h3 class="up-h">많이 팔린 유료 옵션</h3><div class="tbl-scroll" id="upTop"></div></div>
     </div>
+    <h3 class="up-h" style="margin-top:6px">옵션이 붙는 음료 <span class="muted" style="font-weight:400">· CUBE 영수증에서 옵션 줄 바로 앞 음료 기준</span></h3>
+    <div class="up-grid">
+      <div><h3 class="up-h">샷추가</h3><div class="tbl-scroll" id="pairShot"></div></div>
+      <div><h3 class="up-h">디카페인</h3><div class="tbl-scroll" id="pairDecaf"></div></div>
+    </div>
     <span class="sub" id="upNote"></span>
   </section>
 
@@ -528,7 +533,7 @@ footer { font-size: 12px; color: var(--ink-3); }
 
   // ---------- 상태 ----------
   var STORES = ["K1", "K3", "K2"]; // CUBE 카운터, CUBE 키오스크, O2POS 키오스크
-  var state = { names: { K1: "CUBE · 카운터", K3: "CUBE · 키오스크", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], events: [], sample: true, lastF: null, lastT: null,
+  var state = { names: { K1: "CUBE · 카운터", K3: "CUBE · 키오스크", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], opt: [], events: [], sample: true, lastF: null, lastT: null,
     cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none", K3: "none" } } };
   var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu", dailyGroup: "day", evWin: 14 };
   var queue = []; // 불러오기 대기 중인 파일
@@ -576,7 +581,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     try {
       localStorage.setItem(STORE, JSON.stringify(state.sample
         ? { v: 2, names: state.names, cfg: state.cfg, events: state.events }
-        : { v: 2, names: state.names, cfg: state.cfg, events: state.events, prod: state.prod, hour: state.hour, day: state.day, lastF: state.lastF, lastT: state.lastT }));
+        : { v: 2, names: state.names, cfg: state.cfg, events: state.events, prod: state.prod, hour: state.hour, day: state.day, opt: state.opt, lastF: state.lastF, lastT: state.lastT }));
     } catch (e) { showMsg("브라우저 저장소에 저장하지 못했습니다. 저장이 막혀 있을 수 있어요.", true); }
   }
   function load() {
@@ -591,7 +596,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none", K3: (c.pp && c.pp.K3) || "none" }, v: c.v }; } // 2호기(키오스크)는 선불 결제 불가
       if (Array.isArray(o.events)) state.events = o.events;
       if ((o.prod && o.prod.length) || (o.hour && o.hour.length) || (o.day && o.day.length)) {
-        state.prod = (o.prod || []).map(function (r) { r.g = classify(r.p, r.c); return r; }); state.hour = o.hour || []; state.day = o.day || [];
+        state.prod = (o.prod || []).map(function (r) { r.g = classify(r.p, r.c); return r; }); state.hour = o.hour || []; state.day = o.day || []; state.opt = o.opt || [];
         state.lastF = o.lastF || null; state.lastT = o.lastT || null;
         state.sample = false;
         return true;
@@ -601,9 +606,17 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
 
   // ---------- 주문 단위 → 집계 ----------
+  function optKind(p) { var n = String(p).replace(/\s/g, ""); return /샷추가/.test(n) ? "shot" : /^디카페인(변경|서비스)?$/.test(n) ? "decaf" : ""; }
   function aggregateTx(rows) {
-    var P = {}, H = {}, D = {}, out = { prod: [], hour: [], day: [] };
+    var P = {}, H = {}, D = {}, O = {}, last = {}, out = { prod: [], hour: [], day: [], opt: [] };
     rows.forEach(function (r) {
+      // 옵션(샷추가·디카페인) 줄은 같은 영수증에서 바로 앞 음료에 붙은 것으로 셈
+      var ok = r.s + "|" + r.d + "|" + r.o, kind = optKind(r.p);
+      if (kind) {
+        var par = last[ok] || "(앞 음료 없음)", xk = r.s + "|" + r.d + "|" + par + "|" + kind;
+        var ox = O[xk] || (O[xk] = out.opt[out.opt.push({ s: r.s, f: r.d, t: r.d, p: par, k: kind, q: 0 }) - 1]);
+        ox.q += r.q;
+      } else if (r.g !== "옵션·기타") last[ok] = r.p;
       var pk = r.s + "|" + r.d + "|" + r.p;
       var p = P[pk] || (P[pk] = out.prod[out.prod.push({ s: r.s, f: r.d, t: r.d, p: r.p, c: r.c || "", g: r.g, q: 0, a: 0, dc: 0 }) - 1]);
       p.q += r.q; p.a += r.a; p.dc += r.dc || 0;
@@ -869,7 +882,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     renderDataStats();
     var rg = currentRange();
     if (!rg) {
-      ["ideas", "dailyChart", "dailyEv", "kioskCmp", "hourChart", "heat", "heatNote", "upTable", "upMonthly", "upTop", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
+      ["ideas", "dailyChart", "dailyEv", "kioskCmp", "hourChart", "heat", "heatNote", "upTable", "upMonthly", "upTop", "pairShot", "pairDecaf", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
       renderEvents(); renderGaps(null, []);
       $("kpis").innerHTML = '<div class="kpi" style="grid-column:1/-1">' + emptyHtml(shared.on ? "아직 공유 자료가 없습니다. POS 파일을 구글 드라이브 폴더에 넣고 아래 ‘지금 불러오기’를 누르거나, 파일을 직접 올려 주세요." : "아직 데이터가 없습니다. 아래 “데이터 관리”에서 POS 엑셀 파일을 불러오세요.") + "</div>";
       $("rangeLabel").textContent = "";
@@ -887,7 +900,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     var menu = renderMenu(S);
     renderGaps(rg, ks);
     renderGroups(S, ks);
-    renderUpsell(S, ks);
+    renderUpsell(S, ks, rg);
+    renderPairs(rg, ks);
     renderPrepaid(S);
     renderDisc(S);
     renderIdeas(S, Ss, menu, rg);
@@ -1433,7 +1447,36 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (v == null) return '<span class="muted">—</span>';
     return tgt == null ? fmt(v) : '<span class="' + (v >= tgt ? "up-ok" : "up-low") + '">' + fmt(v) + "</span>";
   }
-  function renderUpsell(S, ks) {
+
+  // 옵션이 어느 음료에 붙었는지 (CUBE 상품상세 영수증에서 짝지은 자료)
+  function drinkBase(p) { return String(p).replace(/\s*(up\(ice\)|ice|up|hot)$/i, "").replace(/\s+/g, " ").trim(); }
+  function drinkVar(p) { var m = /(up\(ice\)|ice|up|hot)$/i.exec(String(p).trim()); return m ? (/^up/i.test(m[1]) ? "up" : m[1].toLowerCase()) : ""; }
+  function renderPairs(rg, ks) {
+    var opt = rg ? state.opt.filter(function (r) { return ks.indexOf(r.s) >= 0 && r.f >= rg.from && r.t <= rg.to; }) : [];
+    var stores = {}; opt.forEach(function (r) { stores[r.s] = 1; });
+    var sold = {};
+    state.prod.forEach(function (r) { if (stores[r.s] && r.g === "음료" && r.f >= rg.from && r.t <= rg.to) { var b = drinkBase(r.p); sold[b] = (sold[b] || 0) + (r.q || 0); } });
+    function table(kind) {
+      var list = opt.filter(function (r) { return r.k === kind; }), by = {}, tot = 0, orphan = 0;
+      list.forEach(function (r) {
+        if (r.p === "(앞 음료 없음)") { orphan += r.q; return; }
+        var b = drinkBase(r.p), x = by[b] || (by[b] = { b: b, q: 0, v: {} }), v = drinkVar(r.p) || "기본";
+        x.q += r.q; x.v[v] = (x.v[v] || 0) + r.q; tot += r.q;
+      });
+      var arr = Object.keys(by).map(function (k) { return by[k]; }).filter(function (x) { return x.q > 0; }).sort(function (a, b) { return b.q - a.q; });
+      if (!arr.length) return emptyHtml(ks.indexOf("K1") < 0 && ks.indexOf("K3") < 0 ? "O2POS는 주문 단위 자료가 없어 어느 음료에 붙었는지 볼 수 없습니다." : "선택한 기간에 CUBE 상품상세 자료가 없습니다.");
+      var avg = sumBy(Object.keys(sold), function (k) { return sold[k]; }), avgRate = avg ? tot / avg * 100 : 0;
+      var VL = { ice: "ice", up: "up", hot: "hot", "기본": "기본" };
+      return '<table><thead><tr><th>음료</th><th class="r">수</th><th class="r">비중</th><th class="r">그 음료 100잔당</th><th>온도·사이즈</th></tr></thead><tbody>' + arr.slice(0, 10).map(function (x) {
+        var rate = sold[x.b] ? x.q / sold[x.b] * 100 : null, hi = rate != null && sold[x.b] >= 30 && rate >= avgRate * 2;
+        return "<tr><td>" + esc(x.b) + '</td><td class="r num">' + num(x.q) + '</td><td class="r num">' + pct(x.q / tot, 0) + '</td><td class="r num">' + (rate == null ? '<span class="muted">—</span>' : '<span class="' + (hi ? "up-low" : "") + '"' + (hi ? ' title="평균의 2배 이상"' : "") + ">" + rate.toFixed(1) + "번</span>") + '</td><td class="muted" style="font-size:12px">' + Object.keys(x.v).sort(function (a, b) { return x.v[b] - x.v[a]; }).map(function (k) { return VL[k] + " " + num(x.v[k]); }).join(" · ") + "</td></tr>";
+      }).join("") + '<tr style="font-weight:600"><td>합계</td><td class="r num">' + num(tot) + '</td><td></td><td class="r num">평균 ' + avgRate.toFixed(1) + "번</td><td></td></tr></tbody></table>" +
+        (orphan ? '<p class="sub" style="margin:4px 0 0">앞에 음료가 없는 옵션 줄 ' + num(orphan) + "개는 뺐습니다.</p>" : "");
+    }
+    $("pairShot").innerHTML = table("shot");
+    $("pairDecaf").innerHTML = table("decaf");
+  }
+  function renderUpsell(S, ks, rg) {
     var el = $("upTable");
     var list = S.prods.filter(function (r) { return r.g === "음료" || r.g === "옵션·기타"; });
     if (!list.some(function (r) { return r.g === "음료"; })) { el.innerHTML = emptyHtml("선택한 기간에 상품별 자료가 없습니다."); $("upMonthly").innerHTML = ""; $("upTop").innerHTML = ""; $("upNote").textContent = ""; return; }
@@ -1460,7 +1503,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     $("upTop").innerHTML = top.length ? '<table><thead><tr><th>옵션</th><th class="r">수량</th><th class="r">매출</th><th class="r">개당</th></tr></thead><tbody>' + top.map(function (x) {
       return "<tr><td>" + esc(x.p) + ' <span class="muted" style="font-size:11px">' + Object.keys(x.s).map(kName).map(esc).join(", ") + '</span></td><td class="r num">' + num(x.q) + '</td><td class="r num">' + won(x.a) + '</td><td class="r num">' + won(x.q ? x.a / x.q : 0) + "</td></tr>";
     }).join("") + "</tbody></table>" : emptyHtml("유료 옵션 판매가 없습니다.");
-    $("upNote").textContent = "아이스 사이즈업 = 큰 사이즈 ÷ (큰 사이즈 + 기본 아이스). CUBE 카운터는 ‘범표라떼 up’ 같은 메뉴, O2POS는 ICE-UP 옵션으로 셉니다. 1잔당 옵션 매출에는 사이즈업 추가금(같은 메뉴 ice와의 가격 차이)과 샷·디카페인·변경 옵션이 들어가고, 포장·굿즈는 뺐습니다. CUBE 키오스크는 사이즈 값이 메뉴 가격에 합쳐져 사이즈업을 따로 볼 수 없습니다. 주·월 단위 자료는 기간 안에 다 들어가는 것만 셉니다.";
+    $("upNote").textContent = "아이스 사이즈업 = 큰 사이즈 ÷ (큰 사이즈 + 기본 아이스). CUBE 카운터는 ‘범표라떼 up’ 같은 메뉴, O2POS는 ICE-UP 옵션으로 셉니다. 1잔당 옵션 매출에는 사이즈업 추가금(같은 메뉴 ice와의 가격 차이)과 샷·디카페인·변경 옵션이 들어가고, 포장·굿즈는 뺐습니다. CUBE 키오스크는 사이즈 값이 메뉴 가격에 합쳐져 사이즈업을 따로 볼 수 없습니다. 주·월 단위 자료는 기간 안에 다 들어가는 것만 셉니다. ‘옵션이 붙는 음료’는 CUBE 상품상세의 같은 영수증에서 옵션 줄 바로 앞 음료로 짝지었고(O2POS·CUBE 키오스크는 옵션이 따로 기록되지 않아 빠짐), ‘그 음료 100잔당’이 평균의 2배 이상이면 노란색으로 표시합니다.";
   }
 
   // ---------- 특이사항 · 전후 비교 ----------
@@ -1991,7 +2034,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
 
   function convert(body, type, map, meta) {
-    var out = { prod: [], hour: [], day: [] }, bad = 0, subs = 0, cancel = 0;
+    var out = { prod: [], hour: [], day: [], opt: [] }, bad = 0, subs = 0, cancel = 0;
     function g(r, k) { return map[k] != null ? r[map[k]] : undefined; }
     function amountOf(r) {
       var a = parseNum(g(r, "amount"));
@@ -2226,7 +2269,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     else { f = meta.f; t = meta.t; state.lastF = f; state.lastT = t; }
     var clash = (d.prod.length ? straddle(state.prod, f, t) : []).concat(d.hour.length ? straddle(state.hour, f, t) : []);
     if (clash.length) throw new Error("이미 " + clash[0].f + " ~ " + clash[0].t + " 기간으로 묶인 자료가 있어 " + (f === t ? f : f + " ~ " + t) + " 자료와 겹칩니다. 같은 기간 단위로 올려 주세요.");
-    if (state.sample) { state.prod = []; state.hour = []; state.day = []; state.sample = false; }
+    if (state.sample) { state.prod = []; state.hour = []; state.day = []; state.opt = []; state.sample = false; }
+    if (type === "tx") state.opt = state.opt.filter(function (r) { return !overlap(r, f, t); }).concat(d.opt || []);
     if (d.prod.length) state.prod = state.prod.filter(function (r) { return !overlap(r, f, t); }).concat(d.prod);
     if (d.hour.length) state.hour = state.hour.filter(function (r) { return !overlap(r, f, t); }).concat(d.hour);
     if (d.day.length) { var set = {}; d.day.forEach(function (x) { set[x.d] = 1; }); state.day = state.day.filter(function (r) { return !(sset.indexOf(r.s) >= 0 && set[r.d]); }).concat(d.day); }
@@ -2260,18 +2304,20 @@ footer { font-size: 12px; color: var(--ink-3); }
   var P_KEYS = ["f", "t", "p", "c", "g", "q", "a", "dc", "od", "sd", "ndl", "dq", "da", "tq", "ta", "cq", "ca"];
   var H_KEYS = ["f", "t", "h", "a", "o", "q"];
   var D_KEYS = ["d", "a", "o"];
+  var O_KEYS = ["f", "t", "p", "k", "q"];
   function pack(r, keys) { var a = keys.map(function (k) { return r[k] === undefined ? null : r[k]; }); while (a.length && a[a.length - 1] === null) a.pop(); return a; }
   function unpack(a, keys, s) { var r = { s: s }; keys.forEach(function (k, i) { if (a[i] !== null && a[i] !== undefined) r[k] = a[i]; }); return r; }
 
   function rebuildFromShared() {
-    var prod = [], hour = [], day = [];
+    var prod = [], hour = [], day = [], opt = [];
     Object.keys(shared.months).forEach(function (id) {
       var m = shared.months[id], s = m.s;
       (m.prod || []).forEach(function (a) { var r = unpack(a, P_KEYS, s); r.g = classify(r.p, r.c); prod.push(r); }); // 분류 규칙이 바뀌어도 늘 최신 규칙으로
       (m.hour || []).forEach(function (a) { hour.push(unpack(a, H_KEYS, s)); });
       (m.day || []).forEach(function (a) { day.push(unpack(a, D_KEYS, s)); });
+      (m.opt || []).forEach(function (a) { opt.push(unpack(a, O_KEYS, s)); });
     });
-    state.prod = prod; state.hour = hour; state.day = day; state.sample = false;
+    state.prod = prod; state.hour = hour; state.day = day; state.opt = opt; state.sample = false;
   }
   var rt; function renderSoon() { clearTimeout(rt); rt = setTimeout(function () { syncSeg(); render(); }, 120); }
 
@@ -2280,7 +2326,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     var body = {
       prod: state.prod.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, P_KEYS); }),
       hour: state.hour.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, H_KEYS); }),
-      day: state.day.filter(function (r) { return r.s === s && r.d.slice(0, 7) === m; }).map(function (r) { return pack(r, D_KEYS); })
+      day: state.day.filter(function (r) { return r.s === s && r.d.slice(0, 7) === m; }).map(function (r) { return pack(r, D_KEYS); }),
+      opt: state.opt.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, O_KEYS); })
     };
     if (!body.prod.length && !body.hour.length && !body.day.length) return [];
     var n = Math.max(1, Math.ceil(JSON.stringify(body).length / 190000)), parts = [];
@@ -2288,7 +2335,8 @@ footer { font-size: 12px; color: var(--ink-3); }
       parts.push({
         prod: body.prod.slice(Math.floor(body.prod.length * i / n), Math.floor(body.prod.length * (i + 1) / n)),
         hour: body.hour.slice(Math.floor(body.hour.length * i / n), Math.floor(body.hour.length * (i + 1) / n)),
-        day: body.day.slice(Math.floor(body.day.length * i / n), Math.floor(body.day.length * (i + 1) / n))
+        day: body.day.slice(Math.floor(body.day.length * i / n), Math.floor(body.day.length * (i + 1) / n)),
+        opt: body.opt.slice(Math.floor(body.opt.length * i / n), Math.floor(body.opt.length * (i + 1) / n))
       });
     }
     return parts;
@@ -2299,7 +2347,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     state.prod.forEach(function (r) { ms[r.s + "|" + r.f.slice(0, 7)] = 1; });
     state.hour.forEach(function (r) { ms[r.s + "|" + r.f.slice(0, 7)] = 1; });
     state.day.forEach(function (r) { ms[r.s + "|" + r.d.slice(0, 7)] = 1; });
-    Object.keys(ms).forEach(function (k) { var sm = k.split("|"), parts = monthParts(sm[0], sm[1]); parts.forEach(function (pt, i) { out.push({ id: sm[0] + "_" + sm[1] + "_" + i, body: { s: sm[0], m: sm[1], part: i, parts: parts.length, prod: pt.prod, hour: pt.hour, day: pt.day, at: new Date().toISOString() } }); }); });
+    Object.keys(ms).forEach(function (k) { var sm = k.split("|"), parts = monthParts(sm[0], sm[1]); parts.forEach(function (pt, i) { out.push({ id: sm[0] + "_" + sm[1] + "_" + i, body: { s: sm[0], m: sm[1], part: i, parts: parts.length, prod: pt.prod, hour: pt.hour, day: pt.day, opt: pt.opt, at: new Date().toISOString() } }); }); });
     return out;
   };
   async function persistMonths(stores, months) {
@@ -2309,7 +2357,7 @@ footer { font-size: 12px; color: var(--ink-3); }
         var s = stores[si], m = months[mi], parts = monthParts(s, m), n = parts.length;
         var empty = !parts.length;
         for (var p = 0; p < parts.length; p++) {
-          await shared.db.doc("months/" + s + "_" + m + "_" + p).set({ s: s, m: m, part: p, parts: n, prod: parts[p].prod, hour: parts[p].hour, day: parts[p].day, at: new Date().toISOString() });
+          await shared.db.doc("months/" + s + "_" + m + "_" + p).set({ s: s, m: m, part: p, parts: n, prod: parts[p].prod, hour: parts[p].hour, day: parts[p].day, opt: parts[p].opt, at: new Date().toISOString() });
         }
         // 남는 옛 조각 지우기
         var keep = empty ? 0 : n;
@@ -2436,7 +2484,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     $("storeNote").textContent = "공유 자료입니다. 여기서 올린 파일과 드라이브에서 불러온 파일이 모두에게 같이 보입니다.";
     if (shared.canWrite === false) document.documentElement.classList.add("is-readonly");
     $("drivePanel").hidden = false;
-    state.prod = []; state.hour = []; state.day = []; state.events = []; state.sample = false;
+    state.prod = []; state.hour = []; state.day = []; state.opt = []; state.events = []; state.sample = false;
     renderSoon();
     db.collection("months").onSnapshot(function (snap) {
       var m = {}; snap.docs.forEach(function (d) { m[d.id] = d.data(); });
@@ -2539,7 +2587,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   });
   $("dailyGroup").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view.dailyGroup = b.getAttribute("data-g"); syncSeg(); render(); });
   $("dailyMetric").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view.dailyMetric = b.getAttribute("data-m"); syncSeg(); render(); });
-  function loadSample() { var d = sampleData(); state.prod = d.prod; state.hour = d.hour; state.day = d.day; state.sample = true; }
+  function loadSample() { var d = sampleData(); state.prod = d.prod; state.hour = d.hour; state.day = d.day; state.opt = d.opt || []; state.sample = true; }
 
   $("folderId").addEventListener("change", function () { shared.folder = folderIdOf(this.value); this.value = shared.folder; shared.synced = false; persistConfig(); });
   $("syncBtn").addEventListener("click", function () { if ($("folderId").value && folderIdOf($("folderId").value) !== shared.folder) { shared.folder = folderIdOf($("folderId").value); persistConfig(); } driveSync(true); });
