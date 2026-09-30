@@ -394,6 +394,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       <h2 id="menuH">메뉴별 판매 순위</h2>
       <span class="sub">판매액 = 선불카드로 결제한 메뉴까지 포함한 값 · 등급 A = 판매액 상위 70%, B = 다음 20%, C = 나머지 · 선불 충전·옵션은 제외</span>
     </div>
+    <div id="menuWarn"></div>
     <div class="tbl-scroll"><table id="menuTable"></table></div>
   </section>
 
@@ -484,6 +485,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       <label for="name_K2"><span class="sw" style="background:var(--k2)"></span>O2POS 키오스크 <input id="name_K2" maxlength="16"></label>
     </div>
     <div class="stats" id="dataStats"></div>
+    <div id="dataGaps"></div>
     <div class="row">
       <button type="button" class="btn" id="sampleBtn">예시 데이터 보기</button>
       <button type="button" class="btn danger" id="clearBtn">저장된 데이터 삭제</button>
@@ -717,7 +719,7 @@ footer { font-size: 12px; color: var(--ink-3); }
         if (covered[d] && spread[d] && !dr[d] && !hr[d]) return; // 일별 자료가 있으면 휴무일에는 묶음 자료를 나누지 않음
         // 여러 날 묶음 상품 자료 + 일별 자료가 함께 있으면: 그날 실매출 × (기간 메뉴 판매액 ÷ 기간 실매출)
         var a = mode === "menu"
-          ? (pr[d] && dr[d] && spread[d] ? dr[d].a * (prc[d].a ? pr[d].a / prc[d].a : 1) : pr[d] ? pr[d].a : dr[d] ? dr[d].a : hr[d].a)
+          ? (pr[d] && dr[d] && prc[d] && prc[d].a ? dr[d].a * (pr[d].a / prc[d].a) : pr[d] ? pr[d].a : dr[d] ? dr[d].a : hr[d].a)
           : (dr[d] ? dr[d].a : pr[d] ? pr[d].a : hr[d].a);
         var o = dr[d] && dr[d].o != null ? dr[d].o : hr[d] && hr[d].o != null ? hr[d].o : null;
         out[d] = { a: a, o: o, spread: !dr[d] && !!spread[d] };
@@ -852,7 +854,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     var rg = currentRange();
     if (!rg) {
       ["ideas", "dailyChart", "dailyEv", "kioskCmp", "hourChart", "heat", "heatNote", "menuTable", "grpChart", "discTable", "ppBox"].forEach(function (id) { $(id).innerHTML = ""; });
-      renderEvents();
+      renderEvents(); renderGaps(null, []);
       $("kpis").innerHTML = '<div class="kpi" style="grid-column:1/-1">' + emptyHtml(shared.on ? "아직 공유 자료가 없습니다. POS 파일을 구글 드라이브 폴더에 넣고 아래 ‘지금 불러오기’를 누르거나, 파일을 직접 올려 주세요." : "아직 데이터가 없습니다. 아래 “데이터 관리”에서 POS 엑셀 파일을 불러오세요.") + "</div>";
       $("rangeLabel").textContent = "";
       return;
@@ -867,6 +869,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     renderHourly(S, ks);
     renderHeat(S, ks);
     var menu = renderMenu(S);
+    renderGaps(rg, ks);
     renderGroups(S, ks);
     renderPrepaid(S);
     renderDisc(S);
@@ -1654,6 +1657,35 @@ footer { font-size: 12px; color: var(--ink-3); }
     }
     return [["상품별", span(state.prod, function (r) { return [r.f, r.t]; })], ["시간대별", span(state.hour, function (r) { return [r.f, r.t]; })], ["일별", span(state.day, function (r) { return [r.d, r.d]; })]];
   }
+  // 저장된 상품별 자료 합계가 같은 기간 일별 매출보다 적은지 (순위 제한으로 빠진 메뉴)
+  function prodGaps() {
+    var out = [];
+    STORES.forEach(function (k) {
+      var per = {}, days = {};
+      state.prod.forEach(function (r) { if (r.s === k) { var key = r.f + "|" + r.t; per[key] = (per[key] || 0) + r.a; } });
+      state.day.forEach(function (r) { if (r.s === k) days[r.d] = r.a; });
+      Object.keys(per).forEach(function (key) {
+        var ft = key.split("|"), ds = 0, n = 0;
+        for (var d = ft[0]; d <= ft[1]; d = addDays(d, 1)) if (days[d] != null) { ds += days[d]; n++; }
+        var gap = ds - per[key];
+        if (n && gap > Math.max(1000, ds * 0.001)) out.push({ s: k, f: ft[0], t: ft[1], gap: gap, day: ds, prod: per[key] });
+      });
+    });
+    return out.sort(function (a, b) { return a.f < b.f ? -1 : 1; });
+  }
+  function gapLabel(g) { return g.f === g.t ? mdw(g.f) : g.f.slice(8) === "01" && addDays(g.t, 1).slice(8) === "01" ? +g.f.slice(5, 7) + "월" : mdw(g.f) + "~" + mdw(g.t); }
+  function gapsByStore(list, withAmt) {
+    return STORES.filter(function (k) { return list.some(function (g) { return g.s === k; }); }).map(function (k) {
+      return esc(kName(k)) + ": " + list.filter(function (g) { return g.s === k; }).map(function (g) { return gapLabel(g) + (withAmt ? " <b>−" + won(g.gap) + "</b>" : ""); }).join(", ");
+    }).join(" / ");
+  }
+  function renderGaps(rg, ks) {
+    var all = state.sample ? [] : prodGaps();
+    $("dataGaps").innerHTML = all.length ? '<div class="msg err"><b>⚠ 자료 점검: 순위 제한 의심 ' + all.length + "건</b><br>상품별 자료 합계가 같은 기간 일별 매출보다 적습니다. 파일을 받을 때 순위(상위 N개) 제한이 걸려 있어 판매가 적은 메뉴·옵션이 빠진 것으로 보입니다. 매출 합계는 일별 자료 기준이라 정확하고, 메뉴 순위·상품군 비중에서만 빠집니다.<br>" +
+      gapsByStore(all, true) + "<br>순위 제한 없이 다시 받은 파일을 올리면 자동으로 교체됩니다.</div>" : "";
+    var cur = rg ? all.filter(function (g) { return ks.indexOf(g.s) >= 0 && g.t >= rg.from && g.f <= rg.to; }) : [];
+    $("menuWarn").innerHTML = cur.length ? '<div class="msg err">⚠ 이 기간 상품별 자료에 순위 제한으로 빠진 매출이 약 <b>' + won(sumBy(cur, function (g) { return g.gap; })) + "</b> 있습니다 (" + gapsByStore(cur, false) + "). 판매가 적은 메뉴·옵션이 이 표에서 빠져 있을 수 있습니다. <a href=\"#dataPanel\">자세히</a></div>" : "";
+  }
   function renderDataStats() {
     if (state.sample) { $("dataStats").innerHTML = ""; return; }
     $("dataStats").innerHTML = STORES.map(function (k) {
@@ -1875,6 +1907,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       return NaN;
     }
     var shareIdx = meta.headers ? meta.headers.map(norm).indexOf("점유율") : -1, shareSum = null;
+    var rankIdx = meta.headers ? meta.headers.map(norm).indexOf("순위") : -1, rankMax = 0;
     if (type === "prod") {
       var pending = [], byName = {};
       if (shareIdx >= 0) shareSum = 0;
@@ -1893,6 +1926,7 @@ footer { font-size: 12px; color: var(--ink-3); }
           subs++; return;
         }
         if (shareIdx >= 0) shareSum += n0(r[shareIdx]);
+        if (rankIdx >= 0) rankMax = Math.max(rankMax, n0(r[rankIdx]));
         var rec = byName[name];
         if (!rec) {
           rec = byName[name] = { s: meta.s, f: meta.f, t: meta.t, p: name, c: str(g(r, "cat")), q: 0, a: 0, dc: 0 };
@@ -1959,7 +1993,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       });
       out = aggregateTx(tx);
     }
-    return { data: out, bad: bad, subs: subs, shareSum: shareSum, cancel: cancel };
+    return { data: out, bad: bad, subs: subs, shareSum: shareSum, rankMax: rankMax, cancel: cancel };
   }
 
   // 불러오기 흐름
@@ -2038,7 +2072,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       var list = d.prod.slice().sort(function (a, b) { return b.a - a.a; });
       html = '<table><thead><tr><th>메뉴</th><th>상품군</th><th class="r">수량</th><th class="r">실매출</th><th class="r">할인</th></tr></thead><tbody>' +
         list.slice(0, 6).map(function (r) { return "<tr><td>" + esc(r.p) + '</td><td class="muted">' + r.g + '</td><td class="r num">' + num(r.q) + '</td><td class="r num">' + won(r.a) + '</td><td class="r num">' + (r.dc ? won(r.dc) : "—") + "</td></tr>"; }).join("") + "</tbody></table>";
-      if (res.shareSum != null && res.shareSum < 99.5) html += '<div class="msg err" style="margin-top:6px">이 파일은 판매 상위 순위만 들어 있습니다 (점유율 합계 ' + res.shareSum.toFixed(1) + "%). 빠진 메뉴 매출 약 " + won(sumBy(list, function (r) { return r.a; }) * (100 / res.shareSum - 1)) + ". POS에서 순위 제한 없이 받을 수 있으면 전체로 받아 주세요.</div>";
+      var rw = rankWarn(res); if (rw) html += '<div class="msg err" style="margin-top:6px">⚠ ' + esc(rw) + "</div>";
       html += '<p class="sub" style="margin:4px 0 0">메뉴 ' + num(Object.keys(list.reduce(function (m, r) { m[r.p] = 1; return m; }, {})).length) + "종류 · 실매출 합계 <b>" + won(sumBy(list, function (r) { return r.a; })) + "</b> · 할인 " + won(sumBy(list, function (r) { return r.dc + (r.ndl || 0); })) + (fm.meta.s === "split" ? " · " + ["K1", "K3"].map(function (k) { return kName(k) + " " + won(sumBy(list.filter(function (r) { return r.s === k; }), function (r) { return r.a; })); }).join(", ") : "") + (res.cancel ? " · 취소 줄 " + res.cancel + "개 제외" : "") + (res.subs ? " · 분류 소계 줄 " + res.subs + "개 제외" : "") + (res.bad ? " · 합계·빈 줄 " + res.bad + "개 제외" : "") + " — POS 화면의 합계와 같은지 확인하세요.</p>";
     } else if (fm.type === "hour" || fm.type === "hourwide") {
       if (fm.type === "hourwide") { var ds = {}; d.hour.forEach(function (r) { ds[r.f] = 1; }); html = '<p class="sub" style="margin:0 0 4px">' + Object.keys(ds).length + "일 × 시간대 · 아래는 첫 줄들</p>"; } else html = "";
@@ -2062,7 +2096,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     save();
     var total = ap.total;
     if (shared.on) persistMonths(ap.stores, ap.months).catch(function (e) { showMsg("공유 저장소에 저장하지 못했습니다: " + esc((e && (e.message || e.code)) || e) + ". 보기 전용 권한이면 저장할 수 없습니다.", true); });
-    showMsg(esc(file.name) + " → " + esc(s === "split" ? kName("K1") + " / " + kName("K3") : kName(s)) + " " + (f === t ? f : f + " ~ " + t) + " " + TYPES[fm.type].label.split(" (")[0] + " 자료를 불러왔습니다. 실매출 " + won(total) + ".");
+    var rwd = rankWarn(res);
+    showMsg(esc(file.name) + " → " + esc(s === "split" ? kName("K1") + " / " + kName("K3") : kName(s)) + " " + (f === t ? f : f + " ~ " + t) + " " + TYPES[fm.type].label.split(" (")[0] + " 자료를 불러왔습니다. 실매출 " + won(total) + "." + (rwd ? "<br>⚠ " + esc(rwd) : ""), !!rwd);
     view.period = f === t ? "custom" : "all"; if (f === t) { view.from = f; view.to = t; }
     nextFile();
     syncSeg(); render();
@@ -2077,6 +2112,12 @@ footer { font-size: 12px; color: var(--ink-3); }
     var out = [], m = f.slice(0, 7), end = t.slice(0, 7);
     while (m <= end) { out.push(m); var y = +m.slice(0, 4), mo = +m.slice(5, 7) + 1; if (mo > 12) { y++; mo = 1; } m = y + "-" + pad(mo); }
     return out;
+  }
+  // 상품별 파일이 판매 상위 N위까지만 받아졌는지 (점유율 합계가 100%에 못 미침)
+  function rankWarn(res) {
+    if (res.shareSum == null || res.shareSum >= 99.9 || res.shareSum <= 0) return "";
+    var tot = sumBy(res.data.prod, function (r) { return r.a; }), miss = tot * (100 / res.shareSum - 1);
+    return "순위 제한 의심: 이 상품별 파일은 " + (res.rankMax ? res.rankMax + "위까지만 " : "판매 상위만 ") + "들어 있습니다 (점유율 합계 " + res.shareSum.toFixed(2) + "%, 빠진 매출 약 " + won(Math.round(miss / 100) * 100) + "). O2POS에서 순위 제한 없이 다시 받아 올려 주세요.";
   }
   function applyImport(d, type, s, meta) {
     var sset = s === "split" ? ["K1", "K3"] : [s];
@@ -2114,7 +2155,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     var res = convert(file.rows.slice(ha.body), type, map, meta), d = res.data;
     if (!d.prod.length && !d.hour.length && !d.day.length) throw new Error("읽을 수 있는 매출 줄이 없습니다.");
     var r = applyImport(d, type, s, meta);
-    r.type = type; r.s = s; r.guessed = guessed;
+    r.type = type; r.s = s; r.guessed = guessed; r.warn = rankWarn(res);
     return r;
   }
 
@@ -2245,7 +2286,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       var todo = files.filter(function (f) { return /\.(xlsx?|csv|html?|txt)$/i.test(f.title || "") && !(done[f.id] && done[f.id].mt === f.modifiedTime); })
         .sort(function (a, b) { return (a.createdTime || "") < (b.createdTime || "") ? -1 : 1; });
       if (!todo.length) { syncStatus("새 파일이 없습니다 · " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) + " 확인"); return; }
-      var touched = {}, logs = {}, ok = 0, bad = 0;
+      var touched = {}, logs = {}, ok = 0, bad = 0, warned = 0;
       for (var i = 0; i < todo.length; i++) {
         var f = todo[i];
         syncStatus("불러오는 중 " + (i + 1) + "/" + todo.length + " · " + f.title);
@@ -2259,6 +2300,7 @@ footer { font-size: 12px; color: var(--ink-3); }
           var r = autoImport(parsed, { hint: hintDate(f), folder: f._folder });
           r.stores.forEach(function (s) { r.months.forEach(function (m) { touched[s + "|" + m] = 1; }); });
           entry.type = r.type; entry.s = r.s; entry.f = r.f; entry.t = r.t; entry.a = Math.round(r.total); if (r.guessed) entry.guess = 1;
+          if (r.warn) { entry.warn = r.warn; warned++; }
           ok++;
         } catch (e) { entry.err = e && e.code ? driveErr(e) : String((e && e.message) || e); bad++; }
         logs[f.id] = entry;
@@ -2267,7 +2309,8 @@ footer { font-size: 12px; color: var(--ink-3); }
       var keys = Object.keys(touched);
       for (var k = 0; k < keys.length; k++) { var sm = keys[k].split("|"); await persistMonths([sm[0]], [sm[1]]); }
       await logImports(logs);
-      syncStatus("새 파일 " + ok + "개를 반영했습니다" + (bad ? " · 읽지 못한 파일 " + bad + "개 (아래 기록 확인)" : "") + " · " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }), bad > 0);
+      syncStatus("새 파일 " + ok + "개를 반영했습니다" + (bad ? " · 읽지 못한 파일 " + bad + "개" : "") + (warned ? " · 순위 제한 의심 " + warned + "개" : "") + (bad || warned ? " (아래 기록 확인)" : "") + " · " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }), bad > 0 || warned > 0);
+      if (warned && $("syncLog").closest("details")) $("syncLog").closest("details").open = true;
       renderSoon();
     } catch (e) {
       syncStatus(e && e.code ? driveErr(e) : "불러오지 못했습니다: " + ((e && e.message) || e), true);
@@ -2281,7 +2324,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     var TL = { tx: "상품상세", prod: "상품별", day: "일자별", hour: "시간대별", hourwide: "시간대별" };
     el.innerHTML = '<div class="tbl-scroll"><table><thead><tr><th>파일</th><th>종류</th><th>날짜</th><th class="r">매출</th><th>불러온 때</th></tr></thead><tbody>' + ids.map(function (id) {
       var x = all[id];
-      return "<tr><td>" + esc(x.n || id) + "</td><td>" + (x.err ? '<span style="color:var(--crit)">⚠ ' + esc(x.err) + "</span>" : esc(TL[x.type] || x.type || "") + (x.s === "K2" ? " · O2POS" : " · CUBE")) + '</td><td class="num">' + (x.f ? esc(x.f === x.t ? x.f : x.f + " ~ " + x.t) + (x.guess ? ' <span class="muted" title="파일에 날짜가 없어 올린 시각으로 추정">(추정)</span>' : "") : "—") + '</td><td class="r num">' + (x.a != null ? won(x.a) : "—") + '</td><td class="num muted">' + esc((x.at || "").slice(5, 16).replace("T", " ")) + "</td></tr>";
+      return "<tr><td>" + esc(x.n || id) + "</td><td>" + (x.err ? '<span style="color:var(--crit)">⚠ ' + esc(x.err) + "</span>" : esc(TL[x.type] || x.type || "") + (x.s === "K2" ? " · O2POS" : " · CUBE") + (x.warn ? '<br><span style="color:var(--warn-ink);background:var(--warn-bg);padding:0 4px;border-radius:4px;white-space:normal">⚠ ' + esc(x.warn) + "</span>" : "")) + '</td><td class="num">' + (x.f ? esc(x.f === x.t ? x.f : x.f + " ~ " + x.t) + (x.guess ? ' <span class="muted" title="파일에 날짜가 없어 올린 시각으로 추정">(추정)</span>' : "") : "—") + '</td><td class="r num">' + (x.a != null ? won(x.a) : "—") + '</td><td class="num muted">' + esc((x.at || "").slice(5, 16).replace("T", " ")) + "</td></tr>";
     }).join("") + "</tbody></table></div>";
   }
 
