@@ -493,6 +493,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     <div class="guide">
       <h3>선불카드 설정</h3>
       <div class="map">
+        <label for="cfgT0">0단계 충전 금액 (원 이상)<input type="number" id="cfgT0" min="0" step="10000"></label>
+        <label for="cfgB0">0단계 추가 적립 (%)<input type="number" id="cfgB0" min="0" max="100" step="0.5"></label>
         <label for="cfgT1">1단계 충전 금액 (원 이상)<input type="number" id="cfgT1" min="0" step="10000"></label>
         <label for="cfgB1">1단계 추가 적립 (%)<input type="number" id="cfgB1" min="0" max="100"></label>
         <label for="cfgT2">2단계 충전 금액 (원 이상)<input type="number" id="cfgT2" min="0" step="10000"></label>
@@ -537,8 +539,8 @@ footer { font-size: 12px; color: var(--ink-3); }
 
   // ---------- 상태 ----------
   var STORES = ["K1", "K3", "K2"]; // CUBE 카운터, CUBE 키오스크, O2POS 키오스크
-  var state = { names: { K1: "CUBE · 카운터", K3: "CUBE · 키오스크", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], opt: [], events: [], sample: true, lastF: null, lastT: null,
-    cfg: { t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none", K3: "none" }, regulars: [] } };
+  var state = { names: { K1: "CUBE · 카운터", K3: "CUBE · 키오스크", K2: "O2POS · 키오스크" }, prod: [], hour: [], day: [], opt: [], pp: [], events: [], sample: true, lastF: null, lastT: null,
+    cfg: { t0: 30000, b0: 0.05, t1: 50000, b1: 0.1, t2: 500000, b2: 0.2, pp: { K1: "order", K2: "none", K3: "none" }, regulars: [] } };
   var view = { period: "30", from: null, to: null, kiosk: "all", hourMetric: "a", menuSort: "a", dailyMetric: "menu", dailyGroup: "day", evWin: 14 };
   var queue = []; // 불러오기 대기 중인 파일
 
@@ -585,7 +587,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     try {
       localStorage.setItem(STORE, JSON.stringify(state.sample
         ? { v: 2, names: state.names, cfg: state.cfg, events: state.events }
-        : { v: 2, names: state.names, cfg: state.cfg, events: state.events, prod: state.prod, hour: state.hour, day: state.day, opt: state.opt, lastF: state.lastF, lastT: state.lastT }));
+        : { v: 2, names: state.names, cfg: state.cfg, events: state.events, prod: state.prod, hour: state.hour, day: state.day, opt: state.opt, pp: state.pp, lastF: state.lastF, lastT: state.lastT }));
     } catch (e) { showMsg("브라우저 저장소에 저장하지 못했습니다. 저장이 막혀 있을 수 있어요.", true); }
   }
   function load() {
@@ -597,10 +599,10 @@ footer { font-size: 12px; color: var(--ink-3); }
         var old = { K1: { "1호기 · CUBE": 1, "1호기": 1, "CUBE · 키오스크+카운터": 1 }, K2: { "2호기 · O2POS": 1, "2호기": 1 }, K3: {} };
         STORES.forEach(function (k) { if (o.names[k] && !old[k][o.names[k]]) state.names[k] = o.names[k]; });
       }
-      if (o.cfg) { var c = o.cfg; state.cfg = { t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none", K3: (c.pp && c.pp.K3) || "none" }, v: c.v, regulars: Array.isArray(c.regulars) ? c.regulars : [] }; } // 2호기(키오스크)는 선불 결제 불가
+      if (o.cfg) { var c = o.cfg; state.cfg = { t0: c.t0 != null ? +c.t0 : 30000, b0: c.b0 != null ? +c.b0 : 0.05, t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none", K3: (c.pp && c.pp.K3) || "none" }, v: c.v, regulars: Array.isArray(c.regulars) ? c.regulars : [] }; } // 2호기(키오스크)는 선불 결제 불가
       if (Array.isArray(o.events)) state.events = o.events;
       if ((o.prod && o.prod.length) || (o.hour && o.hour.length) || (o.day && o.day.length)) {
-        state.prod = (o.prod || []).map(function (r) { r.g = classify(r.p, r.c); return r; }); state.hour = o.hour || []; state.day = o.day || []; state.opt = o.opt || [];
+        state.prod = (o.prod || []).map(function (r) { r.g = classify(r.p, r.c); return r; }); state.hour = o.hour || []; state.day = o.day || []; state.opt = o.opt || []; state.pp = o.pp || [];
         state.lastF = o.lastF || null; state.lastT = o.lastT || null;
         state.sample = false;
         return true;
@@ -724,8 +726,11 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
   function promo(r) { return Math.max(0, (r.dc || 0) - pu(r)) + (r.ndl || 0); }
   function sales(r) { return r.g === "선불카드" ? 0 : r.a + pu(r); } // 메뉴 판매액 = 실매출 + 선불 사용 (행사 할인은 제외)
-  function bonusOf(unit) { var c = state.cfg; return unit >= c.t2 ? c.b2 : unit >= c.t1 ? c.b1 : 0; }
+  function bonusOf(unit) { var c = state.cfg; return unit >= c.t2 ? c.b2 : unit >= c.t1 ? c.b1 : c.t0 && unit >= c.t0 ? (c.b0 || 0) : 0; }
 
+  // 선불 시스템 날짜별 합계 (있으면 POS의 100% 할인 대신 실제 차감액을 선불 사용으로 씀)
+  function ppMap() { var m = {}; state.pp.forEach(function (r) { m[r.d] = r; }); return m; }
+  function posPUByDay(s) { var m = {}; state.prod.forEach(function (r) { if (r.s === s && r.f === r.t) m[r.f] = (m[r.f] || 0) + pu(r); }); return m; }
   // 하루 매출. cash = POS 실매출(충전 포함, 선불 사용 제외), menu = 메뉴 판매액(선불 사용 포함, 충전 제외)
   function dayTotals(from, to, ks, mode) {
     var res = {};
@@ -746,6 +751,10 @@ footer { font-size: 12px; color: var(--ink-3); }
       }
       var prc = {};
       state.prod.forEach(function (r) { if (inR(r, from, to, [s])) { spreadAdd(pr, r, mode === "menu" ? sales(r) : r.a); spreadAdd(prc, r, r.a); } });
+      if (mode === "menu" && s === "K1" && state.pp.length) {
+        var ppd = ppMap(), pud = posPUByDay(s);
+        Object.keys(pr).forEach(function (d) { if (ppd[d] && pud[d] != null) pr[d].a += ppd[d].u - pud[d]; });
+      }
       state.hour.forEach(function (r) { if (inR(r, from, to, [s])) spreadAdd(hr, r, r.a, true); });
       var keys = {}; [dr, pr, hr].forEach(function (m) { for (var k in m) keys[k] = 1; });
       Object.keys(keys).forEach(function (d) {
@@ -779,10 +788,28 @@ footer { font-size: 12px; color: var(--ink-3); }
     var charge = sumBy(cards, function (r) { return r.a; });
     var used = sumBy(prods, pu), pro = sumBy(prods, promo);
     var pm = sumBy(prods, sales);
+    // 선불 시스템 자료가 있는 날은 실제 차감액·적립액으로 바꿔 씀
+    var sys = null, usedPos = used, pointsPos = points;
+    if (ks.indexOf("K1") >= 0 && state.pp.length) {
+      var pd = {}; state.pp.forEach(function (r) { if (r.d >= from && r.d <= to) pd[r.d] = r; });
+      var dd = Object.keys(pd);
+      if (dd.length) {
+        sys = { c: 0, b: 0, u: 0, n: 0, days: dd.length, posPU: 0, posPts: 0, from: dd.sort()[0], to: dd[dd.length - 1] };
+        dd.forEach(function (d) { var r = pd[d]; sys.c += r.c; sys.b += r.b; sys.u += r.u; sys.n += r.n; });
+        prods.forEach(function (r) {
+          if (r.s !== "K1" || r.f !== r.t || !pd[r.f]) return;
+          sys.posPU += pu(r);
+          if (r.g === "선불카드") { var unit = r.q ? r.a / r.q : r.a; sys.posPts += r.a * (1 + bonusOf(unit)); }
+        });
+        sys.noDeduct = sys.posPU - sys.u;
+        used = used - sys.posPU + sys.u;
+        points = points - sys.posPts + sys.c + sys.b;
+      }
+    }
     var nd = Object.keys(days).length;
     return {
       a: a, menu: menu, days: nd, perDay: nd ? a / nd : 0, perDayMenu: nd ? menu / nd : 0, o: o, aov: o ? aO / o : null,
-      charge: charge, chargeQ: sumBy(cards, function (r) { return r.q || 1; }), points: points, tiers: tiers, used: used,
+      charge: charge, chargeQ: sumBy(cards, function (r) { return r.q || 1; }), points: points, tiers: tiers, used: used, usedPos: usedPos, pointsPos: pointsPos, sys: sys,
       promo: pro, promoRate: pm + pro > 0 ? pro / (pm + pro) : 0, usedShare: pm > 0 ? used / pm : 0,
       prods: prods, hours: hours, dt: dt, dtm: dtm, spread: spread
     };
@@ -1204,16 +1231,19 @@ footer { font-size: 12px; color: var(--ink-3); }
     var net = S.points - S.used;
     var cashRate = S.points > 0 ? S.charge / S.points : 1 / (1 + c.b1);
     var tiers = Object.keys(S.tiers).map(function (k) { return k + " " + S.tiers[k] + "건"; }).join(" · ") || "—";
+    var y = S.sys, full = y && y.days >= 1;
     var rows = [
       ["충전", won(S.charge) + " · " + num(S.chargeQ) + "건", tiers],
-      ["적립 포인트", num(S.points) + "P", "보너스 +" + num(S.points - S.charge) + "P"],
-      ["사용 포인트", num(S.used) + "P", "POS에서 100% 할인 처리된 금액"],
+      ["적립 포인트", num(S.points) + "P", y ? "선불 시스템 기준 (충전 " + num(y.c) + " + 보너스 " + num(y.b) + ")" : "보너스 +" + num(S.points - S.charge) + "P"],
+      ["사용 포인트", num(S.used) + "P", y ? "선불 시스템 실제 차감 " + num(y.n) + "건" : "POS에서 100% 할인 처리된 금액"],
       ["잔액 변화", (net >= 0 ? "+" : "−") + num(Math.abs(net)) + "P", net >= 0 ? "앞으로 메뉴로 나갈 금액이 늘었습니다" : "쌓인 잔액이 줄었습니다"],
       ["사용분 현금 환산", "약 " + won(S.used * cashRate), "포인트 1P ≈ " + (cashRate * 100).toFixed(1) + "원 기준"],
       ["메뉴 중 선불 결제", pct(S.usedShare, 0), "메뉴 판매액 가운데 선불카드로 결제된 비율"]
     ];
+    if (y) rows.splice(3, 0, ["선불 차감 없는 할인", (y.noDeduct >= 0 ? "" : "−") + won(Math.abs(y.noDeduct)), y.noDeduct > 0 ? "POS 100% 할인 " + num(y.posPU) + "원 중 선불 시스템에서 차감되지 않은 금액 · 직원 확인 필요" : "POS 할인보다 선불 차감이 더 많습니다"]);
     el.innerHTML = '<div class="krows pp">' + rows.map(function (r) { return '<div class="lab">' + r[0] + '</div><div class="c">' + esc(r[1]) + '</div><div class="c muted" style="font-family:var(--font-body);font-size:12px">' + esc(r[2]) + "</div>"; }).join("") + "</div>" +
-      '<span class="sub">적립 규칙: ' + num(c.t1) + "원 이상 +" + Math.round(c.b1 * 100) + "% · " + num(c.t2) + "원 이상 +" + Math.round(c.b2 * 100) + "% (데이터 관리에서 바꿀 수 있어요). 고객별 잔액은 선결제 시스템에서 확인하세요.</span>";
+      (y ? '<p class="sub" style="margin:0">선불카드 시스템 자료: ' + y.from.replace(/-/g, ".") + " ~ " + y.to.replace(/-/g, ".") + " (" + y.days + "일). 이 날들은 메뉴 판매액도 실제 차감액으로 계산합니다.</p>" : '<p class="sub" style="margin:0">선불카드 시스템의 ‘상세거래내역’ 파일을 올리면 실제 적립·사용으로 바뀌고, 선불 차감 없는 할인도 보입니다.</p>') +
+      '<span class="sub">적립 규칙: ' + (c.t0 && c.b0 ? num(c.t0) + "원 이상 +" + Math.round(c.b0 * 1000) / 10 + "% · " : "") + num(c.t1) + "원 이상 +" + Math.round(c.b1 * 100) + "% · " + num(c.t2) + "원 이상 +" + Math.round(c.b2 * 100) + "% (데이터 관리에서 바꿀 수 있어요). 고객별 잔액은 선결제 시스템에서 확인하세요.</span>";
   }
   function renderDisc(S) {
     var el = $("discTable"), m = {};
@@ -2147,6 +2177,15 @@ footer { font-size: 12px; color: var(--ink-3); }
         tx.push({ s: s, d: dp.d, h: tm.h, o: oid || dp.d + " " + pad(tm.h) + ":" + pad(tm.m), p: product, c: cat, g: classify(product, cat), q: (function () { var q = parseNum(g(r, "qty")); return isNaN(q) ? 1 : q; })(), a: a,
           dc: hasSplit ? sd + od : n0(g(r, "dc")), od: hasSplit ? od : null, sd: hasSplit ? sd : null, dine: dineV ? !/포장/.test(dineV) : null });
       });
+      // 주문 단위로 할인 성격 구분: 주문 전체가 무료(판매금액 0)면 선불카드, 일부만 소액(100원 단위, 4,000원 이하) 깎였으면
+      // 텀블러(100원)·원두(2,000원) 같은 행사 할인으로 봄 — ‘전체할인’ 칸에 입력돼 있어도
+      var byOrder = {};
+      tx.forEach(function (r) { if (r.od == null) return; var k = r.s + "|" + r.d + "|" + r.o, x = byOrder[k] || (byOrder[k] = { a: 0, od: 0, ok: true }); x.a += r.a; x.od += r.od; if (r.od % 100) x.ok = false; });
+      tx.forEach(function (r) {
+        if (!r.od) return;
+        var x = byOrder[r.s + "|" + r.d + "|" + r.o];
+        if (x && x.a > 0 && x.ok && x.od <= 4000) { r.sd = (r.sd || 0) + r.od; r.od = 0; }
+      });
       out = aggregateTx(tx);
     }
     return { data: out, bad: bad, subs: subs, shareSum: shareSum, rankMax: rankMax, cancel: cancel };
@@ -2157,10 +2196,18 @@ footer { font-size: 12px; color: var(--ink-3); }
     var list = Array.prototype.slice.call(files);
     Promise.all(list.map(function (f) { return readFile(f).catch(function (e) { return { name: f.name, error: e.message || "파일을 읽지 못했습니다." }; }); }))
       .then(function (parsed) {
+        var msgs = [];
+        parsed = parsed.filter(function (p) {
+          if (p.error || !p.rows || !isPPFile(p.rows)) return true;
+          try { var r = importPP(p); msgs.push(esc(p.name) + " → 선불카드 시스템 거래 " + (r.f === r.t ? r.f : r.f + " ~ " + r.t) + " 날짜별 합계를 불러왔습니다 (실제 사용 " + won(r.total) + "). 고객 정보는 저장하지 않았습니다."); }
+          catch (e) { msgs.push(esc(p.name) + ": " + esc(e.message || e)); }
+          return false;
+        });
+        if (msgs.length) { render(); }
         var errs = parsed.filter(function (p) { return p.error || !p.rows || p.rows.length < 2; });
         queue = queue.concat(parsed.filter(function (p) { return !p.error && p.rows && p.rows.length >= 2; }));
-        if (errs.length) showMsg(errs.map(function (p) { return esc(p.name) + ": " + esc(p.error || "읽을 수 있는 표가 없습니다."); }).join("<br>"), true);
-        else showMsg("");
+        if (errs.length) showMsg(msgs.concat(errs.map(function (p) { return esc(p.name) + ": " + esc(p.error || "읽을 수 있는 표가 없습니다."); })).join("<br>"), true);
+        else showMsg(msgs.join("<br>"));
         if (queue.length) openMap();
       });
   }
@@ -2269,6 +2316,43 @@ footer { font-size: 12px; color: var(--ink-3); }
     while (m <= end) { out.push(m); var y = +m.slice(0, 4), mo = +m.slice(5, 7) + 1; if (mo > 12) { y++; mo = 1; } m = y + "-" + pad(mo); }
     return out;
   }
+  // ---------- 선불카드 시스템 거래내역 ----------
+  // 고객 이름·전화번호가 들어 있는 파일이라, 날짜별 합계(충전·보너스·사용)만 남기고 나머지는 버림
+  function ppHeaderIdx(rows) {
+    for (var i = 0; i < Math.min(rows.length, 15); i++) { var hn = rows[i].map(norm); if (hn.indexOf("계좌거래타입") >= 0 && hn.indexOf("거래금액") >= 0) return i; }
+    return -1;
+  }
+  function isPPFile(rows) { return ppHeaderIdx(rows) >= 0; }
+  function ppConvert(rows) {
+    var hi = ppHeaderIdx(rows), hn = rows[hi].map(norm), col = function (n) { return hn.indexOf(norm(n)); };
+    var cT = col("상점주문일시") >= 0 ? col("상점주문일시") : col("계좌거래일시"), cTy = col("계좌거래타입"), cSub = col("계좌거래서브타입"), cAmt = col("거래금액"), cCx = col("주문이 취소 되었는지 여부"), cOk = col("성공여부");
+    var by = {}, n = 0;
+    rows.slice(hi + 1).forEach(function (r) {
+      var dp = parseDate(r[cT]); if (!dp) return;
+      var ty = str(r[cTy]), amt = n0(r[cAmt]);
+      if (cOk >= 0 && str(r[cOk]) && str(r[cOk]) !== "Y") return;
+      if (cCx >= 0 && str(r[cCx]) === "Y") return; // 나중에 취소된 거래 (취소 줄과 짝이라 둘 다 뺌)
+      if (ty !== "충전" && ty !== "사용") return;
+      var x = by[dp.d] || (by[dp.d] = { s: "K1", d: dp.d, c: 0, b: 0, u: 0, n: 0 });
+      if (ty === "사용") { x.u += amt; x.n++; } else if (/추가/.test(str(r[cSub]))) x.b += amt; else x.c += amt;
+      n++;
+    });
+    var days = Object.keys(by).sort();
+    return { days: days.map(function (d) { return by[d]; }), f: days[0], t: days[days.length - 1], n: n };
+  }
+  function applyPP(res) {
+    if (!res.days.length) throw new Error("선불 거래 줄을 찾지 못했습니다.");
+    if (state.sample) { state.prod = []; state.hour = []; state.day = []; state.opt = []; state.sample = false; }
+    state.pp = state.pp.filter(function (r) { return r.d < res.f || r.d > res.t; }).concat(res.days);
+    return { stores: ["K1"], months: monthsBetween(res.f, res.t), f: res.f, t: res.t, total: sumBy(res.days, function (r) { return r.u; }), type: "pp", s: "K1" };
+  }
+  function importPP(file) {
+    var r = applyPP(ppConvert(file.rows));
+    save();
+    if (shared.on) persistMonths(r.stores, r.months).catch(function (e) { showMsg("공유 저장소에 저장하지 못했습니다: " + esc((e && (e.message || e.code)) || e), true); });
+    return r;
+  }
+
   // 상품별 파일이 판매 상위 N위까지만 받아졌는지 (점유율 합계가 100%에 못 미침)
   function rankWarn(res) {
     if (res.shareSum == null || res.shareSum >= 99.9 || res.shareSum <= 0) return "";
@@ -2296,6 +2380,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   }
   // 드라이브에서 받은 파일처럼 사람 손 없이 불러오기: 형식·매출처·날짜를 스스로 판단
   function autoImport(file, opts) {
+    if (isPPFile(file.rows)) return applyPP(ppConvert(file.rows));
     var hi = findHeader(file.rows), ha = headerAt(file.rows, hi), headers = ha.headers.map(function (h, i) { return str(h) || "열 " + (i + 1); });
     var det = detect(headers), type = det.type, map = guessMap(headers, type);
     var s = det.system === "o2pos" ? "K2" : "K1";
@@ -2322,19 +2407,21 @@ footer { font-size: 12px; color: var(--ink-3); }
   var H_KEYS = ["f", "t", "h", "a", "o", "q"];
   var D_KEYS = ["d", "a", "o"];
   var O_KEYS = ["f", "t", "p", "k", "q"];
+  var PP_KEYS = ["d", "c", "b", "u", "n"];
   function pack(r, keys) { var a = keys.map(function (k) { return r[k] === undefined ? null : r[k]; }); while (a.length && a[a.length - 1] === null) a.pop(); return a; }
   function unpack(a, keys, s) { var r = { s: s }; keys.forEach(function (k, i) { if (a[i] !== null && a[i] !== undefined) r[k] = a[i]; }); return r; }
 
   function rebuildFromShared() {
-    var prod = [], hour = [], day = [], opt = [];
+    var prod = [], hour = [], day = [], opt = [], pp = [];
     Object.keys(shared.months).forEach(function (id) {
       var m = shared.months[id], s = m.s;
       (m.prod || []).forEach(function (a) { var r = unpack(a, P_KEYS, s); r.g = classify(r.p, r.c); prod.push(r); }); // 분류 규칙이 바뀌어도 늘 최신 규칙으로
       (m.hour || []).forEach(function (a) { hour.push(unpack(a, H_KEYS, s)); });
       (m.day || []).forEach(function (a) { day.push(unpack(a, D_KEYS, s)); });
       (m.opt || []).forEach(function (a) { opt.push(unpack(a, O_KEYS, s)); });
+      (m.pp || []).forEach(function (a) { pp.push(unpack(a, PP_KEYS, s)); });
     });
-    state.prod = prod; state.hour = hour; state.day = day; state.opt = opt; state.sample = false;
+    state.prod = prod; state.hour = hour; state.day = day; state.opt = opt; state.pp = pp; state.sample = false;
   }
   var rt; function renderSoon() { clearTimeout(rt); rt = setTimeout(function () { syncSeg(); render(); }, 120); }
 
@@ -2344,16 +2431,18 @@ footer { font-size: 12px; color: var(--ink-3); }
       prod: state.prod.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, P_KEYS); }),
       hour: state.hour.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, H_KEYS); }),
       day: state.day.filter(function (r) { return r.s === s && r.d.slice(0, 7) === m; }).map(function (r) { return pack(r, D_KEYS); }),
-      opt: state.opt.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, O_KEYS); })
+      opt: state.opt.filter(function (r) { return r.s === s && r.f.slice(0, 7) === m; }).map(function (r) { return pack(r, O_KEYS); }),
+      pp: state.pp.filter(function (r) { return r.s === s && r.d.slice(0, 7) === m; }).map(function (r) { return pack(r, PP_KEYS); })
     };
-    if (!body.prod.length && !body.hour.length && !body.day.length) return [];
+    if (!body.prod.length && !body.hour.length && !body.day.length && !body.pp.length) return [];
     var n = Math.max(1, Math.ceil(JSON.stringify(body).length / 190000)), parts = [];
     for (var i = 0; i < n; i++) {
       parts.push({
         prod: body.prod.slice(Math.floor(body.prod.length * i / n), Math.floor(body.prod.length * (i + 1) / n)),
         hour: body.hour.slice(Math.floor(body.hour.length * i / n), Math.floor(body.hour.length * (i + 1) / n)),
         day: body.day.slice(Math.floor(body.day.length * i / n), Math.floor(body.day.length * (i + 1) / n)),
-        opt: body.opt.slice(Math.floor(body.opt.length * i / n), Math.floor(body.opt.length * (i + 1) / n))
+        opt: body.opt.slice(Math.floor(body.opt.length * i / n), Math.floor(body.opt.length * (i + 1) / n)),
+        pp: body.pp.slice(Math.floor(body.pp.length * i / n), Math.floor(body.pp.length * (i + 1) / n))
       });
     }
     return parts;
@@ -2364,7 +2453,8 @@ footer { font-size: 12px; color: var(--ink-3); }
     state.prod.forEach(function (r) { ms[r.s + "|" + r.f.slice(0, 7)] = 1; });
     state.hour.forEach(function (r) { ms[r.s + "|" + r.f.slice(0, 7)] = 1; });
     state.day.forEach(function (r) { ms[r.s + "|" + r.d.slice(0, 7)] = 1; });
-    Object.keys(ms).forEach(function (k) { var sm = k.split("|"), parts = monthParts(sm[0], sm[1]); parts.forEach(function (pt, i) { out.push({ id: sm[0] + "_" + sm[1] + "_" + i, body: { s: sm[0], m: sm[1], part: i, parts: parts.length, prod: pt.prod, hour: pt.hour, day: pt.day, opt: pt.opt, at: new Date().toISOString() } }); }); });
+    state.pp.forEach(function (r) { ms[r.s + "|" + r.d.slice(0, 7)] = 1; });
+    Object.keys(ms).forEach(function (k) { var sm = k.split("|"), parts = monthParts(sm[0], sm[1]); parts.forEach(function (pt, i) { out.push({ id: sm[0] + "_" + sm[1] + "_" + i, body: { s: sm[0], m: sm[1], part: i, parts: parts.length, prod: pt.prod, hour: pt.hour, day: pt.day, opt: pt.opt, pp: pt.pp, at: new Date().toISOString() } }); }); });
     return out;
   };
   async function persistMonths(stores, months) {
@@ -2374,7 +2464,7 @@ footer { font-size: 12px; color: var(--ink-3); }
         var s = stores[si], m = months[mi], parts = monthParts(s, m), n = parts.length;
         var empty = !parts.length;
         for (var p = 0; p < parts.length; p++) {
-          await shared.db.doc("months/" + s + "_" + m + "_" + p).set({ s: s, m: m, part: p, parts: n, prod: parts[p].prod, hour: parts[p].hour, day: parts[p].day, opt: parts[p].opt, at: new Date().toISOString() });
+          await shared.db.doc("months/" + s + "_" + m + "_" + p).set({ s: s, m: m, part: p, parts: n, prod: parts[p].prod, hour: parts[p].hour, day: parts[p].day, opt: parts[p].opt, pp: parts[p].pp, at: new Date().toISOString() });
         }
         // 남는 옛 조각 지우기
         var keep = empty ? 0 : n;
@@ -2482,10 +2572,10 @@ footer { font-size: 12px; color: var(--ink-3); }
     var el = $("syncLog"); if (!el) return;
     var all = importedMap(), ids = Object.keys(all).sort(function (a, b) { return (all[b].at || "") < (all[a].at || "") ? -1 : 1; }).slice(0, 12);
     if (!ids.length) { el.innerHTML = '<span class="sub">아직 드라이브에서 불러온 파일이 없습니다.</span>'; return; }
-    var TL = { tx: "상품상세", prod: "상품별", day: "일자별", hour: "시간대별", hourwide: "시간대별" };
+    var TL = { pp: "선불 거래", tx: "상품상세", prod: "상품별", day: "일자별", hour: "시간대별", hourwide: "시간대별" };
     el.innerHTML = '<div class="tbl-scroll"><table><thead><tr><th>파일</th><th>종류</th><th>날짜</th><th class="r">매출</th><th>불러온 때</th></tr></thead><tbody>' + ids.map(function (id) {
       var x = all[id];
-      return "<tr><td>" + esc(x.n || id) + "</td><td>" + (x.err ? '<span style="color:var(--crit)">⚠ ' + esc(x.err) + "</span>" : esc(TL[x.type] || x.type || "") + (x.s === "K2" ? " · O2POS" : " · CUBE") + (x.warn ? '<br><span style="color:var(--warn-ink);background:var(--warn-bg);padding:0 4px;border-radius:4px;white-space:normal">⚠ ' + esc(x.warn) + "</span>" : "")) + '</td><td class="num">' + (x.f ? esc(x.f === x.t ? x.f : x.f + " ~ " + x.t) + (x.guess ? ' <span class="muted" title="파일에 날짜가 없어 올린 시각으로 추정">(추정)</span>' : "") : "—") + '</td><td class="r num">' + (x.a != null ? won(x.a) : "—") + '</td><td class="num muted">' + esc((x.at || "").slice(5, 16).replace("T", " ")) + "</td></tr>";
+      return "<tr><td>" + esc(x.n || id) + "</td><td>" + (x.err ? '<span style="color:var(--crit)">⚠ ' + esc(x.err) + "</span>" : esc(TL[x.type] || x.type || "") + (x.type === "pp" ? " · 선불 시스템" : x.s === "K2" ? " · O2POS" : " · CUBE") + (x.warn ? '<br><span style="color:var(--warn-ink);background:var(--warn-bg);padding:0 4px;border-radius:4px;white-space:normal">⚠ ' + esc(x.warn) + "</span>" : "")) + '</td><td class="num">' + (x.f ? esc(x.f === x.t ? x.f : x.f + " ~ " + x.t) + (x.guess ? ' <span class="muted" title="파일에 날짜가 없어 올린 시각으로 추정">(추정)</span>' : "") : "—") + '</td><td class="r num">' + (x.a != null ? won(x.a) : "—") + '</td><td class="num muted">' + esc((x.at || "").slice(5, 16).replace("T", " ")) + "</td></tr>";
     }).join("") + "</tbody></table></div>";
   }
 
@@ -2501,7 +2591,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     $("storeNote").textContent = "공유 자료입니다. 여기서 올린 파일과 드라이브에서 불러온 파일이 모두에게 같이 보입니다.";
     if (shared.canWrite === false) document.documentElement.classList.add("is-readonly");
     $("drivePanel").hidden = false;
-    state.prod = []; state.hour = []; state.day = []; state.opt = []; state.events = []; state.sample = false;
+    state.prod = []; state.hour = []; state.day = []; state.opt = []; state.pp = []; state.events = []; state.sample = false;
     renderSoon();
     db.collection("months").onSnapshot(function (snap) {
       var m = {}; snap.docs.forEach(function (d) { m[d.id] = d.data(); });
@@ -2590,12 +2680,13 @@ footer { font-size: 12px; color: var(--ink-3); }
 
   function syncCfg() {
     var c = state.cfg;
-    $("cfgT1").value = c.t1; $("cfgB1").value = Math.round(c.b1 * 100); $("cfgT2").value = c.t2; $("cfgB2").value = Math.round(c.b2 * 100);
+    $("cfgT0").value = c.t0 || 0; $("cfgB0").value = Math.round((c.b0 || 0) * 1000) / 10; $("cfgT1").value = c.t1; $("cfgB1").value = Math.round(c.b1 * 100); $("cfgT2").value = c.t2; $("cfgB2").value = Math.round(c.b2 * 100);
     STORES.forEach(function (k) { $("cfgPP_" + k).value = c.pp[k] || "none"; $("ppName_" + k).textContent = kName(k); });
   }
-  ["cfgT1", "cfgB1", "cfgT2", "cfgB2", "cfgPP_K1", "cfgPP_K2", "cfgPP_K3"].forEach(function (id) {
+  ["cfgT0", "cfgB0", "cfgT1", "cfgB1", "cfgT2", "cfgB2", "cfgPP_K1", "cfgPP_K2", "cfgPP_K3"].forEach(function (id) {
     $(id).addEventListener("change", function () {
       var c = state.cfg;
+      c.t0 = Math.max(0, +$("cfgT0").value || 0); c.b0 = Math.max(0, +$("cfgB0").value || 0) / 100;
       c.t1 = Math.max(0, +$("cfgT1").value || 0); c.b1 = Math.max(0, +$("cfgB1").value || 0) / 100;
       c.t2 = Math.max(0, +$("cfgT2").value || 0); c.b2 = Math.max(0, +$("cfgB2").value || 0) / 100;
       STORES.forEach(function (k) { c.pp[k] = $("cfgPP_" + k).value; }); c.v = 3;
@@ -2604,7 +2695,7 @@ footer { font-size: 12px; color: var(--ink-3); }
   });
   $("dailyGroup").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view.dailyGroup = b.getAttribute("data-g"); syncSeg(); render(); });
   $("dailyMetric").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view.dailyMetric = b.getAttribute("data-m"); syncSeg(); render(); });
-  function loadSample() { var d = sampleData(); state.prod = d.prod; state.hour = d.hour; state.day = d.day; state.opt = d.opt || []; state.sample = true; }
+  function loadSample() { var d = sampleData(); state.prod = d.prod; state.hour = d.hour; state.day = d.day; state.opt = d.opt || []; state.pp = []; state.sample = true; }
 
   $("folderId").addEventListener("change", function () { shared.folder = folderIdOf(this.value); this.value = shared.folder; shared.synced = false; persistConfig(); });
   $("syncBtn").addEventListener("click", function () { if ($("folderId").value && folderIdOf($("folderId").value) !== shared.folder) { shared.folder = folderIdOf($("folderId").value); persistConfig(); } driveSync(true); });
