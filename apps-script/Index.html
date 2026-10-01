@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Styles') ?>
+  <style>
+    label.f { display: block; margin: 18px 0 6px; font-size: 17px; }
+    .hint { font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: var(--muted); margin-top: 4px; }
+    input[type=text], input[type=url], input[type=tel] {
+      width: 100%; font: 16px 'Noto Sans KR', sans-serif;
+      padding: 12px 14px; border: 2px solid var(--line); border-radius: 12px; background: #fff;
+    }
+    input:focus { outline: none; border-color: var(--orange); }
+    .stores { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stores label {
+      display: flex; align-items: center; gap: 8px;
+      border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff;
+      font-size: 15px; cursor: pointer;
+    }
+    .stores input { accent-color: var(--orange); width: 18px; height: 18px; }
+    .actions { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .actions .btn { flex: 1 1 auto; text-align: center; }
+    .msg { margin-top: 14px; font-family: 'Noto Sans KR', sans-serif; font-size: 14px; min-height: 1.4em; }
+    .msg.err { color: #c0392b; }
+    .done { text-align: center; padding: 28px 8px; }
+    .done .big { font-size: 56px; }
+    .done h2 { margin: 8px 0; font-size: 26px; }
+  </style>
+</head>
+<body>
+  <div class="wrap" style="max-width:560px">
+    <div class="brand">범표원두 · BUMPY BEANS</div>
+    <h1><em>범표나들이</em> 완주 인증</h1>
+    <p class="sub">완성된 스탬프 카드를 인스타그램에 올리고, 그 게시물 링크를 보내주세요.<br>모두의 인증이 사진첩에 모여요!</p>
+
+    <div class="panel" id="formPanel">
+      <form id="f" autocomplete="off">
+        <label class="f" for="link">인스타그램 게시물 링크</label>
+        <input id="link" name="link" type="url" inputmode="url" required
+               placeholder="https://www.instagram.com/p/...">
+        <div class="hint">게시물 우측 상단 ⋯ → <b>링크 복사</b> 후 붙여넣어 주세요. 공개 계정 게시물만 사진첩에 보여요.</div>
+        <div class="tags">
+          <? for (var i = 0; i < config.HASHTAGS.length; i++) { ?>
+            <span class="tag"><?= config.HASHTAGS[i] ?></span>
+          <? } ?>
+        </div>
+
+        <label class="f" for="nickname">닉네임</label>
+        <input id="nickname" name="nickname" type="text" maxlength="30" required placeholder="사진첩에 표시돼요">
+
+        <label class="f" for="phone">연락처 뒷자리 4자리</label>
+        <input id="phone" name="phone" type="tel" inputmode="numeric" maxlength="4" pattern="\d{4}" required placeholder="0000">
+        <div class="hint">추가 선물 당첨 확인용이며 사진첩에는 공개되지 않아요.</div>
+
+        <label class="f">방문한 매장 (3곳 이상)</label>
+        <div class="stores">
+          <? for (var i = 0; i < config.STORES.length; i++) { ?>
+            <label><input type="checkbox" name="stores" value="<?= config.STORES[i] ?>"> <?= config.STORES[i] ?></label>
+          <? } ?>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="submitBtn" type="submit">인증하기</button>
+        </div>
+        <div class="msg" id="msg"></div>
+      </form>
+    </div>
+
+    <div class="panel done" id="donePanel" hidden>
+      <div class="big">🐯🎁</div>
+      <h2>인증 완료!</h2>
+      <p class="sub">추가 선물 이벤트에 자동으로 참여되었어요.</p>
+      <a class="btn" href="<?= baseUrl ?>?page=gallery">사진첩 보러가기</a>
+    </div>
+
+    <div class="actions">
+      <a class="btn ghost" href="<?= baseUrl ?>?page=gallery">범표나들이 사진첩 구경하기</a>
+    </div>
+  </div>
+
+  <script>
+    var form = document.getElementById('f');
+    var msg = document.getElementById('msg');
+    var btn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var stores = Array.prototype.map.call(
+        form.querySelectorAll('input[name=stores]:checked'), function (c) { return c.value; });
+      var data = {
+        link: form.link.value,
+        nickname: form.nickname.value,
+        phone: form.phone.value,
+        stores: stores,
+      };
+      if (stores.length < 3) return show('방문한 매장을 3곳 이상 선택해주세요.', true);
+
+      btn.disabled = true;
+      show('보내는 중…');
+      google.script.run
+        .withSuccessHandler(function () {
+          document.getElementById('formPanel').hidden = true;
+          document.getElementById('donePanel').hidden = false;
+          window.scrollTo(0, 0);
+        })
+        .withFailureHandler(function (err) {
+          btn.disabled = false;
+          show(String(err && err.message || err).replace(/^Error:\s*/, ''), true);
+        })
+        .submitEntry(data);
+    });
+
+    function show(text, isErr) {
+      msg.textContent = text;
+      msg.className = 'msg' + (isErr ? ' err' : '');
+    }
+  </script>
+</body>
+</html>

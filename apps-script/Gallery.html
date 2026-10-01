@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Styles') ?>
+  <style>
+    .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .count { font-size: 18px; }
+    .count b { color: var(--orange); font-size: 26px; }
+    .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+    .filters button {
+      font: inherit; font-size: 14px; cursor: pointer;
+      border: 2px solid var(--line); background: #fff; color: var(--ink);
+      border-radius: 999px; padding: 6px 12px;
+    }
+    .filters button.on { background: var(--green); border-color: var(--green); color: #fff; }
+    .grid { columns: 3 300px; column-gap: 16px; }
+    .item {
+      break-inside: avoid; margin: 0 0 16px;
+      background: var(--card); border: 2px solid var(--line); border-radius: 16px; overflow: hidden;
+    }
+    .item .meta { padding: 10px 14px; display: flex; justify-content: space-between; gap: 8px; font-size: 15px; }
+    .item .meta span { font-family: 'Noto Sans KR', sans-serif; font-size: 12px; color: var(--muted); text-align: right; }
+    .item .embed { background: #fff; }
+    .item .embed .instagram-media { margin: 0 !important; min-width: 0 !important; width: 100% !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+    .fallback { display: block; padding: 28px 14px; text-align: center; color: var(--orange); font-family: 'Noto Sans KR', sans-serif; }
+    .empty { text-align: center; padding: 60px 16px; color: var(--muted); }
+    .more { text-align: center; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <div class="brand">범표원두 · BUMPY BEANS</div>
+        <h1><em>10월의 범표나들이</em> 사진첩</h1>
+        <p class="sub" style="margin:0">세 곳을 다녀온 진짜 범표 탐험가들의 기록이에요 🐯</p>
+      </div>
+      <div class="count" id="count"></div>
+    </div>
+
+    <div class="filters" id="filters"></div>
+    <div class="grid" id="grid"><div class="empty">불러오는 중…</div></div>
+    <div class="more"><button class="btn" id="moreBtn" hidden>더 보기</button></div>
+
+    <div class="panel" style="margin-top:28px;text-align:center">
+      <p class="sub" style="margin:0 0 12px">스탬프 카드를 완성하셨나요?</p>
+      <a class="btn" href="<?= baseUrl ?>">나도 인증하기</a>
+    </div>
+  </div>
+
+  <script>
+    var STORES = <?!= JSON.stringify(config.STORES) ?>;
+    var PAGE = 12;
+    var all = [], filtered = [], shown = 0, store = '';
+
+    google.script.run
+      .withSuccessHandler(function (entries) {
+        all = entries || [];
+        document.getElementById('count').innerHTML = '완주 인증 <b>' + all.length + '</b>건';
+        renderFilters();
+        apply();
+      })
+      .withFailureHandler(function () {
+        document.getElementById('grid').innerHTML = '<div class="empty">사진첩을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</div>';
+      })
+      .getGalleryEntries();
+
+    function renderFilters() {
+      var box = document.getElementById('filters');
+      [''].concat(STORES).forEach(function (s) {
+        var b = document.createElement('button');
+        b.textContent = s || '전체';
+        b.className = s === store ? 'on' : '';
+        b.onclick = function () {
+          store = s;
+          Array.prototype.forEach.call(box.children, function (c) { c.className = ''; });
+          b.className = 'on';
+          apply();
+        };
+        box.appendChild(b);
+      });
+    }
+
+    function apply() {
+      filtered = store ? all.filter(function (e) { return e.stores.indexOf(store) !== -1; }) : all;
+      shown = 0;
+      var grid = document.getElementById('grid');
+      grid.innerHTML = filtered.length ? '' : '<div class="empty">아직 인증이 없어요. 첫 번째 범표 탐험가가 되어주세요!</div>';
+      more();
+    }
+
+    function more() {
+      var grid = document.getElementById('grid');
+      filtered.slice(shown, shown + PAGE).forEach(function (e) { grid.appendChild(card(e)); });
+      shown += PAGE;
+      document.getElementById('moreBtn').hidden = shown >= filtered.length;
+      processEmbeds();
+    }
+    document.getElementById('moreBtn').onclick = more;
+
+    function card(e) {
+      var el = document.createElement('div');
+      el.className = 'item';
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      var name = document.createElement('b');
+      name.textContent = '🐯 ' + e.nickname;
+      var st = document.createElement('span');
+      st.textContent = e.stores;
+      meta.appendChild(name);
+      meta.appendChild(st);
+
+      // 인스타그램 공식 임베드. 비공개/삭제된 게시물이면 링크만 남아요.
+      var embed = document.createElement('div');
+      embed.className = 'embed';
+      var bq = document.createElement('blockquote');
+      bq.className = 'instagram-media';
+      bq.setAttribute('data-instgrm-permalink', e.url + '?utm_source=ig_embed');
+      bq.setAttribute('data-instgrm-version', '14');
+      var a = document.createElement('a');
+      a.className = 'fallback';
+      a.href = e.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = '인스타그램에서 보기 →';
+      bq.appendChild(a);
+      embed.appendChild(bq);
+
+      el.appendChild(meta);
+      el.appendChild(embed);
+      return el;
+    }
+
+    var igLoading = false;
+    function processEmbeds() {
+      if (window.instgrm) return window.instgrm.Embeds.process();
+      if (igLoading) return;
+      igLoading = true;
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.instagram.com/embed.js';
+      s.onload = function () { window.instgrm && window.instgrm.Embeds.process(); };
+      document.body.appendChild(s);
+    }
+  </script>
+</body>
+</html>
