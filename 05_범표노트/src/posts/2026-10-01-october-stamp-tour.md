@@ -1,7 +1,7 @@
 ---
 title: "10월의 범표나들이 — 매장 3곳 스탬프 모으고 보냉백 받아가세요"
 date: 2026-10-01
-category: "가맹점 이야기"
+category: "커피 수다"
 public: true
 description: "10월 한 달, 범표원두 4개 매장 중 3곳을 찾아 서로 다른 범표 도장을 모으면 범표원두 보냉백을 드려요. 선착순 50명."
 image: "/images/2026-10-01-october-stamp-tour.jpg"
