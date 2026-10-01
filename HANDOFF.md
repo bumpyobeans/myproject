@@ -332,6 +332,6 @@ vercel --prod --yes
 ```
 끝에 `readyState: READY` 가 나오면 성공. 확인: `curl -s https://coffee.bumpyobeans.shop/app.js | grep 특정문자열`
 
-노트 사이트 배포: `cd 05_범표노트` 후 `vercel --prod --yes`. 확인: `curl -s https://bumpyobeans.shop/llms.txt`
+노트 사이트 배포: (10/1부터) Vercel `bumpyo-note` 가 GitHub `bumpyobeans/myproject` 와 연결됨 → `update-settings` 브랜치에 push 하면 자동 배포(Root Directory `05_범표노트`). 예전 방식 `cd 05_범표노트` 후 `vercel --prod --yes` 도 가능. 확인: `curl -s https://bumpyobeans.shop/llms.txt`
 
 커밋 메시지 끝에 `Co-Authored-By: Claude ... <noreply@anthropic.com>` 관례(세션마다 모델명 다름).
