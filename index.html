@@ -569,6 +569,11 @@ footer { font-size: 12px; color: var(--ink-3); }
   function str(v) { return String(v == null ? "" : v).trim(); }
   function sumBy(list, f) { var s = 0; for (var i = 0; i < list.length; i++) s += f(list[i]); return s; }
 
+  // 상품 레코드 기준 분류: O2POS의 0원 ‘아이스크림’은 바닐라·딸기 아이스크림을 고를 때 함께 찍히는 상위 메뉴 줄이라 디저트로 세지 않음
+  function groupOf(r) {
+    if (r.s === "K2" && norm(r.p) === "아이스크림" && !r.a && !r.dc) return "옵션·기타";
+    return classify(r.p, r.c);
+  }
   function classify(name, cat) {
     var n = String(name).replace(/\s+/g, ""), c = String(cat || "");
     if (/(VIP카드|상품권|충전|기프트카드|선불|멤버십카드|정기권)/i.test(n)) return "선불카드";
@@ -603,7 +608,7 @@ footer { font-size: 12px; color: var(--ink-3); }
       if (o.cfg) { var c = o.cfg; state.cfg = { t0: c.t0 != null ? +c.t0 : 30000, b0: c.b0 != null ? +c.b0 : 0.05, t1: +c.t1 || 50000, b1: c.b1 != null ? +c.b1 : 0.1, t2: +c.t2 || 500000, b2: c.b2 != null ? +c.b2 : 0.2, pp: { K1: (c.pp && c.pp.K1) || "order", K2: c.v >= 3 && c.pp && c.pp.K2 ? c.pp.K2 : "none", K3: (c.pp && c.pp.K3) || "none" }, v: c.v, regulars: Array.isArray(c.regulars) ? c.regulars : [] }; } // 2호기(키오스크)는 선불 결제 불가
       if (Array.isArray(o.events)) state.events = o.events;
       if ((o.prod && o.prod.length) || (o.hour && o.hour.length) || (o.day && o.day.length)) {
-        state.prod = (o.prod || []).map(function (r) { r.g = classify(r.p, r.c); return r; }); state.hour = o.hour || []; state.day = o.day || []; state.opt = o.opt || []; state.pp = o.pp || [];
+        state.prod = (o.prod || []).map(function (r) { r.g = groupOf(r); return r; }); state.hour = o.hour || []; state.day = o.day || []; state.opt = o.opt || []; state.pp = o.pp || [];
         state.lastF = o.lastF || null; state.lastT = o.lastT || null;
         state.sample = false;
         return true;
@@ -2374,6 +2379,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     if (clash.length) throw new Error("이미 " + clash[0].f + " ~ " + clash[0].t + " 기간으로 묶인 자료가 있어 " + (f === t ? f : f + " ~ " + t) + " 자료와 겹칩니다. 같은 기간 단위로 올려 주세요.");
     if (state.sample) { state.prod = []; state.hour = []; state.day = []; state.opt = []; state.sample = false; }
     if (type === "tx") state.opt = state.opt.filter(function (r) { return !overlap(r, f, t); }).concat(d.opt || []);
+    d.prod.forEach(function (r) { r.g = groupOf(r); });
     if (d.prod.length) state.prod = state.prod.filter(function (r) { return !overlap(r, f, t); }).concat(d.prod);
     if (d.hour.length) state.hour = state.hour.filter(function (r) { return !overlap(r, f, t); }).concat(d.hour);
     if (d.day.length) { var set = {}; d.day.forEach(function (x) { set[x.d] = 1; }); state.day = state.day.filter(function (r) { return !(sset.indexOf(r.s) >= 0 && set[r.d]); }).concat(d.day); }
@@ -2417,7 +2423,7 @@ footer { font-size: 12px; color: var(--ink-3); }
     var prod = [], hour = [], day = [], opt = [], pp = [];
     Object.keys(shared.months).forEach(function (id) {
       var m = shared.months[id], s = m.s;
-      (m.prod || []).forEach(function (a) { var r = unpack(a, P_KEYS, s); r.g = classify(r.p, r.c); prod.push(r); }); // 분류 규칙이 바뀌어도 늘 최신 규칙으로
+      (m.prod || []).forEach(function (a) { var r = unpack(a, P_KEYS, s); r.g = groupOf(r); prod.push(r); }); // 분류 규칙이 바뀌어도 늘 최신 규칙으로
       (m.hour || []).forEach(function (a) { hour.push(unpack(a, H_KEYS, s)); });
       (m.day || []).forEach(function (a) { day.push(unpack(a, D_KEYS, s)); });
       (m.opt || []).forEach(function (a) { opt.push(unpack(a, O_KEYS, s)); });
