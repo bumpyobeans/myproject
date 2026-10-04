@@ -2177,14 +2177,17 @@ footer { font-size: 12px; color: var(--ink-3); }
         tx.push({ s: s, d: dp.d, h: tm.h, o: oid || dp.d + " " + pad(tm.h) + ":" + pad(tm.m), p: product, c: cat, g: classify(product, cat), q: (function () { var q = parseNum(g(r, "qty")); return isNaN(q) ? 1 : q; })(), a: a,
           dc: hasSplit ? sd + od : n0(g(r, "dc")), od: hasSplit ? od : null, sd: hasSplit ? sd : null, dine: dineV ? !/포장/.test(dineV) : null });
       });
-      // 주문 단위로 할인 성격 구분: 주문 전체가 무료(판매금액 0)면 선불카드, 일부만 소액(100원 단위, 4,000원 이하) 깎였으면
+      // 주문 단위로 할인 성격 구분: 주문 전체가 무료(판매금액 0)면 선불카드·네이버 주문, 일부만 소액(100원 단위, 4,000원 이하) 깎였으면
       // 텀블러(100원)·원두(2,000원) 같은 행사 할인으로 봄 — ‘전체할인’ 칸에 입력돼 있어도
       var byOrder = {};
-      tx.forEach(function (r) { if (r.od == null) return; var k = r.s + "|" + r.d + "|" + r.o, x = byOrder[k] || (byOrder[k] = { a: 0, od: 0, ok: true }); x.a += r.a; x.od += r.od; if (r.od % 100) x.ok = false; });
+      // 직원 할인(10%·20%)도 주문 일부만 깎이므로 행사 할인으로 봄. 그 밖의 큰 일부 할인은 잔액이 모자라 선불로 일부만 낸 경우로 보고 선불에 둠
+      tx.forEach(function (r) { if (r.od == null) return; var k = r.s + "|" + r.d + "|" + r.o, x = byOrder[k] || (byOrder[k] = { a: 0, od: 0, sd: 0, ok: true }); x.a += r.a; x.od += r.od; x.sd += r.sd || 0; if (r.od % 100) x.ok = false; });
       tx.forEach(function (r) {
         if (!r.od) return;
-        var x = byOrder[r.s + "|" + r.d + "|" + r.o];
-        if (x && x.a > 0 && x.ok && x.od <= 4000) { r.sd = (r.sd || 0) + r.od; r.od = 0; }
+        var x = byOrder[r.s + "|" + r.d + "|" + r.o]; if (!x || x.a <= 0) return;
+        var gross = x.a + x.od + x.sd, rate = gross ? (x.od + x.sd) / gross : 0;
+        var staff = Math.abs(rate - 0.1) < 0.012 || Math.abs(rate - 0.2) < 0.012;
+        if ((x.ok && x.od <= 4000) || staff) { r.sd = (r.sd || 0) + r.od; r.od = 0; }
       });
       out = aggregateTx(tx);
     }
