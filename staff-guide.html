@@ -1,0 +1,195 @@
+<title>범표원두 마감 업로드 안내</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 한 줄 세로 흐름 — 오늘 할 일(체크리스트) → 파일 받는 법 → POS 할인 입력 규칙 → 문제 생겼을 때 */
+:root {
+  --bg: #f2f4f1;
+  --panel: #ffffff;
+  --ink: #1b211d;
+  --ink-2: #4d5850;
+  --ink-3: #7d877f;
+  --line: #d9dfd9;
+  --accent: #1f4d3a;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2ede6;
+  --warn-bg: #fff2d1;
+  --warn-ink: #6a4800;
+  --good: #1d7a3a;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121512; --panel: #1a1e1b; --ink: #eef1ec; --ink-2: #bfc7c0; --ink-3: #8b958d; --line: #2d332e;
+    --accent: #8fd0ad; --accent-ink: #0d1a12; --accent-soft: #1d2d24; --warn-bg: #3a2f12; --warn-ink: #f3d68a; --good: #6fd08e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121512; --panel: #1a1e1b; --ink: #eef1ec; --ink-2: #bfc7c0; --ink-3: #8b958d; --line: #2d332e;
+  --accent: #8fd0ad; --accent-ink: #0d1a12; --accent-soft: #1d2d24; --warn-bg: #3a2f12; --warn-ink: #f3d68a; --good: #6fd08e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; margin: 0; }
+.wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: flex; flex-direction: column; gap: 22px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.3; }
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 18px; font-weight: 700; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--ink-3); }
+.sub { color: var(--ink-2); font-size: 14px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--accent); }
+header { display: flex; flex-direction: column; gap: 8px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 14px; font-weight: 500; text-decoration: none; cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.today-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.date { font-family: var(--font-num); font-size: 13px; color: var(--ink-2); }
+.progress { height: 6px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+@media (prefers-reduced-motion: reduce) { .progress i { transition: none; } }
+ol.check { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; counter-reset: step; }
+ol.check li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+ol.check li:last-child { border-bottom: 0; }
+ol.check input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+ol.check label { cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+ol.check label b { font-weight: 600; }
+ol.check li.done label b { color: var(--ink-3); text-decoration: line-through; }
+.done-msg { font-size: 14px; color: var(--good); font-weight: 600; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+td.pos { white-space: nowrap; font-weight: 600; }
+.tbl { overflow-x: auto; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.tag.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.note { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.note b { color: inherit; }
+ul.plain { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+code, .mono { font-family: var(--font-num); font-size: 13px; background: var(--accent-soft); color: var(--ink); padding: 1px 6px; border-radius: 6px; word-break: break-all; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.mini { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+footer { font-size: 13px; color: var(--ink-3); text-align: center; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">범표원두 갈매점 · 직원용</span>
+    <h1>마감 후 매출 파일 올리기</h1>
+    <p class="sub">하루 5분이면 끝납니다. POS 파일 4개를 구글 드라이브 폴더에 넣으면, 매출 대시보드가 알아서 불러와 모두 같은 화면으로 봅니다.</p>
+    <div class="links">
+      <a class="btn primary" href="https://drive.google.com/drive/folders/1ofI1B8aC3GtxES-4eW5lh_IrXIcjbRRw" target="_blank" rel="noopener">드라이브 폴더 열기</a>
+      <a class="btn" href="https://claude.ai/artifact/WMNeBLWf7Qad2iXLiQqsyY" target="_blank" rel="noopener">매출 대시보드 열기</a>
+    </div>
+    <p class="muted" style="font-size:13px">폴더 이름: 「범표원두 POS 매출자료」 · 열리지 않으면 사장님께 공유를 요청하세요.</p>
+  </header>
+
+  <section aria-labelledby="todayH">
+    <div class="today-head">
+      <h2 id="todayH">오늘 마감 체크리스트</h2>
+      <span class="date" id="today"></span>
+    </div>
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    <ol class="check" id="checklist">
+      <li><input type="checkbox" id="c1"><label for="c1"><b>CUBE ‘상품상세’ 저장</b><span class="sub">조회 기간을 오늘 하루로 두고 엑셀로 저장</span></label></li>
+      <li><input type="checkbox" id="c2"><label for="c2"><b>O2POS ‘일자별 매출현황’ 저장</b><span class="sub">화면 캡처가 아니라 엑셀 파일로</span></label></li>
+      <li><input type="checkbox" id="c3"><label for="c3"><b>O2POS ‘시간대별 매출현황’ 저장</b><span class="sub">엑셀 파일로</span></label></li>
+      <li><input type="checkbox" id="c4"><label for="c4"><b>O2POS ‘상품별 매출현황’ 저장 — 순위 기준 ‘전체’</b><span class="sub">10위·50위로 두면 적게 팔린 메뉴가 빠집니다. 파일 이름 앞에 날짜를 붙여 주세요 (예: <span class="mono">20261003_상품별.xls</span>)</span></label></li>
+      <li><input type="checkbox" id="c5"><label for="c5"><b>파일 4개를 드라이브 폴더에 넣기</b><span class="sub">날짜별 하위 폴더를 만들어 넣어도 됩니다</span></label></li>
+      <li><input type="checkbox" id="c6"><label for="c6"><b>대시보드 열고 ‘지금 불러오기’ → ‘자료 점검’ 경고 0건 확인</b><span class="sub">맨 아래 데이터 관리에 있습니다. 경고가 있으면 아래 ‘문제가 생겼을 때’를 보세요</span></label></li>
+      <li><input type="checkbox" id="c7"><label for="c7"><b>특별한 일이 있었으면 ‘특이사항’에 한 줄</b><span class="sub">행사, 품절, 신메뉴, 가격 변경, 날씨, 휴무 등. 없으면 체크만 하세요</span></label></li>
+    </ol>
+    <p class="done-msg" id="doneMsg" hidden>오늘 마감 업로드 끝! 수고하셨습니다.</p>
+    <p class="muted" style="font-size:12px">체크 표시는 이 기기에만 저장되고, 날짜가 바뀌면 새로 시작합니다.</p>
+  </section>
+
+  <section aria-labelledby="filesH">
+    <h2 id="filesH">어떤 파일을 받나요</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>POS</th><th>메뉴</th><th>꼭 지킬 것</th></tr></thead>
+        <tbody>
+          <tr><td class="pos">CUBE</td><td>상품상세</td><td>오늘 하루. 카운터와 키오스크가 자동으로 나뉩니다</td></tr>
+          <tr><td class="pos">O2POS</td><td>일자별 매출현황</td><td>엑셀 저장</td></tr>
+          <tr><td class="pos">O2POS</td><td>시간대별 매출현황</td><td>엑셀 저장</td></tr>
+          <tr><td class="pos">O2POS</td><td>상품별 매출현황</td><td><span class="tag warn">순위 기준 ‘전체’</span> · 파일 이름에 날짜</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub">같은 날짜 파일을 다시 넣어도 중복되지 않고 새 파일로 바뀝니다. 실수했으면 고쳐서 다시 넣으면 됩니다.</p>
+  </section>
+
+  <section aria-labelledby="discH">
+    <h2 id="discH">POS 할인 입력 규칙</h2>
+    <p class="sub">대시보드가 할인을 구분해서 계산합니다. 아래처럼 입력해 주세요.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>상황</th><th>POS 입력</th><th>함께 할 일</th></tr></thead>
+        <tbody>
+          <tr><td>선불카드 결제</td><td>메뉴를 찍고 <b>100% 할인</b></td><td><b>선불 시스템에서 같은 금액을 바로 차감</b> (빠뜨리면 손님 잔액이 줄지 않습니다)</td></tr>
+          <tr><td>네이버 주문</td><td>메뉴를 찍고 <b>100% 할인</b>으로 주문지 출력</td><td>온라인에서 이미 결제됨</td></tr>
+          <tr><td>원두 + 음료 같은 날 구매</td><td>원두 줄에 <b>단품할인 2,000원</b></td><td>원두 1봉마다 범딱지 1장</td></tr>
+          <tr><td>텀블러 지참</td><td><b>100원</b> 할인</td><td>—</td></tr>
+          <tr><td>범딱지 5장 교환</td><td>0원 <b>‘OO서비스’</b> 원두로 입력</td><td>범딱지 회수</td></tr>
+          <tr><td>직원 할인</td><td>본인 선불카드면 <b>10%</b>, 아니면 <b>20%</b></td><td>할인원인 코드를 찍으면 더 정확합니다</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="troubleH">
+    <h2 id="troubleH">문제가 생겼을 때</h2>
+    <div class="grid2">
+      <div class="mini"><h3>‘순위 제한 의심’ 경고</h3><p class="sub">O2POS 상품별을 순위 기준 ‘전체’로 다시 받아 같은 이름으로 다시 넣으세요.</p></div>
+      <div class="mini"><h3>‘날짜를 알 수 없습니다’</h3><p class="sub">파일 이름 앞에 날짜를 붙여 다시 넣으세요 (예: 20261003_…).</p></div>
+      <div class="mini"><h3>‘겹칩니다’ 기록</h3><p class="sub">월·주 단위 파일과 하루 파일이 섞였습니다. 하루 파일로만 올려 주세요.</p></div>
+      <div class="mini"><h3>새 파일이 안 들어옴</h3><p class="sub">드라이브 폴더가 맞는지, 파일이 .xls/.xlsx인지 확인하고 ‘지금 불러오기’를 다시 누르세요.</p></div>
+    </div>
+    <div class="note">해결이 안 되면 대시보드 화면을 캡처해서 사장님께 보내 주세요. 파일을 채팅으로 따로 보낼 필요는 없습니다.</div>
+  </section>
+
+  <section aria-labelledby="ownerH">
+    <h2 id="ownerH">사장님 / 관리자 (주 1회~월 1회)</h2>
+    <ul class="plain">
+      <li><b>선불카드 시스템 ‘상세거래내역’</b>을 받아 같은 드라이브 폴더에 넣기. 날짜별 합계만 저장되고 고객 정보는 저장되지 않습니다.</li>
+      <li>이 파일에는 고객 이름·전화번호가 있으니, 대시보드에 반영된 뒤 <b>드라이브에서 지워 주세요.</b></li>
+      <li>네이버 주문·정산 내역은 모아 두었다가 분석이 필요할 때 함께 요청하세요.</li>
+    </ul>
+  </section>
+
+  <footer>범표원두 매출 대시보드 운영 안내 · 2026년 10월</footer>
+</div>
+
+<script>
+(function () {
+  var now = new Date();
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var key = "close-check:" + now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+  var days = ["일", "월", "화", "수", "목", "금", "토"];
+  document.getElementById("today").textContent = now.getFullYear() + "." + pad(now.getMonth() + 1) + "." + pad(now.getDate()) + " (" + days[now.getDay()] + ")";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll("#checklist input"));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch (e) { saved = {}; }
+  function update() {
+    var n = 0;
+    boxes.forEach(function (b) { b.closest("li").classList.toggle("done", b.checked); if (b.checked) n++; });
+    document.getElementById("bar").style.width = (n / boxes.length * 100) + "%";
+    document.getElementById("doneMsg").hidden = n !== boxes.length;
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!saved[b.id];
+    b.addEventListener("change", function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) { /* 저장 안 돼도 화면은 동작 */ }
+      update();
+    });
+  });
+  update();
+})();
+</script>
