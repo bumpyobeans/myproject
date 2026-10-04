@@ -1,0 +1,11 @@
+# 매출 원본/결과 파일은 민감 정보이므로 저장소에 올리지 않음
+data/raw/**
+!data/raw/.gitkeep
+reports/**
+!reports/.gitkeep
+~$*.xlsx
+
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
