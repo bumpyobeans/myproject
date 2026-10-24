@@ -19,13 +19,13 @@ PAD = 72
 
 STORES = [
     ("역삼점", "서울 강남", "테헤란로 뒷골목 숨은 라떼집",
-     ["월–금 10:00–19:00 · 토 휴무"]),
+     ["월–금 10:00–19:00 · 토 휴무", "매월 마지막 주 일요일 휴무"]),
     ("갈매점", "경기 구리", "로스팅 공장 바로 옆, 원두는 여기 다 있음",
      ["월–금 10:00–18:00 · 토 휴무"]),
     ("별내 하나로마트점", "경기 남양주", "연중무휴 · 주차 250대 · 음료 사면 2시간 무료",
      ["매일 10:00–19:00"]),
-    ("다산 정약용도서관점", "경기 남양주", "가맹 1호점 · 일요일은 점주님도 쉽니다",
-     ["월–금 08:00–19:00", "토·공휴일 10:00–19:00 · 일 휴무"]),
+    ("다산 정약용도서관점", "경기 남양주", "가맹 1호점 · 주말에도 열어요",
+     ["월–금 08:00–19:00", "토·일·공휴일 10:00–19:00"]),
 ]
 
 
@@ -45,11 +45,11 @@ y = SAFE_TOP + 10
 text(d, (PAD, y), "@bumpyobeans", 34, TAN)
 y += 62
 text(d, (PAD, y), "범표원두, 어디서 마실까?", 76, CREAM, bold=True)
-y += 130
+y += 120
 
 NAME, SUB, DESC, HOURS = 48, 30, 31, 34
 for name, region, desc, hours in STORES:
-    h = 34 + NAME + 22 + DESC + 20 + len(hours) * (HOURS + 14) + 26
+    h = 34 + NAME + 22 + DESC + 20 + len(hours) * (HOURS + 14) + 20
     d.rounded_rectangle((PAD - 20, y, W - PAD + 20, y + h), radius=28, fill=CARD)
     cy = y + 32
     text(d, (PAD + 12, cy), name, NAME, TAN, bold=True)
@@ -61,7 +61,7 @@ for name, region, desc, hours in STORES:
     for line in hours:
         text(d, (PAD + 12, cy), line, HOURS, CREAM, bold=True)
         cy += HOURS + 14
-    y += h + 22
+    y += h + 14
 
 # nationwide delivery
 y += 8
