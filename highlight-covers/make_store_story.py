@@ -26,6 +26,8 @@ STORES = [
      ["매일 10:00–19:00"]),
     ("다산 정약용도서관점", "경기 남양주", "가맹 1호점 · 주말에도 열어요",
      ["월–금 08:00–19:00", "토·일·공휴일 10:00–19:00"]),
+    ("수서역점", "서울 강남", "NEW · 11/16 그랜드 오픈 · 현대벤처빌 1층",
+     ["07:00–19:00"]),
 ]
 
 
@@ -47,21 +49,21 @@ y += 62
 text(d, (PAD, y), "범표원두, 어디서 마실까?", 76, CREAM, bold=True)
 y += 120
 
-NAME, SUB, DESC, HOURS = 48, 30, 31, 34
+NAME, SUB, DESC, HOURS = 44, 28, 28, 31
 for name, region, desc, hours in STORES:
-    h = 34 + NAME + 22 + DESC + 20 + len(hours) * (HOURS + 14) + 20
-    d.rounded_rectangle((PAD - 20, y, W - PAD + 20, y + h), radius=28, fill=CARD)
-    cy = y + 32
+    h = 24 + NAME + 14 + DESC + 14 + len(hours) * (HOURS + 10) + 14
+    d.rounded_rectangle((PAD - 20, y, W - PAD + 20, y + h), radius=26, fill=CARD)
+    cy = y + 24
     text(d, (PAD + 12, cy), name, NAME, TAN, bold=True)
     nw = d.textlength(name, font=f(NAME))
     text(d, (PAD + 12 + nw + 18, cy + NAME - SUB - 2), region, SUB, MUTED)
-    cy += NAME + 22
+    cy += NAME + 14
     text(d, (PAD + 12, cy), desc, DESC, CREAM)
-    cy += DESC + 20
+    cy += DESC + 14
     for line in hours:
         text(d, (PAD + 12, cy), line, HOURS, CREAM, bold=True)
-        cy += HOURS + 14
-    y += h + 14
+        cy += HOURS + 10
+    y += h + 12
 
 # nationwide delivery
 y += 8
