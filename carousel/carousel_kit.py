@@ -247,3 +247,23 @@ def quote(kicker, lines, byline, formula, save_line, handle):
     d.text((M, H - bar // 2), save_line, font=font("Bold", 34), fill=WHITE, anchor="lm")
     d.text((W - M, H - bar // 2), handle, font=font("Bold", 34), fill=WHITE, anchor="rm")
     return _finish(im)
+
+
+def spec_item(label, page, total, handle, num, title, spec, paragraphs, highlight):
+    """Numbered item built around an official spec card (transparent PNG, full width)."""
+    im, d = _canvas()
+    _header(d, label, page, total)
+    y = 170 * S
+    fnum = font("Thin", 190)
+    d.text((M - 8 * S, y - 30 * S), f"{num:02d}", font=fnum, fill=INK)
+    nx = M + d.textlength(f"{num:02d}", font=fnum) + 30 * S
+    d.text((nx, y + 130 * S), title, font=font("ExtraBold", 66), fill=INK)
+    y += 290 * S
+    card = Image.open(spec).convert("RGBA")
+    cw = W - 2 * M + 30 * S
+    card = card.resize((cw, int(card.height * cw / card.width)), Image.LANCZOS)
+    im.paste(card, (M - 15 * S, y), card)
+    y += card.height + 50 * S
+    _body(d, M, y, paragraphs, size=34, highlight=highlight)
+    _footer(d, handle)
+    return _finish(im)
