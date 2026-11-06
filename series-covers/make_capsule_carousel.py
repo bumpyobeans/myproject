@@ -2,9 +2,13 @@
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 OUT = Path(sys.argv[1])
+PHOTOS = Path(sys.argv[2]) if len(sys.argv) > 2 else None   # folder with 9.jpg ... 13.jpg
+# (photo, horizontal focus 0..1) per slide; None keeps the plain background
+BACKS = [("9.jpg", 0.55), ("9.jpg", 0.2), ("10.jpg", 0.5), ("13.jpg", 0.5),
+         ("12.jpg", 0.55), ("9.jpg", 0.85), ("11.jpg", 0.45), ("13.jpg", 0.3)]
 FONT = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
 S = 2
 W, H = 1080 * S, 1350 * S
@@ -58,9 +62,41 @@ def fit(d, s, size, maxw):
     return size
 
 
+def photo_bg(name, focus, blur=0, clear_top=0.0):
+    """Photo fills the slide; the brand colour washes over it.
+
+    clear_top: fraction of the height (from the top) kept nearly clear so the
+    photo itself shows; below it the wash ramps up to near-solid for text.
+    """
+    img = ImageOps.exif_transpose(Image.open(PHOTOS / name)).convert("RGB")
+    s = max(W / img.width, H / img.height)
+    img = img.resize((int(img.width * s) + 1, int(img.height * s) + 1), Image.LANCZOS)
+    x = int((img.width - W) * focus)
+    y = (img.height - H) // 2
+    img = img.crop((x, y, x + W, y + H))
+    if blur:
+        img = img.filter(ImageFilter.GaussianBlur(blur * S))
+    shade = Image.new("L", (W, H))
+    sd = ImageDraw.Draw(shade)
+    for yy in range(H):
+        if clear_top:
+            a0, ramp = H * clear_top, H * 0.12
+            v = 30 if yy < a0 else 30 + 215 * min(1, (yy - a0) / ramp)
+            v = max(v, 190 * (1 - yy / (200 * S)))   # keep the header line readable
+        else:
+            v = 170
+        sd.line((0, yy, W, yy), fill=int(v))
+    return Image.composite(Image.new("RGB", (W, H), BG), img, shade)
+
+
 def base(page):
-    im = Image.new("RGB", (W, H), BG)
-    d = ImageDraw.Draw(im)
+    if PHOTOS:
+        name, focus = BACKS[page - 1]
+        clear = 0.36 if 2 <= page <= 7 else 0.0
+        im = photo_bg(name, focus, blur=6 if page == 8 else 0, clear_top=clear)
+    else:
+        im = Image.new("RGB", (W, H), BG)
+    d = ImageDraw.Draw(im, "RGBA")
     t(d, (L, 70 * S), "범표캡슐 6종 · 내 취향 찾기", 34, TAN)
     t(d, (W - L, 70 * S), f"{page}/8", 34, TAN, anchor="ra")
     d.line((L, 126 * S, W - L, 126 * S), fill=TAN, width=3 * S)
@@ -91,19 +127,20 @@ def cover():
 def capsule_slide(i, cap):
     name, tag, lines, how, who = cap
     im, d = base(i + 2)
-    capsule_icon(d, W - L - 110 * S, 300 * S, 110 * S, i + 1)
-    t(d, (L, 210 * S), name, fit(d, name, 120, 640 * S), CREAM, bold=True)
-    t(d, (L, 380 * S), tag, fit(d, tag, 54, 640 * S), TAN, bold=True)
-    y = 500 * S
+    top = 560 * S                                   # photo shows above this
+    capsule_icon(d, W - L - 80 * S, top + 70 * S, 80 * S, i + 1)
+    t(d, (L, top), name, fit(d, name, 110, 700 * S), CREAM, bold=True)
+    t(d, (L, top + 140 * S), tag, fit(d, tag, 50, 760 * S), TAN, bold=True)
+    y = top + 230 * S
     for line in lines:
-        t(d, (L, y), line, fit(d, line, 46, W - 2 * L), CREAM)
-        y += 72 * S
-    y = max(y + 40 * S, 860 * S)
-    for label, text in (("이렇게 드세요", how), ("이런 분께", who)):
-        d.rounded_rectangle((L - 24 * S, y, W - L + 24 * S, y + 170 * S), radius=28 * S, fill=CARD)
-        t(d, (L, y + 26 * S), label, 34, TAN, bold=True)
-        t(d, (L, y + 84 * S), text, fit(d, text, 44, W - 2 * L), CREAM)
-        y += 196 * S
+        t(d, (L, y), line, fit(d, line, 40, W - 2 * L), CREAM)
+        y += 58 * S
+    y = H - 300 * S
+    d.rounded_rectangle((L - 24 * S, y, W - L + 24 * S, y + 250 * S), radius=28 * S, fill=CARD + (215,))
+    for k, (label, text) in enumerate((("이렇게 드세요", how), ("이런 분께", who))):
+        yy = y + 24 * S + k * 116 * S
+        t(d, (L, yy), label, 30, TAN, bold=True)
+        t(d, (L, yy + 44 * S), text, fit(d, text, 40, W - 2 * L), CREAM)
     return im
 
 
@@ -112,7 +149,7 @@ def pick_slide():
     t(d, (L, 190 * S), "한눈에 고르기", 96, CREAM, bold=True)
     y = 360 * S
     for want, cap in PICK:
-        d.rounded_rectangle((L - 24 * S, y, W - L + 24 * S, y + 112 * S), radius=24 * S, fill=CARD)
+        d.rounded_rectangle((L - 24 * S, y, W - L + 24 * S, y + 112 * S), radius=24 * S, fill=CARD + (215,))
         t(d, (L, y + 32 * S), want, 42, CREAM)
         t(d, (W - L, y + 28 * S), cap, 46, TAN, bold=True, anchor="ra")
         y += 128 * S
