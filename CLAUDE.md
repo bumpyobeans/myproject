@@ -26,3 +26,8 @@
 스킬이 `~/.claude/instagram/` 의 파일(voice.md, swipe.md, log.md)을 읽거나 쓰라고 하면
 대신 이 저장소의 `.claude/instagram/` 을 쓴다. 템플릿은
 `.claude/instagram/voice.template.md` 에 있다.
+
+## 캐러셀 기본 스타일
+
+캐러셀을 만들 때는 따로 지정이 없으면 `.claude/instagram/carousel_style.md`의
+"깔끔 + 사진" 스타일을 쓴다. 그리는 코드는 `carousel/carousel_kit.py`, 글꼴은 `fonts/`(Pretendard).
