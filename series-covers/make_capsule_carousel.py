@@ -7,8 +7,16 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 OUT = Path(sys.argv[1])
 PHOTOS = Path(sys.argv[2]) if len(sys.argv) > 2 else None   # folder with 9.jpg ... 13.jpg
 # (photo, horizontal focus 0..1) per slide; None keeps the plain background
-BACKS = [("9.jpg", 0.55), ("9.jpg", 0.2), ("10.jpg", 0.5), ("13.jpg", 0.5),
-         ("12.jpg", 0.55), ("9.jpg", 0.85), ("11.jpg", 0.45), ("13.jpg", 0.3)]
+# capsule colours: 역삼동호랑이 = green, 인도호랑이 = purple. Other slides avoid
+# showing a green or purple capsule so no colour points at the wrong flavour.
+BACKS = [("9.jpg", 0.5),            # cover: all colours
+         ("11.jpg", 0.5),           # 조선호랑이
+         ("9.jpg", 0.0),            # 역삼동호랑이: green capsule + iced americano
+         ("11.jpg", 0.0),           # 범프레소: tiramisu
+         ("12.jpg", 1.0),           # 호랑이형님: no capsule in view
+         ("10.jpg", 0.25),          # 인도호랑이: purple capsule + espresso
+         ("10.jpg", 1.0),           # 디카페인: no capsule in view
+         ("13.jpg", 0.3)]           # pick list, blurred
 FONT = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
 S = 2
 W, H = 1080 * S, 1350 * S
