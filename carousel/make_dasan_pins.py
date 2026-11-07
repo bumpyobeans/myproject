@@ -60,8 +60,8 @@ pins = [
     k.cover(handdrip, TAG.format(2), ["핸드드립", "맛집이라", "소문났어요!!"],
             "드립 커피 손님이 가장 많은 매장", HANDLE, "직접 볶으니까, 원두도 라떼도 맛있어요",
             focus=0.5, underline=()),
-    k.cover(latte, TAG.format(3), ["주말에도", "문 열어요!!"],
-            "토 · 일 · 공휴일 10:00–19:00", HANDLE, "평일 08:00–19:00",
+    k.cover(latte, TAG.format(3), ["원두 사면,", "음료 한 잔", "2,000원 할인!!"],
+            "원두 1봉당 음료 1잔", HANDLE, "주말 · 공휴일에도 10–19 열어요",
             focus=0.5, underline=()),
 ]
 for i, im in enumerate(pins, 1):
