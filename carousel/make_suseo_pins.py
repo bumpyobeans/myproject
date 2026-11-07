@@ -10,6 +10,8 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import carousel_kit as k  # noqa: E402
 
+k.OUT_SCALE = 2                          # 2160x2700, download quality
+
 OUT, UP, PH = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
 OUT.mkdir(parents=True, exist_ok=True)
 TMP = OUT / "_src"
@@ -41,9 +43,11 @@ pins = [
 ]
 
 sticker = Image.open(UP / "490650c6-image.png").convert("RGBA")
-sticker = sticker.resize((300, int(300 * sticker.height / sticker.width)), Image.LANCZOS)
+sw = 300 * k.OUT_SCALE
+sticker = sticker.resize((sw, int(sw * sticker.height / sticker.width)), Image.LANCZOS)
 for i, (im, with_sticker) in enumerate(pins, 1):
     if with_sticker:
-        im.paste(sticker, (1080 - 300 - 50, 120), sticker)
+        im.paste(sticker, (im.width - sw - 50 * k.OUT_SCALE, 120 * k.OUT_SCALE), sticker)
     im.save(OUT / f"수서_고정_{i}.png", optimize=True)
+    im.convert("RGB").save(OUT / f"수서_고정_{i}.jpg", quality=95, subsampling=0)
 print("ok", len(pins))

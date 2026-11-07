@@ -32,8 +32,13 @@ def _canvas(bg=CREAM):
     return im, ImageDraw.Draw(im, "RGBA")
 
 
+OUT_SCALE = 1                           # 2 = 2160x2700 print-quality export
+
+
 def _finish(im):
-    return im.resize((1080, 1350), Image.LANCZOS)
+    if OUT_SCALE == S:
+        return im
+    return im.resize((1080 * OUT_SCALE, 1350 * OUT_SCALE), Image.LANCZOS)
 
 
 def _cover_crop(img, w, h, focus=0.5):
