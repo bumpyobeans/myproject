@@ -38,8 +38,8 @@ pins = [
              "궁극의 고소함, 범표라떼", HANDLE,
              "평일 07–20 · 주말 09–20", focus=0.5, underline=(0,)), False),
     (k.cover(PH / "13.jpg", TAG.format(3), ["내 취향 원두,", "집에서도!!", "이제 걱정마!!"],
-             "원두 · 드립백 · 캡슐 6종", HANDLE,
-             "오후 2시 전 주문 당일 로스팅", focus=0.5, underline=()), False),
+             "드립백커피 · 캡슐 · 콜드브루", HANDLE,
+             "밤고개로1길 10 현대벤처빌 1층", focus=0.5, underline=()), False),
 ]
 
 sticker = Image.open(UP / "490650c6-image.png").convert("RGBA")
