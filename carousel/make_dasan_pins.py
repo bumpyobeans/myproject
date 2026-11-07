@@ -51,7 +51,7 @@ def cup_on_brown(cutout, name):
 
 
 handdrip = cup_on_brown(Path(__file__).resolve().parent / "assets" / "drive_드립커피.png", "handdrip.png")
-latte = crop(UP / "013a501a-image.jpg", (0, 2300, 2268, 5135), "latte.png")
+cans = crop(UP / "e033888f-image.png", (366, 1113, 1956, 3100), "cans.png")
 
 pins = [
     k.cover(PH / "12.jpg", TAG.format(1), ["책 한 권,", "커피 한 잔,", "오늘은 여유!!"],
@@ -60,7 +60,7 @@ pins = [
     k.cover(handdrip, TAG.format(2), ["핸드드립", "맛집이라", "소문났어요!!"],
             "드립 커피 손님이 가장 많은 매장", HANDLE, "직접 볶으니까, 원두도 라떼도 맛있어요",
             focus=0.5, underline=()),
-    k.cover(latte, TAG.format(3), ["원두 사면,", "음료 한 잔", "2,000원 할인!!"],
+    k.cover(cans, TAG.format(3), ["원두 사면,", "음료 한 잔", "2,000원 할인!!"],
             "원두 1봉당 음료 1잔", HANDLE, "주말 · 공휴일에도 10–19 열어요",
             focus=0.5, underline=()),
 ]
