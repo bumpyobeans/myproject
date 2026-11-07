@@ -31,3 +31,8 @@
 
 캐러셀을 만들 때는 따로 지정이 없으면 `.claude/instagram/carousel_style.md`의
 "깔끔 + 사진" 스타일을 쓴다. 그리는 코드는 `carousel/carousel_kit.py`, 글꼴은 `fonts/`(Pretendard).
+
+## "정보소개" 형식
+
+"정보소개"라고 하면 매장 고정 게시물 3장 + 캡션 3개 세트를 만든다.
+규칙은 `.claude/instagram/info_style.md`, 예시는 `수서역점_고정게시물/`, `다산점_고정게시물/`.
