@@ -272,3 +272,56 @@ def spec_item(label, page, total, handle, num, title, spec, paragraphs, highligh
     _body(d, M, y, paragraphs, size=34, highlight=highlight)
     _footer(d, handle)
     return _finish(im)
+
+
+# ------------------------------------------------- "스토리 캐러셀" (story style)
+
+PINK = (230, 0, 126)
+LIME = (229, 251, 72)
+
+
+def _box_text(d, x, y, lines, size, align, pad, maxw):
+    """Draw lines; a line may contain [[pink words]]. Returns box height."""
+    f = font("Regular", size)
+    lh = int(size * S * 1.45)
+    for i, line in enumerate(lines):
+        parts = line.replace("]]", "[[").split("[[")
+        widths = [d.textlength(p, font=f) for p in parts]
+        tw = sum(widths)
+        cx = x + pad + ((maxw - tw) / 2 if align == "center" else 0)
+        for k, p in enumerate(parts):
+            d.text((cx, y + pad + i * lh), p, font=f, fill=PINK if k % 2 else INK)
+            cx += widths[k]
+    return lh * len(lines) + 2 * pad - int(size * S * 0.3)
+
+
+def story_slide(photo, boxes, focus=0.5, dim=0):
+    """Personal photo full-bleed, white bordered text boxes on top.
+
+    boxes: dicts with text ("\\n" lines, [[pink]] marks), x, y (0..1 of the slide),
+    size (default 40), fill ("white" | "lime" | "none" = big white overlay text),
+    align ("left" | "center"), width (0..1, optional; default fits the text).
+    """
+    im = _cover_crop(Image.open(photo), W, H, focus)
+    if dim:
+        im = Image.blend(im, Image.new("RGB", (W, H), (0, 0, 0)), dim)
+    d = ImageDraw.Draw(im, "RGBA")
+    for b in boxes:
+        lines = b["text"].split("\n")
+        size = b.get("size", 40)
+        x, y = int(b["x"] * W), int(b["y"] * H)
+        if b.get("fill") == "none":
+            f = font("Regular", size)
+            for i, line in enumerate(lines):
+                d.text((x, y + i * int(size * S * 1.25)), line, font=f, fill=WHITE,
+                       stroke_width=2 * S, stroke_fill=(0, 0, 0, 90))
+            continue
+        pad = 26 * S
+        f = font("Regular", size)
+        natural = max(d.textlength(l.replace("[[", "").replace("]]", ""), font=f) for l in lines)
+        inner = int(b["width"] * W) - 2 * pad if "width" in b else natural
+        h = int(size * S * 1.45) * len(lines) + 2 * pad - int(size * S * 0.3)
+        fill = LIME if b.get("fill") == "lime" else WHITE
+        d.rectangle((x, y, x + inner + 2 * pad, y + h), fill=fill, outline=INK, width=3 * S)
+        _box_text(d, x, y, lines, size, b.get("align", "left"), pad, inner)
+    return _finish(im)

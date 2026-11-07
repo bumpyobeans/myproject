@@ -36,3 +36,8 @@
 
 "정보소개"라고 하면 매장 고정 게시물 3장 + 캡션 3개 세트를 만든다.
 규칙은 `.claude/instagram/info_style.md`, 예시는 `수서역점_고정게시물/`, `다산점_고정게시물/`.
+
+## "스토리 캐러셀" 형식
+
+"스토리 캐러셀"이라고 하면 일상 사진 + 흰 박스 글로 내 이야기를 고백하듯 푸는 캐러셀을 만든다.
+규칙은 `.claude/instagram/story_carousel_style.md`, 그리는 함수는 `carousel_kit.story_slide()`.
