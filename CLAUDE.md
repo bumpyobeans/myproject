@@ -41,3 +41,8 @@
 
 "스토리 캐러셀"이라고 하면 일상 사진 + 흰 박스 글로 내 이야기를 고백하듯 푸는 캐러셀을 만든다.
 규칙은 `.claude/instagram/story_carousel_style.md`, 그리는 함수는 `carousel_kit.story_slide()`.
+
+## 훅: Hook 10 아키타입
+
+릴스·캐러셀 표지·캡션 첫 줄을 쓸 때는 `.claude/instagram/hook10.md`의 10가지 틀에서 고르고
+어떤 아키타입인지 밝힌다. `/ig-reel`의 hooks.json과 함께 쓴다.
